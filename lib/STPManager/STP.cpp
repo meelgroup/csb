@@ -47,6 +47,7 @@ THE SOFTWARE.
 #include "stp/Simplifier/RemoveUnconstrained.h"
 #include "stp/Simplifier/UnsignedIntervalAnalysis.h"
 #include "stp/Simplifier/UseITEContext.h"
+#include "stp/Simplifier/Flatten.h"
 #include <memory>
 using std::cout;
 
@@ -150,9 +151,7 @@ SOLVER_RETURN_TYPE STP::TopLevelSTP(const ASTNode& inputasserts,
 }
 
 ASTNode STP::callSizeReducing(ASTNode inputToSat, BVSolver* bvSolver,
-                              PropagateEqualities* pe,
-                              const long initial_difficulty_score,
-                              long& actualBBSize)
+                              PropagateEqualities* pe)
 {
   while (true)
   {
@@ -162,45 +161,6 @@ ASTNode STP::callSizeReducing(ASTNode inputToSat, BVSolver* bvSolver,
       break;
   }
 
-  actualBBSize = -1;
-
-  // Expensive, so only want to do it once.
-  if (bm->UserFlags.enable_bitblast_simplification &&
-      initial_difficulty_score < 250000)
-  {
-    BBNodeManagerAIG bitblast_nodemgr;
-    BitBlaster<BBNodeAIG, BBNodeManagerAIG> bb(
-        &bitblast_nodemgr, simp, bm->defaultNodeFactory, &(bm->UserFlags));
-    ASTNodeMap fromTo;
-    ASTNodeMap equivs;
-    bb.getConsts(inputToSat, fromTo, equivs);
-
-    if (equivs.size() > 0)
-    {
-      /* These nodes have equivalent AIG representations, so even though they
-       * have different
-       * word level expressions they are identical semantically. So we pick one
-       * of the ASTnodes
-       * and replace the others with it.
-       * TODO: I replace with the lower id node, sometimes though we replace
-       * with much more
-       * difficult looking ASTNodes.
-      */
-      ASTNodeMap cache;
-      inputToSat = SubstitutionMap::replace(
-          inputToSat, equivs, cache, bm->defaultNodeFactory, false, true);
-      bm->ASTNodeStats(bb_message.c_str(), inputToSat);
-    }
-
-    if (fromTo.size() > 0)
-    {
-      ASTNodeMap cache;
-      inputToSat = SubstitutionMap::replace(inputToSat, fromTo, cache,
-                                            bm->defaultNodeFactory);
-      bm->ASTNodeStats(bb_message.c_str(), inputToSat);
-    }
-    actualBBSize = bitblast_nodemgr.totalNumberOfNodes();
-  }
   return inputToSat;
 }
 
@@ -338,20 +298,68 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   bm->UserFlags.construct_counterexample_flag = true;
 #endif
 
+  if (bm->UserFlags.enable_flatten)
+  {
+    Flatten flatten(bm,bm->defaultNodeFactory);
+    inputToSat = flatten.topLevel(inputToSat);
+    bm->ASTNodeStats("After Sharing-aware Flattening: ", inputToSat);
+  }
+
   // Run size reducing just once.
   inputToSat = sizeReducing(inputToSat, bvSolver.get(), pe.get());
   long initial_difficulty_score = difficulty.score(inputToSat, bm);
-  long bitblasted_difficulty = -1;
+
+  // It's helpful to know the initial node size. The difficulty scorer can easily get something similar:
+  const long initial_node_size = difficulty.getEvalCount();
 
   // Fixed point it if it's not too difficult.
   // Currently we discards all the state each time sizeReducing is called,
   // so it's expensive to call.
-  if ((!arrayops && initial_difficulty_score < 1000000))
+  if (!arrayops && ( -1 == bm->UserFlags.size_reducing_fixed_point || initial_node_size < bm->UserFlags.size_reducing_fixed_point))
   {
     inputToSat =
-        callSizeReducing(inputToSat, bvSolver.get(), pe.get(),
-                         initial_difficulty_score, bitblasted_difficulty);
+        callSizeReducing(inputToSat, bvSolver.get(), pe.get());
   }
+
+  long bitblasted_difficulty = -1;
+  // Expensive, so only want to do it once.
+  if (bm->UserFlags.bitblast_simplification == -1 || initial_difficulty_score < bm->UserFlags.bitblast_simplification)
+  {
+    BBNodeManagerAIG bitblast_nodemgr;
+    BitBlaster<BBNodeAIG, BBNodeManagerAIG> bb(
+        &bitblast_nodemgr, simp, bm->defaultNodeFactory, &(bm->UserFlags));
+    ASTNodeMap fromTo;
+    ASTNodeMap equivs;
+    bb.getConsts(inputToSat, fromTo, equivs);
+
+    if (equivs.size() > 0)
+    {
+      /* These nodes have equivalent AIG representations, so even though they
+       * have different
+       * word level expressions they are identical semantically. So we pick one
+       * of the ASTnodes
+       * and replace the others with it.
+       * TODO: I replace with the lower id node, sometimes though we replace
+       * with much more
+       * difficult looking ASTNodes.
+      */
+      ASTNodeMap cache;
+      inputToSat = SubstitutionMap::replace(
+          inputToSat, equivs, cache, bm->defaultNodeFactory, false, true);
+      bm->ASTNodeStats(bb_message.c_str(), inputToSat);
+    }
+
+    if (fromTo.size() > 0)
+    {
+      ASTNodeMap cache;
+      inputToSat = SubstitutionMap::replace(inputToSat, fromTo, cache,
+                                            bm->defaultNodeFactory);
+      bm->ASTNodeStats(bb_message.c_str(), inputToSat);
+    }
+    
+    bitblasted_difficulty = bitblast_nodemgr.totalNumberOfNodes();
+  }
+
 
   if (!arrayops || bm->UserFlags.array_difficulty_reversion)
   {
@@ -381,7 +389,6 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   // round of substitution, solving, and simplification. ensures that
   // DAG is minimized as much as possibly, and ideally should
   // garuntee that all liketerms in BVPLUSes have been combined.
-  bm->SimplifyWrites_InPlace_Flag = false;
   bm->TermsAlreadySeenMap_Clear();
 
   ASTNode tmp_inputToSAT;
@@ -486,7 +493,6 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   }
 
   bm->TermsAlreadySeenMap_Clear();
-  bm->SimplifyWrites_InPlace_Flag = false;
 
   long final_difficulty_score = difficulty.score(inputToSat, bm);
 
@@ -558,10 +564,6 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   bm->UserFlags.optimize_flag = optimize_enabled;
 
   SOLVER_RETURN_TYPE res;
-  if (!bm->UserFlags.ackermannisation)
-  {
-    bm->counterexample_checking_during_refinement = true;
-  }
 
   // We are about to solve. Clear out all the memory associated with caches
   // that we won't need again.

@@ -30,14 +30,10 @@ THE SOFTWARE.
 #define UNSIGNEDINTERVAL_H_
 
 #include "stp/AST/AST.h"
-//#include "stp/STPManager/STPManager.h"
-//#include "stp/Simplifier/Simplifier.h"
-
 #include <iostream>
 
 namespace stp
 {
-using std::make_pair;
 
 struct UnsignedInterval
 {
@@ -53,9 +49,12 @@ struct UnsignedInterval
     assert(size_(minV) == size_(maxV));
   }
 
+  UnsignedInterval(UnsignedInterval const&) = delete;
+  UnsignedInterval& operator=(UnsignedInterval const&) = delete;
+
+
   void print()
   {
-
     unsigned char* a = CONSTANTBV::BitVector_to_Dec(minV);
     unsigned char* b = CONSTANTBV::BitVector_to_Dec(maxV);
     std::cerr << a << " " << b << std::endl;
