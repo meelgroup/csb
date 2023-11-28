@@ -28,6 +28,12 @@ if (USE_CRYPTOMINISAT)
     set(sat_lib_to_add ${sat_lib_to_add} CryptoMinisat5.cpp)
 endif()
 
+if (USE_UNIGEN)
+    include_directories(${UNIGEN_INCLUDE_DIRS})
+    include_directories(${APPROXMC_INCLUDE_DIRS})
+    set(sat_lib_to_add ${sat_lib_to_add} UniSamp.cpp)
+endif()
+
 if (USE_RISS)
     set(sat_lib_to_add ${sat_lib_to_add} RissCore.cpp)
 endif()

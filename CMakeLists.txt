@@ -503,6 +503,17 @@ option(NOUNIGEN "Don't try to use cryptominisat" OFF)
 
 if (NOT NOUNIGEN)
   set(unigen_DIR "" CACHE PATH "Path to directory containing unigenConfig.cmake") #AS: No clue
+  find_package(approxmc CONFIG)
+  if (approxmc_FOUND)
+    message(STATUS "Found approxmc")
+    message(STATUS "ApproxMC dynamic lib: ${APPROXMC_LIBRARIES}")
+    message(STATUS "ApproxMC static lib:  ${APPROXMC_STATIC_LIBRARIES}")
+    message(STATUS "ApproxMC static lib deps: ${APPROXMC_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "ApproxMC include dirs: ${APPROXMC_INCLUDE_DIRS}")
+  else()
+    message(FATAL_ERROR "Cannot find ApproxMC. Please install it! Exiting.")
+  endif()
+
   find_package(unigen CONFIG)
   if (unigen_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOUNIGEN))
     message(STATUS "UniGen dynamic lib: ${UNIGEN_LIBRARIES}")
