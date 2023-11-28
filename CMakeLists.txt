@@ -497,6 +497,32 @@ if (FORCE_CMS AND NOT USE_CRYPTOMINISAT)
 endif()
 
 # -----------------------------------------------------------------------------
+# Find UniGen
+# -----------------------------------------------------------------------------
+option(NOUNIGEN "Don't try to use cryptominisat" OFF)
+
+if (NOT NOUNIGEN)
+  set(unigen_DIR "" CACHE PATH "Path to directory containing unigenConfig.cmake") #AS: No clue
+  find_package(unigen CONFIG)
+  if (unigen_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOUNIGEN))
+    message(STATUS "UniGen dynamic lib: ${UNIGEN_LIBRARIES}")
+    message(STATUS "UniGen static lib:  ${UNIGEN_STATIC_LIBRARIES}")
+    message(STATUS "UniGen static lib deps: ${UNIGEN_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "UniGen include dirs: ${UNIGEN_INCLUDE_DIRS}")
+    add_definitions(-DUSE_UNIGEN)
+    set(USE_UNIGEN ON)
+  else()
+    message(STATUS "UniGen NOT found")
+  endif()
+endif()
+add_feature_info(UniGen USE_UNIGEN "Enables Uniform Sampling, allows --unisamp option")
+
+option(FORCE_UNIG "Must build with UniGen" OFF)
+if (FORCE_UNIG AND NOT USE_UNIGEN)
+    message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
+endif()
+
+# -----------------------------------------------------------------------------
 # Find ZLIB (needed for MiniSat)
 # yes, we need to include the zlib header location or STP will not build
 # thanks to MiniSat include-ing it n the header
