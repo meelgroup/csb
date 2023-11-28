@@ -137,6 +137,24 @@ if (USE_CRYPTOMINISAT)
     endif()
 endif()
 
+if (USE_UNIGEN)
+    if (STATICCOMPILE)
+      set(stp_link_libs
+        ${stp_link_libs}
+        ${UNIGEN_STATIC_LIBRARIES}
+        ${APPROXMC_STATIC_LIBRARIES}
+        ${APPROXMC_STATIC_LIBRARIES_DEPS}
+        ${UNIGEN_STATIC_LIBRARIES_DEPS})
+    else()
+      set(stp_link_libs
+        ${stp_link_libs}
+        ${ARJUN_LIBRARIES}
+        ${LOUVAIN_COMMUNITIES_LIBRARIES}
+        ${APPROXMC_LIBRARIES}
+        ${UNIGEN_LIBRARIES})
+    endif()
+endif()
+
 if (USE_RISS)
     set(stp_link_libs
         ${stp_link_libs} -lriss-coprocessor)

@@ -499,10 +499,27 @@ endif()
 # -----------------------------------------------------------------------------
 # Find UniGen
 # -----------------------------------------------------------------------------
-option(NOUNIGEN "Don't try to use cryptominisat" OFF)
+option(NOUNIGEN "Don't try to use UniSamp" OFF)
 
 if (NOT NOUNIGEN)
   set(unigen_DIR "" CACHE PATH "Path to directory containing unigenConfig.cmake") #AS: No clue
+
+  find_package(louvain_communities CONFIG)
+  if (louvain_communities_FOUND)
+      message(STATUS "Found Louvain Communities library")
+      message(STATUS "Louvain Communities dynamic lib: ${LOUVAIN_COMMUNITIES_LIBRARIES}")
+      message(STATUS "Louvain Communities include dirs: ${LOUVAIN_COMMUNITIES_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find Louvain Communities libraries.")
+  endif()
+  find_package(arjun CONFIG)
+  if (arjun_FOUND)
+      message(STATUS "Found Arjun")
+      message(STATUS "Arjun dynamic lib : ${ARJUN_LIBRARIES}")
+      message(STATUS "Arjun include dirs: ${ARJUN_INCLUDE_DIRS}")
+  else()
+      message(FATAL_ERROR "Cannot find Arjun. Please install it! Exiting.")
+  endif()
   find_package(approxmc CONFIG)
   if (approxmc_FOUND)
     message(STATUS "Found approxmc")
