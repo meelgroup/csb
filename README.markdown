@@ -19,14 +19,16 @@ STP is a constraint solver (or SMT solver) aimed at solving constraints of bitve
 For a quick install:
 
 ```
-sudo apt-get install git cmake bison flex libboost-all-dev python2 perl
-git clone https://github.com/stp/stp
+sudo apt-get install git cmake bison flex libboost-all-dev python2 perl build-essential
+sudo apt-get install zlib1g-dev libboost-program-options-dev libboost-serialization-dev
+git clone https://github.com/meelgroup/stp
 cd stp
 git submodule init && git submodule update
 ./scripts/deps/setup-gtest.sh
 ./scripts/deps/setup-outputcheck.sh
 ./scripts/deps/setup-cms.sh
 ./scripts/deps/setup-minisat.sh
+./scripts/deps/setup-unigen.sh
 mkdir build
 cd build
 cmake ..
@@ -45,6 +47,15 @@ For more detailed instructions, see towards the end of the page.
 ## Input format
 
 The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+
+### Usage as Almost-uniform Sampler:
+
+Run with an SMT-LIB2 file:
+
+```
+./stp --unisamp myproblem.smt2
+```
+
 
 ### Usage
 
