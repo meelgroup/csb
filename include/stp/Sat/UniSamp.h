@@ -30,8 +30,11 @@ THE SOFTWARE.
 
 #include "stp/Sat/SATSolver.h"
 #include "unigen/unigen.h"
+#include <arjun/arjun.h>
 
 #include <unordered_set>
+
+using std::vector;
 
 namespace UniSmp
 {
@@ -49,6 +52,7 @@ namespace stp
 {
   ApproxMC::AppMC* a;
   UniGen::UniG* s;
+  ArjunNS::Arjun* arjun;
 
 public:
   UniSamp();

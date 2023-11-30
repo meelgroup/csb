@@ -36,12 +36,16 @@ using namespace UniGen; // namespace in UniGen library
 namespace stp
 {
 
+  vector<vector<int>> unigen_models;
+
+
 void mycallback(const std::vector<int>& solution, void*)
 {
     for(uint32_t i = 0; i < solution.size(); i++) {
         std::cout << solution[i] <<  " ";
     }
-     std::cout << "0" << std::endl;
+    unigen_models.push_back(solution);
+    std::cout << "c [stp->unigen] Got model of size " << solution.size() << std::endl;
 }
 
 void UniSamp::enableRefinement(const bool enable)
@@ -58,7 +62,10 @@ UniSamp::UniSamp()
 
   a = new ApproxMC::AppMC;
   s = new UniG(a);
+  arjun = new ArjunNS::Arjun;
+
   s->set_callback(mycallback, NULL);
+  a->set_verbosity(1);
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
   //s->set_default_polarity(false);
@@ -95,7 +102,8 @@ bool UniSamp::addClause(
   {
     real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-
+  std::cout << "0\n";
+  arjun->add_clause(real_temp_cl);
   return a->add_clause(real_temp_cl);
 }
 
@@ -118,21 +126,46 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
 
 
   // CMSat::lbool ret = s->solve(); // TODO AS
+  std::cout << "c [stp->unigen] UniSamp solving instance with " << a->nVars()
+            << " variables." << std::endl;
+
+  vector <uint32_t> sampling_vars, sampling_vars_orig ;
+  for(uint32_t i = 0; i < a->nVars(); i++)
+    sampling_vars.push_back(i);
+
+  arjun->set_seed(5);
+  arjun->set_verbosity(1);
+  std::cout << "c Arjun SHA revision " <<  arjun->get_version_info() << std::endl;
+
+  sampling_vars_orig = sampling_vars;
+  sampling_vars = arjun->get_indep_set();
+  delete arjun;
+
+  sampling_vars = sampling_vars_orig; //TODO AS this is debugging as Arjun is not performing correctly
+
+  a->set_projection_set(sampling_vars);
+  std::cout << "c [unigen->arjun] sampling var size [from arjun] " << sampling_vars.size() << "\n";
+
   auto sol_count = a->count();
-  s->sample(&sol_count,1);
-  CMSat::lbool ret = CMSat::l_True;
-  return ret == CMSat::l_True;
+  s->set_full_sampling_vars(sampling_vars_orig);
+  std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
+            << "*2**" << sol_count.hashCount << std::endl;
+
+  s->sample(&sol_count,10);
+  return true;
 }
 
 uint8_t UniSamp::modelValue(uint32_t x) const
 {
-  // return (s->get_model().at(x) == CMSat::l_True); TODO AS
-  return true;
+  if (unigen_models[0].size() < a->nVars())
+    std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
+  return (unigen_models[0].at(x) > 0);
 }
 
 uint32_t UniSamp::newVar()
 {
   a->new_var();
+  arjun->new_var();
   return a->nVars() - 1;
 }
 
