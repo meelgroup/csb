@@ -36,16 +36,12 @@ using namespace UniGen; // namespace in UniGen library
 namespace stp
 {
 
-  vector<vector<int>> unigen_models;
+vector<vector<int>> unigen_models;
 
 
 void mycallback(const std::vector<int>& solution, void*)
 {
-    for(uint32_t i = 0; i < solution.size(); i++) {
-        std::cout << solution[i] <<  " ";
-    }
     unigen_models.push_back(solution);
-    std::cout << "c [stp->unigen] Got model of size " << solution.size() << std::endl;
 }
 
 void UniSamp::enableRefinement(const bool enable)
@@ -102,7 +98,6 @@ bool UniSamp::addClause(
   {
     real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-  std::cout << "0\n";
   arjun->add_clause(real_temp_cl);
   return a->add_clause(real_temp_cl);
 }
@@ -134,8 +129,6 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
     sampling_vars.push_back(i);
 
   arjun->set_seed(5);
-  arjun->set_verbosity(1);
-  std::cout << "c Arjun SHA revision " <<  arjun->get_version_info() << std::endl;
 
   sampling_vars_orig = sampling_vars;
   sampling_vars = arjun->get_indep_set();
@@ -157,8 +150,8 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
 
 uint8_t UniSamp::modelValue(uint32_t x) const
 {
-  if (unigen_models[0].size() < a->nVars())
-    std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
+  //   if (unigen_models[0].size() < sampling_vars.size())
+  //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
   return (unigen_models[0].at(x) > 0);
 }
 
@@ -171,7 +164,9 @@ uint32_t UniSamp::newVar()
 
 void UniSamp::setVerbosity(int v)
 {
-  s->set_verbosity(v);
+  s->set_verbosity(0);
+  a->set_verbosity(0);
+  arjun->set_verbosity(0);
 }
 
 unsigned long UniSamp::nVars() const
