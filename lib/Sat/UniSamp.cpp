@@ -131,13 +131,16 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   arjun->set_seed(5);
 
   sampling_vars_orig = sampling_vars;
+  arjun->set_starting_sampling_set(sampling_vars_orig);
   sampling_vars = arjun->get_indep_set();
+  std::cout << "c [unigen->arjun] sampling var size [from arjun] " << sampling_vars.size() << "\n";
+
   delete arjun;
 
-  sampling_vars = sampling_vars_orig; //TODO AS this is debugging as Arjun is not performing correctly
+  //TODO AS: this is debugging as Arjun is not performing correctly
+  //sampling_vars = sampling_vars_orig;
 
   a->set_projection_set(sampling_vars);
-  std::cout << "c [unigen->arjun] sampling var size [from arjun] " << sampling_vars.size() << "\n";
 
   auto sol_count = a->count();
   s->set_full_sampling_vars(sampling_vars_orig);
