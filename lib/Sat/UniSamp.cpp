@@ -53,15 +53,17 @@ void UniSamp::enableRefinement(const bool enable)
   //   }
 }
 
-UniSamp::UniSamp()
+UniSamp::UniSamp(uint64_t unisamp_seed)
 {
 
   a = new ApproxMC::AppMC;
   s = new UniG(a);
   arjun = new ArjunNS::Arjun;
+  seed = unisamp_seed;
 
   s->set_callback(mycallback, NULL);
   a->set_verbosity(1);
+  a->set_seed(seed);
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
   //s->set_default_polarity(false);

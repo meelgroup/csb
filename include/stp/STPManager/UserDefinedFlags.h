@@ -140,6 +140,7 @@ public:
 
   int64_t timeout_max_conflicts = -1;
   int num_solver_threads = 1;
+  uint64_t unisamp_seed = 12345;
   int64_t timeout_max_time = -1; // seconds
 
   // check the counterexample against the original input to STP

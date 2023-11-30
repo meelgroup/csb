@@ -112,7 +112,7 @@ SATSolver* STP::get_new_sat_solver()
       break;
     case UserDefinedFlags::UNIGEN_SOLVER:
 #ifdef USE_UNIGEN
-      newS = new UniSamp();
+      newS = new UniSamp(bm->UserFlags.unisamp_seed);
 #else
       std::cerr << "UniSamp support was not enabled at configure time."
                 << std::endl;

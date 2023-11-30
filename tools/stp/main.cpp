@@ -250,7 +250,11 @@ void ExtraMain::create_options()
 #endif
 #endif
               )
-           ("unisamp", "use unisamp as solver -- behave as a uniform sampler");
+           ("unisamp", "use unisamp as solver -- behave as a uniform sampler")
+           ("seed",
+                     po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+                         ->default_value(bm->UserFlags.unisamp_seed),
+                     "Seed for UniSamp");
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(

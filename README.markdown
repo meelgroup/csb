@@ -53,9 +53,10 @@ The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recomme
 Run with an SMT-LIB2 file:
 
 ```
-./stp --unisamp myproblem.smt2
+./stp --unisamp --seed 6 myproblem.smt2
 ```
 
+Change seed value to get different samples.
 
 ### Usage
 

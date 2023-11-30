@@ -53,9 +53,10 @@ namespace stp
   ApproxMC::AppMC* a;
   UniGen::UniG* s;
   ArjunNS::Arjun* arjun;
+  uint64_t seed;
 
 public:
-  UniSamp();
+  UniSamp(uint64_t unisamp_seed);
 
   ~UniSamp();
 
