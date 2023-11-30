@@ -33,6 +33,10 @@ THE SOFTWARE.
 #include "stp/Sat/CryptoMinisat5.h"
 #endif
 
+#ifdef USE_UNIGEN
+#include "stp/Sat/UniSamp.h"
+#endif
+
 #ifdef USE_RISS
 #include "stp/Sat/Riss.h"
 #endif
@@ -102,6 +106,15 @@ SATSolver* STP::get_new_sat_solver()
       newS = new CryptoMiniSat5(bm->UserFlags.num_solver_threads);
 #else
       std::cerr << "CryptoMiniSat5 support was not enabled at configure time."
+                << std::endl;
+      exit(-1);
+#endif
+      break;
+    case UserDefinedFlags::UNIGEN_SOLVER:
+#ifdef USE_UNIGEN
+      newS = new UniSamp();
+#else
+      std::cerr << "UniSamp support was not enabled at configure time."
                 << std::endl;
       exit(-1);
 #endif

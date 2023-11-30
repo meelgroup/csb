@@ -36,6 +36,14 @@ using namespace UniGen; // namespace in UniGen library
 namespace stp
 {
 
+void mycallback(const std::vector<int>& solution, void*)
+{
+    for(uint32_t i = 0; i < solution.size(); i++) {
+        std::cout << solution[i] <<  " ";
+    }
+     std::cout << "0" << std::endl;
+}
+
 void UniSamp::enableRefinement(const bool enable)
 {
   // might break if we simplify with refinement enabled..
@@ -47,8 +55,10 @@ void UniSamp::enableRefinement(const bool enable)
 
 UniSamp::UniSamp()
 {
+
   a = new ApproxMC::AppMC;
   s = new UniG(a);
+  s->set_callback(mycallback, NULL);
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
   //s->set_default_polarity(false);

@@ -249,7 +249,8 @@ void ExtraMain::create_options()
                          "(default)"
 #endif
 #endif
-              );
+              )
+           ("unisamp", "use unisamp as solver -- behave as a uniform sampler");
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(
@@ -469,6 +470,13 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (vm.count("cryptominisat"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::CRYPTOMINISAT5_SOLVER;
+  }
+#endif
+
+#ifdef USE_UNIGEN
+  if (vm.count("unisamp"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::UNIGEN_SOLVER;
   }
 #endif
 
