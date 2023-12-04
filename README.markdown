@@ -25,7 +25,7 @@ git submodule init && git submodule update
 ./scripts/deps/setup-outputcheck.sh
 ./scripts/deps/setup-cms.sh
 ./scripts/deps/setup-minisat.sh
-./scripts/deps/setup-unigen.sh
+./scripts/deps/setup-unisamp.sh
 mkdir build
 cd build
 cmake ..
@@ -89,8 +89,8 @@ Out[9]: 180388626432
 
 # Authors
 
-* Arijit Shaw
-* Kuldeep S. Meel
+* [Arijit Shaw](https://arijitsh.github.io)
+* [Kuldeep S. Meel](https://www.cs.toronto.edu/~meel/)
 
 Please refer to  STP/UniSamp/ApproxMC for the respective authors.
 
