@@ -1213,6 +1213,18 @@ DLL_PUBLIC bool vc_useCryptominisat(VC vc);
 //!
 DLL_PUBLIC bool vc_isUsingCryptominisat(VC vc);
 
+//! \brief Checks if STP was compiled with support for unigen
+//!
+DLL_PUBLIC bool vc_supportsUnigen(VC vc);
+
+//! \brief Sets underlying SAT solver to unigen
+//!
+DLL_PUBLIC bool vc_useUnigen(VC vc);
+
+//! \brief Checks if underlying SAT solver is unigen
+//!
+DLL_PUBLIC bool vc_isUsingUnigen(VC vc);
+
 //! \brief Checks if STP was compiled with support for riss
 //!
 DLL_PUBLIC bool vc_supportsRiss(VC vc);

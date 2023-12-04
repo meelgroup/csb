@@ -2267,6 +2267,42 @@ vc
 #endif
 }
 
+bool vc_supportsUnigen(VC /*vc*/)
+{
+#ifdef USE_UNIGEN
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool vc_useUnigen(VC
+#ifdef USE_UNIGEN
+vc
+#endif
+)
+{
+#ifdef USE_UNIGEN
+  _vc_useSolver(vc, stp::UserDefinedFlags::UNIGEN_SOLVER);
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool vc_isUsingUnigen(VC
+#ifdef USE_UNIGEN
+vc
+#endif
+)
+{
+#ifdef USE_UNIGEN
+  return _vc_isUsingSolver(vc, stp::UserDefinedFlags::UNIGEN_SOLVER);
+#else
+  return false;
+#endif
+}
+
 bool vc_supportsRiss(VC /*vc*/ )
 {
 #ifdef USE_RISS

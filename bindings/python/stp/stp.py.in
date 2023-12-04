@@ -79,6 +79,9 @@ _set_func('vc_isUsingSimplifyingMinisat', c_bool, _VC)
 _set_func('vc_supportsCryptominisat', c_bool, _VC)
 _set_func('vc_useCryptominisat', c_bool, _VC)
 _set_func('vc_isUsingCryptominisat', c_bool, _VC)
+_set_func('vc_supportsUnigen', c_bool, _VC)
+_set_func('vc_useUnigen', c_bool, _VC)
+_set_func('vc_isUsingUnigen', c_bool, _VC)
 _set_func('vc_supportsRiss', c_bool, _VC)
 _set_func('vc_useRiss', c_bool, _VC)
 _set_func('vc_isUsingRiss', c_bool, _VC)
@@ -251,6 +254,15 @@ class Solver(object):
 
     def isUsingCryptominisat(self):
         return _lib.vc_isUsingCryptominisat(self.vc)
+
+    def supportsUnigen(self):
+        return _lib.vc_supportsUnigen(self.vc)
+
+    def useUnigen(self):
+        return _lib.vc_useUnigen(self.vc)
+
+    def isUsingUnigen(self):
+        return _lib.vc_isUsingUnigen(self.vc)
 
     def supportsRiss(self):
         return _lib.vc_supportsRiss(self.vc)
