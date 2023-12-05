@@ -255,6 +255,9 @@ class Solver(object):
     def isUsingCryptominisat(self):
         return _lib.vc_isUsingCryptominisat(self.vc)
 
+    def setSeed(self, seed):
+        return _lib.vc_setSeed(self.vc, seed)
+
     def supportsUnigen(self):
         return _lib.vc_supportsUnigen(self.vc)
 

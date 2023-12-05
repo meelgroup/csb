@@ -17,7 +17,7 @@ For a quick install:
 
 ```
 sudo apt-get install git cmake bison flex libboost-all-dev python2 perl build-essential
-sudo apt-get install zlib1g-dev libboost-program-options-dev libboost-serialization-dev
+sudo apt-get install zlib1g-dev libboost-program-options-dev libboost-serialization-dev libgmp-dev
 git clone https://github.com/meelgroup/csb
 cd csb
 git submodule init && git submodule update

@@ -2199,6 +2199,15 @@ bool _vc_isUsingSolver(VC vc, stp::UserDefinedFlags::SATSolvers solver)
   return b->UserFlags.solver_to_use == solver;
 }
 
+bool vc_setSeed(VC vc, long long unsigned int this_seed)
+{
+  stp::STP* stp_i = (stp::STP*)vc;
+  stp::STPMgr* bm = stp_i->bm;
+  bm->UserFlags.unisamp_seed = this_seed;
+  return true;
+}
+
+
 bool vc_supportsMinisat(VC /*vc*/)
 {
   return true;

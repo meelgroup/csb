@@ -1178,6 +1178,10 @@ DLL_PUBLIC int vc_parseMemExpr(VC vc, const char* s, Expr* outQuery,
 //!
 DLL_PUBLIC bool vc_supportsMinisat(VC vc);
 
+//! \brief Sets seed for ApproxMC/UniSamp
+//!
+bool vc_setSeed ( VC vc, long long unsigned int seed );
+
 //! \brief Sets underlying SAT solver to minisat
 //!
 DLL_PUBLIC bool vc_useMinisat(VC vc);
