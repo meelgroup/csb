@@ -43,6 +43,7 @@ jobs:
         ./scripts/deps/setup-minisat.sh
         ./scripts/deps/setup-cms.sh
         ./scripts/deps/setup-gtest.sh
+        /scripts/deps/setup-unisamp.sh
         ./scripts/deps/setup-outputcheck.sh
 
     - name: Configure
