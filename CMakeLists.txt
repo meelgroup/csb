@@ -638,7 +638,7 @@ set(LIBS ${LIBS} ${MINISAT_LIBRARIES})
 # not provide new enough versions for us to use.
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     execute_process(
-        COMMAND brew --prefix bison 
+        COMMAND brew --prefix bison
         RESULT_VARIABLE BREW_BISON
         OUTPUT_VARIABLE BREW_BISON_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE

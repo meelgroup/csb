@@ -42,10 +42,12 @@ void CMSGenC::enableRefinement(const bool enable)
   }
 }
 
-CMSGenC::CMSGenC(int num_threads)
+CMSGenC::CMSGenC(int seed)
 {
   s = new CMSGen::SATSolver;
   temp_cl = (void*)new vector<CMSGen::Lit>;
+  // s->set_seed(seed);
+  // TODO - set seed
 }
 
 CMSGenC::~CMSGenC()

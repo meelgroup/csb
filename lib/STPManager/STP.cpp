@@ -120,6 +120,24 @@ SATSolver* STP::get_new_sat_solver()
       exit(-1);
 #endif
       break;
+    case UserDefinedFlags::APPROXMC_SOLVER:
+#ifdef USE_UNIGEN
+      newS = new UniSamp(bm->UserFlags.unisamp_seed);
+#else
+      std::cerr << "UniSamp support was not enabled at configure time."
+                << std::endl;
+      exit(-1);
+#endif
+      break;
+    case UserDefinedFlags::CMSGEN_SOLVER:
+#ifdef USE_UNIGEN
+      newS = new CMSGenC(bm->UserFlags.unisamp_seed);
+#else
+      std::cerr << "UniSamp support was not enabled at configure time."
+                << std::endl;
+      exit(-1);
+#endif
+      break;
     case UserDefinedFlags::RISS_SOLVER:
 #ifdef USE_RISS
       newS = new RissCore();

@@ -250,11 +250,13 @@ void ExtraMain::create_options()
 #endif
 #endif
               )
-           ("unisamp", "use unisamp as solver -- behave as a uniform sampler")
+           ("unisamp,u", "use unisamp as solver -- behave as a almost uniform sampler")
+           ("cmsgen,s", "use cmsgen as solver -- behave as a uniform like sampler")
+           ("approxmc,c", "use approxmc as solver -- behave as a approximate counter")
            ("seed",
                      po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
                          ->default_value(bm->UserFlags.unisamp_seed),
-                     "Seed for UniSamp");
+                     "Seed for counting and sampling");
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(
@@ -290,7 +292,7 @@ void ExtraMain::create_options()
       "print-arrayval,q",
       po::bool_switch(&(bm->UserFlags.print_arrayval_declaredorder_flag)),
       "print arrayval declared order")(
-      "print-functionstat,s", po::bool_switch(&(bm->UserFlags.stats_flag)),
+      "print-functionstat", po::bool_switch(&(bm->UserFlags.stats_flag)),
       "print function statistics")(
       "print-quickstat,t",
       po::bool_switch(&(bm->UserFlags.quick_statistics_flag)),
@@ -481,6 +483,14 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (vm.count("unisamp"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::UNIGEN_SOLVER;
+  }
+  if (vm.count("cmsgen"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::CMSGEN_SOLVER;
+  }
+  if (vm.count("approxmc"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::APPROXMC_SOLVER;
   }
 #endif
 
