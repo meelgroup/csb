@@ -170,7 +170,7 @@ SOLVER_RETURN_TYPE STP::TopLevelSTP(const ASTNode& inputasserts,
   return result;
 }
 
-ASTNode STP::callSizeReducing(ASTNode inputToSat, 
+ASTNode STP::callSizeReducing(ASTNode inputToSat,
                               BVSolver* bvSolver,
                               PropagateEqualities* pe,
                               NodeDomainAnalysis* domain
@@ -188,7 +188,7 @@ ASTNode STP::callSizeReducing(ASTNode inputToSat,
 }
 
 // These transformations should never increase the size of the DAG.
-ASTNode STP::sizeReducing(ASTNode inputToSat, 
+ASTNode STP::sizeReducing(ASTNode inputToSat,
                           BVSolver* bvSolver,
                           PropagateEqualities* pe,
                           NodeDomainAnalysis* domain

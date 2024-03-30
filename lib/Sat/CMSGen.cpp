@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
 
-#include "stp/Sat/CryptoMinisat5.h"
+#include "stp/Sat/CMSGen.h"
 #include "cmsgen/cmsgen.h"
 #include <unordered_set>
 #include <algorithm>
@@ -32,7 +32,7 @@ using std::vector;
 namespace stp
 {
 
-void CryptoMiniSat5::enableRefinement(const bool enable)
+void CMSGenNS::enableRefinement(const bool enable)
 {
   // might break if we simplify with refinement enabled..
   if (enable)
@@ -41,7 +41,7 @@ void CryptoMiniSat5::enableRefinement(const bool enable)
   }
 }
 
-CryptoMiniSat5::CryptoMiniSat5(int num_threads)
+CMSGen::CMSGen(int num_threads)
 {
   s = new CMSat::SATSolver;
   // s->log_to_file("stp.cnf");
@@ -51,24 +51,24 @@ CryptoMiniSat5::CryptoMiniSat5(int num_threads)
   temp_cl = (void*)new vector<CMSat::Lit>;
 }
 
-CryptoMiniSat5::~CryptoMiniSat5()
+CMSGenNS::~CMSGen()
 {
   delete s;
   vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
   delete real_temp_cl;
 }
 
-void CryptoMiniSat5::setMaxConflicts(int64_t _max_confl)
+void CMSGenNS::setMaxConflicts(int64_t _max_confl)
 {
   max_confl = _max_confl;
 }
 
-void CryptoMiniSat5::setMaxTime(int64_t _max_time)
+void CMSGenNS::setMaxTime(int64_t _max_time)
 {
   max_time = _max_time;
 }
 
-bool CryptoMiniSat5::addClause(
+bool CMSGenNS::addClause(
     const vec_literals& ps) // Add a clause to the solver.
 {
   // Cryptominisat uses a slightly different vec class.
@@ -84,13 +84,13 @@ bool CryptoMiniSat5::addClause(
   return s->add_clause(real_temp_cl);
 }
 
-bool CryptoMiniSat5::okay()
+bool CMSGenNS::okay()
     const // FALSE means solver is in a conflicting state
 {
   return s->okay();
 }
 
-bool CryptoMiniSat5::solve(bool& timeout_expired) // Search without assumptions.
+bool CMSGenNS::solve(bool& timeout_expired) // Search without assumptions.
 {
   if (max_confl > 0) {
      s->set_max_confl(std::max(max_confl - s->get_sum_conflicts(), (uint64_t)1));
@@ -113,33 +113,33 @@ bool CryptoMiniSat5::solve(bool& timeout_expired) // Search without assumptions.
   return ret == CMSat::l_True;
 }
 
-uint8_t CryptoMiniSat5::modelValue(uint32_t x) const
+uint8_t CMSGenNS::modelValue(uint32_t x) const
 {
   return (s->get_model().at(x) == CMSat::l_True);
 }
 
-uint32_t CryptoMiniSat5::newVar()
+uint32_t CMSGenNS::newVar()
 {
   s->new_var();
   return s->nVars() - 1;
 }
 
-void CryptoMiniSat5::setVerbosity(int v)
+void CMSGenNS::setVerbosity(int v)
 {
   s->set_verbosity(v);
 }
 
-unsigned long CryptoMiniSat5::nVars() const
+unsigned long CMSGenNS::nVars() const
 {
   return s->nVars();
 }
 
-void CryptoMiniSat5::printStats() const
+void CMSGenNS::printStats() const
 {
   // s->printStats();
 }
 
-void CryptoMiniSat5::solveAndDump()
+void CMSGenNS::solveAndDump()
   {
      bool t;
      solve(t);
@@ -149,15 +149,15 @@ void CryptoMiniSat5::solveAndDump()
 
 
 // Count how many literals/bits get fixed subject to the assumptions..
-uint32_t CryptoMiniSat5::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
+uint32_t CMSGenNS::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
 {
   const uint64_t conf = s->get_sum_conflicts();
   assert(conf == 0);
 
 
-  const CMSat::lbool r = s->simplify();  
+  const CMSat::lbool r = s->simplify();
 
-   
+
   // Add the assumptions are clauses.
   vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
   for (int i = 0; i < assumps.size(); i++)
@@ -177,12 +177,12 @@ uint32_t CryptoMiniSat5::getFixedCountWithAssumptions(const stp::SATSolver::vec_
       if (literals.find(l.var()) != literals.end())
         assigned++;
   }
- 
- 
-       
+
+
+
   //std::cerr << assigned << " assignments at end" <<std::endl;
 
-  // The assumptions are each single literals (corresponding to bits) that are true/false. 
+  // The assumptions are each single literals (corresponding to bits) that are true/false.
   // so in the result they should be all be set
   assert(assumps.size() >= 0);
   assert(assigned >= static_cast<uint32_t>(assumps.size()));

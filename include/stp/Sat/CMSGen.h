@@ -30,6 +30,7 @@ THE SOFTWARE.
 #define CMSGEN_H_
 
 #include "stp/Sat/SATSolver.h"
+#include "cmsgen/cmsgen.h"
 #include <unordered_set>
 
 namespace CMSGenNS
@@ -46,7 +47,7 @@ namespace stp
 #endif
 
 {
-  CMSGenNS::SATSolver* s;
+  CMSGen::CMSGen* s;
 
 public:
   CMSGen(int num_threads);
