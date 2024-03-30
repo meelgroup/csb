@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 #include "stp/Sat/CMSGen.h"
 #include "cmsgen/cmsgen.h"
+#include "cmsgen/solvertypesmini.h"
 #include <unordered_set>
 #include <algorithm>
 using std::vector;
@@ -32,7 +33,7 @@ using std::vector;
 namespace stp
 {
 
-void CMSGenNS::enableRefinement(const bool enable)
+void CMSGenC::enableRefinement(const bool enable)
 {
   // might break if we simplify with refinement enabled..
   if (enable)
@@ -41,56 +42,52 @@ void CMSGenNS::enableRefinement(const bool enable)
   }
 }
 
-CMSGen::CMSGen(int num_threads)
+CMSGenC::CMSGenC(int num_threads)
 {
-  s = new CMSat::SATSolver;
-  // s->log_to_file("stp.cnf");
-  s->set_num_threads(num_threads);
-  //s->set_default_polarity(false);
-  //s->set_allow_otf_gauss();
-  temp_cl = (void*)new vector<CMSat::Lit>;
+  s = new CMSGen::SATSolver;
+  temp_cl = (void*)new vector<CMSGen::Lit>;
 }
 
-CMSGenNS::~CMSGen()
+CMSGenC::~CMSGenC()
 {
   delete s;
-  vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
+  vector<CMSGen::Lit>* real_temp_cl = (vector<CMSGen::Lit>*)temp_cl;
   delete real_temp_cl;
 }
 
-void CMSGenNS::setMaxConflicts(int64_t _max_confl)
+void CMSGenC::setMaxConflicts(int64_t _max_confl)
 {
   max_confl = _max_confl;
 }
 
-void CMSGenNS::setMaxTime(int64_t _max_time)
+void CMSGenC::setMaxTime(int64_t _max_time)
 {
   max_time = _max_time;
 }
 
-bool CMSGenNS::addClause(
+bool CMSGenC::addClause(
     const vec_literals& ps) // Add a clause to the solver.
 {
   // Cryptominisat uses a slightly different vec class.
   // Cryptominisat uses a slightly different Lit class too.
 
-  vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
+  vector<CMSGen::Lit>& real_temp_cl = *(vector<CMSGen::Lit>*)temp_cl;
   real_temp_cl.clear();
   for (int i = 0; i < ps.size(); i++)
   {
-    real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
+    real_temp_cl.push_back(CMSGen::Lit(var(ps[i]), sign(ps[i])));
   }
 
   return s->add_clause(real_temp_cl);
 }
 
-bool CMSGenNS::okay()
+bool CMSGenC::okay()
     const // FALSE means solver is in a conflicting state
 {
   return s->okay();
 }
 
-bool CMSGenNS::solve(bool& timeout_expired) // Search without assumptions.
+bool CMSGenC::solve(bool& timeout_expired) // Search without assumptions.
 {
   if (max_confl > 0) {
      s->set_max_confl(std::max(max_confl - s->get_sum_conflicts(), (uint64_t)1));
@@ -105,65 +102,64 @@ bool CMSGenNS::solve(bool& timeout_expired) // Search without assumptions.
      s->set_max_time(max_time);
   }
 
-  CMSat::lbool ret = s->solve();
-  if (ret == CMSat::l_Undef)
+  CMSGen::lbool ret = s->solve();
+  if (ret == CMSGen::l_Undef)
   {
     timeout_expired = true;
   }
-  return ret == CMSat::l_True;
+  return ret == CMSGen::l_True;
 }
 
-uint8_t CMSGenNS::modelValue(uint32_t x) const
+uint8_t CMSGenC::modelValue(uint32_t x) const
 {
-  return (s->get_model().at(x) == CMSat::l_True);
+  return (s->get_model().at(x) == CMSGen::l_True);
 }
 
-uint32_t CMSGenNS::newVar()
+uint32_t CMSGenC::newVar()
 {
   s->new_var();
   return s->nVars() - 1;
 }
 
-void CMSGenNS::setVerbosity(int v)
+void CMSGenC::setVerbosity(int v)
 {
   s->set_verbosity(v);
 }
 
-unsigned long CMSGenNS::nVars() const
+unsigned long CMSGenC::nVars() const
 {
   return s->nVars();
 }
 
-void CMSGenNS::printStats() const
+void CMSGenC::printStats() const
 {
   // s->printStats();
 }
 
-void CMSGenNS::solveAndDump()
+void CMSGenC::solveAndDump()
   {
      bool t;
      solve(t);
-     s->open_file_and_dump_irred_clauses("clauses.txt");
   }
 
 
 
 // Count how many literals/bits get fixed subject to the assumptions..
-uint32_t CMSGenNS::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
+uint32_t CMSGenC::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
 {
   const uint64_t conf = s->get_sum_conflicts();
   assert(conf == 0);
 
 
-  const CMSat::lbool r = s->simplify();
+  const CMSGen::lbool r = s->simplify();
 
 
   // Add the assumptions are clauses.
-  vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
+  vector<CMSGen::Lit>& real_temp_cl = *(vector<CMSGen::Lit>*)temp_cl;
   for (int i = 0; i < assumps.size(); i++)
   {
     real_temp_cl.clear();
-    real_temp_cl.push_back(CMSat::Lit(var(assumps[i]), sign(assumps[i])));
+    real_temp_cl.push_back(CMSGen::Lit(var(assumps[i]), sign(assumps[i])));
     s->add_clause(real_temp_cl);
   }
 
@@ -171,8 +167,8 @@ uint32_t CMSGenNS::getFixedCountWithAssumptions(const stp::SATSolver::vec_litera
   //std::cerr << assumps.size() << " assumptions" << std::endl;
 
   uint32_t assigned = 0;
-  std::vector<CMSat::Lit> zero = s->get_zero_assigned_lits();
-  for (CMSat::Lit l : zero)
+  std::vector<CMSGen::Lit> zero = s->get_zero_assigned_lits();
+  for (CMSGen::Lit l : zero)
   {
       if (literals.find(l.var()) != literals.end())
         assigned++;
@@ -187,7 +183,7 @@ uint32_t CMSGenNS::getFixedCountWithAssumptions(const stp::SATSolver::vec_litera
   assert(assumps.size() >= 0);
   assert(assigned >= static_cast<uint32_t>(assumps.size()));
   assert(s->get_sum_conflicts() == conf ); // no searching, so no conflicts.
-  assert(CMSat::l_False != r); // always satisfiable.
+  assert(CMSGen::l_False != r); // always satisfiable.
 
   return assigned;
 }

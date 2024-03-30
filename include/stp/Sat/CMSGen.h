@@ -24,7 +24,7 @@ THE SOFTWARE.
 ********************************************************************/
 
 /*
- * Wraps around Cryptominisat minisat.
+ * Wraps around CMSGen
  */
 #ifndef CMSGEN_H_
 #define CMSGEN_H_
@@ -41,18 +41,18 @@ class SATSolver;
 namespace stp
 {
 #if defined(__GNUC__) || defined(__clang__)
-  class __attribute__((visibility("default"))) CMSGen : public SATSolver
+  class __attribute__((visibility("default"))) CMSGenC : public SATSolver
 #else
   class CMSGen : public SATSolver
 #endif
 
 {
-  CMSGen::CMSGen* s;
+  CMSGen::SATSolver* s;
 
 public:
-  CMSGen(int num_threads);
+  CMSGenC(int num_threads);
 
-  ~CMSGen();
+  ~CMSGenC();
 
   virtual void setMaxConflicts(int64_t max_confl); // set max solver conflicts
 

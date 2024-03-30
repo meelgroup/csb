@@ -540,6 +540,8 @@ if (NOT NOUNIGEN)
     message(STATUS "CMSGen static lib:  ${CMSGEN_STATIC_LIBRARIES}")
     message(STATUS "CMSGen static lib deps: ${CMSGEN_STATIC_LIBRARIES_DEPS}")
     message(STATUS "CMSGen include dirs: ${CMSGEN_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${CMSGEN_INCLUDE_DIRS})
+
   else()
     message(FATAL_ERROR "Cannot find CMSGen. Please install it! Exiting.")
   endif()
