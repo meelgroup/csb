@@ -35,6 +35,7 @@ THE SOFTWARE.
 
 #ifdef USE_UNIGEN
 #include "stp/Sat/UniSamp.h"
+#include "stp/Sat/CMSGen.h"
 #endif
 
 #ifdef USE_RISS

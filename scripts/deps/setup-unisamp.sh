@@ -39,4 +39,11 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 make -j8
 cd ../..
 
+git clone https://github.com/arijitsh/cmsgen/
+cd cmsgen
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
+make -j8
+cd ../..
+
 # EOF
