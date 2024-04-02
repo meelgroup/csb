@@ -97,6 +97,7 @@ SOLVER_RETURN_TYPE STP::solve_by_sat_solver(SATSolver* newS,
 SATSolver* STP::get_new_sat_solver()
 {
   SATSolver* newS = NULL;
+  uint32_t seed;
   switch (bm->UserFlags.solver_to_use)
   {
     case UserDefinedFlags::SIMPLIFYING_MINISAT_SOLVER:
@@ -131,7 +132,8 @@ SATSolver* STP::get_new_sat_solver()
       break;
     case UserDefinedFlags::CMSGEN_SOLVER:
 #ifdef USE_UNIGEN
-      newS = new CMSGenC(bm->UserFlags.unisamp_seed);
+      seed = bm->UserFlags.unisamp_seed;
+      newS = new CMSGenC(&seed);
 #else
       std::cerr << "UniSamp support was not enabled at configure time."
                 << std::endl;

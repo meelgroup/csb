@@ -50,7 +50,7 @@ namespace stp
   CMSGen::SATSolver* s;
 
 public:
-  CMSGenC(int num_threads);
+  CMSGenC(uint32_t *seed);
 
   ~CMSGenC();
 

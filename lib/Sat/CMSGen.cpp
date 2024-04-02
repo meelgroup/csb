@@ -42,9 +42,9 @@ void CMSGenC::enableRefinement(const bool enable)
   }
 }
 
-CMSGenC::CMSGenC(int seed)
+CMSGenC::CMSGenC(uint32_t *seed)
 {
-  s = new CMSGen::SATSolver;
+  s = new CMSGen::SATSolver(NULL,NULL, seed);
   temp_cl = (void*)new vector<CMSGen::Lit>;
   // s->set_seed(seed);
   // TODO - set seed
