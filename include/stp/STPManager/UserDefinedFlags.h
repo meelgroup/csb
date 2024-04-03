@@ -142,6 +142,7 @@ public:
   int num_solver_threads = 1;
   uint64_t unisamp_seed = 12345;
   uint64_t num_samples = 500;
+  uint64_t samples_generated = 0;
   int64_t timeout_max_time = -1; // seconds
 
   /* Counting and Sampling mode options */

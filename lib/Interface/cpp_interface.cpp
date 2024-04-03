@@ -530,6 +530,7 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
       if(samples_generated < bm.UserFlags.num_samples)
       {
         bm.UserFlags.unisamp_seed++;
+        bm.UserFlags.samples_generated++;
         checkSat(assertionsSMT2);
       }
    }

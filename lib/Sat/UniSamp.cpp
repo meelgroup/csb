@@ -51,21 +51,24 @@ void UniSamp::enableRefinement(const bool enable)
   //   }
 }
 
-UniSamp::UniSamp(uint64_t unisamp_seed)
+UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
+                 uint64_t _samples_generated)
 {
 
   a = new ApproxMC::AppMC;
   s = new UniG(a);
   arjun = new ArjunNS::Arjun;
   seed = unisamp_seed;
-  samples_needed = num_samples;
-
+  samples_needed = _samples_needed;
+  samples_generated = _samples_generated;
+  // unisamp_ran = false;
   s->set_callback(mycallback, NULL);
   a->set_verbosity(0);
   arjun->set_verbosity(0);
   s->set_verbosity(0);
 
   a->set_seed(seed);
+
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
   //s->set_default_polarity(false);
