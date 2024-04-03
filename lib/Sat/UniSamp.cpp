@@ -123,8 +123,10 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
    */
 
   // CMSat::lbool ret = s->solve(); // TODO AS
-  samples_generated += 1;
-  if (unisamp_ran)
+  samples_generated++;
+  std::cout << "c [stp->unigen] Generating Sample number " << samples_generated
+            << std::endl;
+  if (samples_generated > 1)
     return true;
 
   std::cout << "c [stp->unigen] UniSamp solving instance with " << a->nVars()
@@ -189,7 +191,7 @@ uint8_t UniSamp::modelValue(uint32_t x) const
 {
   //   if (unigen_models[0].size() < sampling_vars.size())
   //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
-  return (unigen_models[samples_generated - 1].at(x) > 0);
+  return (unigen_models[samples_generated].at(x) > 0);
 }
 
 uint32_t UniSamp::newVar()

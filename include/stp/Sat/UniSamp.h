@@ -60,7 +60,7 @@ class UniSamp : public SATSolver
 
 public:
   UniSamp(uint64_t unisamp_seed, uint64_t samples_needed,
-          uint64_t samples_generated);
+          uint64_t _samples_generated);
 
   ~UniSamp();
 

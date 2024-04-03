@@ -249,20 +249,19 @@ void ExtraMain::create_options()
                          "(default)"
 #endif
 #endif
-                  )("unisamp,u", "use unisamp as solver -- behave as a almost "
-                                 "uniform sampler")(
-                  "cmsgen,s",
-                  "use cmsgen as solver -- behave as a uniform like sampler")(
-                  "approxmc,c",
-                  "use approxmc as solver -- behave as a approximate counter")(
-                  "seed",
-                  po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
-                      ->default_value(bm->UserFlags.unisamp_seed),
-                  "Seed for counting and sampling")(
-                  "num-samples,ns",
-                  po::value<uint64_t>(&bm->UserFlags.num_samples)
-                      ->default_value(bm->UserFlags.num_samples),
-                  "Number of samples to generate in case of sampling");
+          )("unisamp,u", "use unisamp as solver -- behave as a almost-uniform sampler")(
+          "cmsgen,s",
+          "use cmsgen as solver -- behave as a uniform like sampler")(
+          "approxmc,c",
+          "use approxmc as solver -- behave as a approximate counter")(
+          "seed",
+          po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+              ->default_value(bm->UserFlags.unisamp_seed),
+          "Seed for counting and sampling")(
+          "num-samples,ns",
+          po::value<uint64_t>(&bm->UserFlags.num_samples)
+              ->default_value(bm->UserFlags.num_samples),
+          "Number of samples to generate in sampling mode");
   ;
 
   po::options_description refinement_options("Refinement options");
