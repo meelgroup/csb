@@ -529,6 +529,7 @@ if (NOT NOUNIGEN)
     message(STATUS "ApproxMC static lib:  ${APPROXMC_STATIC_LIBRARIES}")
     message(STATUS "ApproxMC static lib deps: ${APPROXMC_STATIC_LIBRARIES_DEPS}")
     message(STATUS "ApproxMC include dirs: ${APPROXMC_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${APPROXMC_INCLUDE_DIRS})
 
   find_package(sbva CONFIG REQUIRED)
     message(STATUS "Found sbva")

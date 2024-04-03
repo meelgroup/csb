@@ -34,6 +34,7 @@ THE SOFTWARE.
 #endif
 
 #ifdef USE_UNIGEN
+#include "stp/Sat/ApxMC.h"
 #include "stp/Sat/UniSamp.h"
 #include "stp/Sat/CMSGen.h"
 #endif
@@ -124,10 +125,9 @@ SATSolver* STP::get_new_sat_solver()
       break;
     case UserDefinedFlags::APPROXMC_SOLVER:
 #ifdef USE_UNIGEN
-      newS = new UniSamp(bm->UserFlags.unisamp_seed, bm->UserFlags.num_samples,
-      bm->UserFlags.samples_generated);
+      newS = new ApxMC(bm->UserFlags.unisamp_seed);
 #else
-      std::cerr << "UniSamp support was not enabled at configure time."
+      std::cerr << "ApproxMC support was not enabled at configure time."
                 << std::endl;
       exit(-1);
 #endif
