@@ -25,23 +25,21 @@ THE SOFTWARE.
 #include "stp/Sat/UniSamp.h"
 #include "approxmc/approxmc.h"
 #include "unigen/unigen.h"
-#include <unordered_set>
 #include <algorithm>
+#include <unordered_set>
 using std::vector;
 
 using namespace CMSat;
 using namespace UniGen; // namespace in UniGen library
 
-
 namespace stp
 {
 
-vector<vector<int>> unigen_models;
-
+static vector<vector<int>> unigen_models;
 
 void mycallback(const std::vector<int>& solution, void*)
 {
-    unigen_models.push_back(solution);
+  unigen_models.push_back(solution);
 }
 
 void UniSamp::enableRefinement(const bool enable)
@@ -60,9 +58,13 @@ UniSamp::UniSamp(uint64_t unisamp_seed)
   s = new UniG(a);
   arjun = new ArjunNS::Arjun;
   seed = unisamp_seed;
+  samples_needed = num_samples;
 
   s->set_callback(mycallback, NULL);
-  a->set_verbosity(1);
+  a->set_verbosity(0);
+  arjun->set_verbosity(0);
+  s->set_verbosity(0);
+
   a->set_seed(seed);
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
@@ -88,8 +90,7 @@ void UniSamp::setMaxTime(int64_t _max_time)
   max_time = _max_time;
 }
 
-bool UniSamp::addClause(
-    const vec_literals& ps) // Add a clause to the solver.
+bool UniSamp::addClause(const vec_literals& ps) // Add a clause to the solver.
 {
   // Cryptominisat uses a slightly different vec class.
   // Cryptominisat uses a slightly different Lit class too.
@@ -100,12 +101,10 @@ bool UniSamp::addClause(
   {
     real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-  arjun->add_clause(real_temp_cl);
-  return a->add_clause(real_temp_cl);
+  return arjun->add_clause(real_temp_cl);
 }
 
-bool UniSamp::okay()
-    const // FALSE means solver is in a conflicting state
+bool UniSamp::okay() const // FALSE means solver is in a conflicting state
 {
   //return a->okay();
   return true; //TODO AS: implement well
@@ -114,42 +113,72 @@ bool UniSamp::okay()
 bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
 {
 
-
   /*
    * STP uses -1 for a value of "no timeout" -- this means that we only set the
    * timeout _in the SAT solver_ if the value is >= 0. This avoids us
    * accidentally setting a large limit (or one in the past).
    */
 
-
   // CMSat::lbool ret = s->solve(); // TODO AS
+  samples_generated += 1;
+  if (unisamp_ran)
+    return true;
+
   std::cout << "c [stp->unigen] UniSamp solving instance with " << a->nVars()
             << " variables." << std::endl;
 
-  vector <uint32_t> sampling_vars, sampling_vars_orig ;
-  for(uint32_t i = 0; i < a->nVars(); i++)
+  vector<uint32_t> sampling_vars, sampling_vars_orig;
+  for (uint32_t i = 0; i < a->nVars(); i++)
     sampling_vars.push_back(i);
 
   arjun->set_seed(5);
 
   sampling_vars_orig = sampling_vars;
-  arjun->set_starting_sampling_set(sampling_vars_orig);
-  sampling_vars = arjun->get_indep_set();
-  std::cout << "c [unigen->arjun] sampling var size [from arjun] " << sampling_vars.size() << "\n";
+  arjun->set_sampl_vars(sampling_vars_orig);
+  bool ret = true;
+  const uint32_t orig_num_vars = arjun->get_orig_num_vars();
+  a->new_vars(orig_num_vars);
+  arjun->start_getting_constraints(false);
+  vector<Lit> clause;
+  while (ret)
+  {
+    bool is_xor, rhs;
+    ret = arjun->get_next_constraint(clause, is_xor, rhs);
+    assert(rhs);
+    assert(!is_xor);
+    if (!ret)
+      break;
 
+    bool ok = true;
+    for (auto l : clause)
+    {
+      if (l.var() >= orig_num_vars)
+      {
+        ok = false;
+        break;
+      }
+    }
+
+    if (ok)
+    {
+      a->add_clause(clause);
+    }
+  }
+  arjun->end_getting_constraints();
+  sampling_vars = arjun->run_backwards();
   delete arjun;
+  a->set_sampl_vars(sampling_vars);
 
-  //TODO AS: this is debugging as Arjun is not performing correctly
-  //sampling_vars = sampling_vars_orig;
-
-  a->set_projection_set(sampling_vars);
+  std::cout << "c [unigen->arjun] sampling var size [from arjun] "
+            << sampling_vars.size() << "\n";
 
   auto sol_count = a->count();
   s->set_full_sampling_vars(sampling_vars_orig);
-  std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
-            << "*2**" << sol_count.hashCount << std::endl;
+  // std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
+  // << "*2**" << sol_count.hashCount << std::endl;
 
-  s->sample(&sol_count,10);
+  s->sample(&sol_count, samples_needed);
+  unisamp_ran = true;
   return true;
 }
 
@@ -157,7 +186,7 @@ uint8_t UniSamp::modelValue(uint32_t x) const
 {
   //   if (unigen_models[0].size() < sampling_vars.size())
   //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
-  return (unigen_models[0].at(x) > 0);
+  return (unigen_models[samples_generated - 1].at(x) > 0);
 }
 
 uint32_t UniSamp::newVar()
@@ -169,7 +198,6 @@ uint32_t UniSamp::newVar()
 
 void UniSamp::setVerbosity(int v)
 {
-  s->set_verbosity(0);
   a->set_verbosity(0);
   arjun->set_verbosity(0);
 }
@@ -185,16 +213,16 @@ void UniSamp::printStats() const
 }
 
 void UniSamp::solveAndDump()
-  {
-     bool t;
-     solve(t);
-     //s->open_file_and_dump_irred_clauses("clauses.txt");
-  }
-
-
+{
+  bool t;
+  solve(t);
+  //s->open_file_and_dump_irred_clauses("clauses.txt");
+}
 
 // Count how many literals/bits get fixed subject to the assumptions..
-uint32_t UniSamp::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
+uint32_t UniSamp::getFixedCountWithAssumptions(
+    const stp::SATSolver::vec_literals& assumps,
+    const std::unordered_set<unsigned>& literals)
 {
   /* TODO AS skip all?
   const uint64_t conf = 0; // TODO AS: s->get_sum_conflicts();
@@ -203,7 +231,7 @@ uint32_t UniSamp::getFixedCountWithAssumptions(const stp::SATSolver::vec_literal
 
   // const CMSat::lbool r = s->simplify();  TODO AS
 
-   
+
   // Add the assumptions are clauses.
   vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
   for (int i = 0; i < assumps.size(); i++)
@@ -222,12 +250,12 @@ uint32_t UniSamp::getFixedCountWithAssumptions(const stp::SATSolver::vec_literal
       if (literals.find(l.var()) != literals.end())
         assigned++;
   }
- 
- 
-       
+
+
+
   //std::cerr << assigned << " assignments at end" <<std::endl;
 
-  // The assumptions are each single literals (corresponding to bits) that are true/false. 
+  // The assumptions are each single literals (corresponding to bits) that are true/false.
   // so in the result they should be all be set
   assert(assumps.size() >= 0);
   assert(assigned >= static_cast<uint32_t>(assumps.size()));
@@ -239,7 +267,5 @@ uint32_t UniSamp::getFixedCountWithAssumptions(const stp::SATSolver::vec_literal
 
   return assigned;
 }
-
-
 
 } //end namespace stp

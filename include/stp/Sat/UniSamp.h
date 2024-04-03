@@ -44,9 +44,9 @@ class SATSolver;
 namespace stp
 {
 #if defined(__GNUC__) || defined(__clang__)
-  class __attribute__((visibility("default"))) UniSamp : public SATSolver
+class __attribute__((visibility("default"))) UniSamp : public SATSolver
 #else
-  class UniSamp : public SATSolver
+class UniSamp : public SATSolver
 #endif
 
 {
@@ -54,6 +54,9 @@ namespace stp
   UniGen::UniG* s;
   ArjunNS::Arjun* arjun;
   uint64_t seed;
+  uint64_t samples_generated = 0;
+  uint64_t samples_needed = 0;
+  bool unisamp_ran = false;
 
 public:
   UniSamp(uint64_t unisamp_seed);
@@ -87,17 +90,17 @@ public:
   virtual lbool false_literal() { return ((uint8_t)-1); }
   virtual lbool undef_literal() { return ((uint8_t)0); }
 
-  uint32_t getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps,  const std::unordered_set<unsigned>& literals );
-
+  uint32_t
+  getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps,
+                               const std::unordered_set<unsigned>& literals);
 
   void solveAndDump();
-
 
 private:
   void* temp_cl;
   int64_t max_confl = 0;
   int64_t max_time = 0; // seconds
 };
-}
+} // namespace stp
 
 #endif

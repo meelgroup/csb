@@ -28,8 +28,8 @@ THE SOFTWARE.
 namespace po = boost::program_options;
 
 using namespace stp;
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
 /********************************************************************
@@ -249,14 +249,21 @@ void ExtraMain::create_options()
                          "(default)"
 #endif
 #endif
-              )
-           ("unisamp,u", "use unisamp as solver -- behave as a almost uniform sampler")
-           ("cmsgen,s", "use cmsgen as solver -- behave as a uniform like sampler")
-           ("approxmc,c", "use approxmc as solver -- behave as a approximate counter")
-           ("seed",
-                     po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
-                         ->default_value(bm->UserFlags.unisamp_seed),
-                     "Seed for counting and sampling");
+                  )("unisamp,u", "use unisamp as solver -- behave as a almost "
+                                 "uniform sampler")(
+                  "cmsgen,s",
+                  "use cmsgen as solver -- behave as a uniform like sampler")(
+                  "approxmc,c",
+                  "use approxmc as solver -- behave as a approximate counter")(
+                  "seed",
+                  po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+                      ->default_value(bm->UserFlags.unisamp_seed),
+                  "Seed for counting and sampling")(
+                  "num-samples,ns",
+                  po::value<uint64_t>(&bm->UserFlags.num_samples)
+                      ->default_value(bm->UserFlags.num_samples),
+                  "Number of samples to generate in case of sampling");
+  ;
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(
@@ -483,14 +490,19 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (vm.count("unisamp"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::UNIGEN_SOLVER;
+    bm->UserFlags.sampling_mode = true;
+    bm->UserFlags.almost_uniform_sampling = true;
   }
   if (vm.count("cmsgen"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::CMSGEN_SOLVER;
+    bm->UserFlags.sampling_mode = true;
+    bm->UserFlags.uniform_like_sampling = true;
   }
   if (vm.count("approxmc"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::APPROXMC_SOLVER;
+    bm->UserFlags.counting_mode = true;
   }
 #endif
 

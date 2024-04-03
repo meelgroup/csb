@@ -141,13 +141,19 @@ public:
   int64_t timeout_max_conflicts = -1;
   int num_solver_threads = 1;
   uint64_t unisamp_seed = 12345;
+  uint64_t num_samples = 500;
   int64_t timeout_max_time = -1; // seconds
+
+  /* Counting and Sampling mode options */
+  bool sampling_mode = false;
+  bool counting_mode = false;
+  bool almost_uniform_sampling = false;
+  bool uniform_like_sampling = false;
 
   // check the counterexample against the original input to STP
   bool check_counterexample_flag = false;
   //This is derived from other settings.
   bool construct_counterexample_flag = false;
-
 
   // Available back-end SAT solvers.
   enum SATSolvers

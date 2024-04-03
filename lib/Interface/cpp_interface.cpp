@@ -450,10 +450,11 @@ void Cpp_interface::printStatus()
 // Does some simple caching of prior results.
 void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 {
+  static uint64_t samples_generated = 0;
   if (ignoreCheckSatRequest)
     return;
 
-  bm.GetRunTimes()->stop(RunTimes::Parsing);
+  // bm.GetRunTimes()->stop(RunTimes::Parsing);
 
   checkInvariant();
   assert(assertionsSMT2.size() == cache.size());
@@ -478,8 +479,9 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
   // unsat. If it was sat,
   // we've stored the result (but not the model), so we can shortcut and return
   // what we know.
+  // Do not use the shortcut, if we are in sampling mode.
   if (!((last_run.result == SOLVER_SATISFIABLE) ||
-        last_run.result == SOLVER_UNSATISFIABLE))
+        last_run.result == SOLVER_UNSATISFIABLE) || bm.UserFlags.sampling_mode)
   {
     resetSolver();
 
@@ -520,6 +522,16 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
    if (bm.UserFlags.print_counterexample_flag)
    {
       getModel();
+   }
+   if(bm.UserFlags.sampling_mode)
+   {
+      getModel();
+      samples_generated++;
+      if(samples_generated < bm.UserFlags.num_samples)
+      {
+        bm.UserFlags.unisamp_seed++;
+        checkSat(assertionsSMT2);
+      }
    }
 
 
