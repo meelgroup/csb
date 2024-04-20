@@ -10,6 +10,22 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 dep="cms"
 
 cd "${dep_dir}"
+
+
+git clone https://github.com/meelgroup/cadical
+cd cadical
+git checkout mate-only-libraries-1.8.0
+./configure
+make
+cd ..
+
+git clone https://github.com/meelgroup/cadiback
+cd cadiback
+git checkout mate
+./configure
+make
+cd ..
+
 git clone https://github.com/msoos/cryptominisat "${dep}"
 cd "${dep}"
 mkdir build && cd build
