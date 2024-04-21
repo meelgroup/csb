@@ -503,6 +503,21 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.solver_to_use = UserDefinedFlags::APPROXMC_SOLVER;
     bm->UserFlags.counting_mode = true;
   }
+
+  if (bm->UserFlags.sampling_mode && bm->UserFlags.counting_mode)
+  {
+    cout << "ERROR: You have selected both sampling and counting mode" << endl;
+    std::exit(-1);
+  }
+
+  if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
+  {
+    // disable all simplifications while counting or sampling
+    bm->UserFlags.bitConstantProp_flag = false;
+    bm->UserFlags.optimize_flag = false;
+    bm->UserFlags.disableSimplifications();
+    bm->UserFlags.propagate_equalities = false;
+  }
 #endif
 
   if (vm.count("disable-simplifications"))

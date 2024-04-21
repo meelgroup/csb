@@ -26,6 +26,8 @@ THE SOFTWARE.
 #include "stp/Sat/ApxMC.h"
 #include <algorithm>
 #include <unordered_set>
+#include <gmpxx.h>
+
 using std::vector;
 
 using namespace CMSat;
@@ -133,7 +135,16 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   auto sol_count = a->count();
 
   std::cout << "c [stp->appmc] Number of Solutions " << sol_count.cellSolCount
-            << "*2**" << sol_count.hashCount - 1  << std::endl;
+            << "*2**" << sol_count.hashCount << std::endl;
+  // use gmp to get the absolute count of solutions
+  mpz_class result;
+  mpz_class cellSolCount_gmp(sol_count.cellSolCount);
+  mpz_mul_2exp(result.get_mpz_t(), cellSolCount_gmp.get_mpz_t(), sol_count.hashCount);
+
+  std::cout << "s mc " << result << std::endl;
+
+
+
   exit(0);
   return true;
 }
