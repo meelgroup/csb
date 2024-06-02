@@ -22,11 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
 
-#include "approxmc/approxmc.h"
 #include "stp/Sat/ApxMC.h"
+#include "approxmc/approxmc.h"
 #include <algorithm>
-#include <unordered_set>
 #include <gmpxx.h>
+#include <unordered_set>
 
 using std::vector;
 
@@ -35,7 +35,6 @@ using namespace ApxMC; // namespace in appmc library
 
 namespace stp
 {
-
 
 void ApxMC::enableRefinement(const bool enable)
 {
@@ -90,8 +89,7 @@ bool ApxMC::addClause(const vec_literals& ps) // Add a clause to the solver.
   {
     real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-  arjun->add_clause(real_temp_cl);
-  return a->add_clause(real_temp_cl);
+  return arjun->add_clause(real_temp_cl);
 }
 
 bool ApxMC::okay() const // FALSE means solver is in a conflicting state
@@ -110,18 +108,41 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
    */
 
   // CMSat::lbool ret = s->solve(); // TODO AS
-  std::cout << "c [stp->appmc] ApxMC solving instance with " << a->nVars()
-            << " variables." << std::endl;
+  std::cout << "c [stp->appmc] ApxMC solving instance with " << arjun->nVars()
+            << " variables" << std::endl;
 
   vector<uint32_t> sampling_vars, sampling_vars_orig;
-  for (uint32_t i = 0; i < a->nVars(); i++)
+  for (uint32_t i = 0; i < arjun->nVars(); i++)
     sampling_vars.push_back(i);
 
   arjun->set_seed(5);
+  arjun->set_seed(seed);
+  arjun->set_verbosity(0);
+  arjun->set_simp(1);
+  // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
+  //           << std::endl;
+
+  ArjunNS::SimpConf sc;
+  sc.appmc = true;
+  sc.oracle_vivify = true;
+  sc.oracle_vivify_get_learnts = true;
+  sc.oracle_sparsify = false;
+  sc.iter1 = 2;
+  sc.iter2 = 0;
 
   sampling_vars_orig = sampling_vars;
   arjun->set_sampl_vars(sampling_vars_orig);
   sampling_vars = arjun->run_backwards();
+  const auto ret = arjun->get_fully_simplified_renumbered_cnf(sc);
+  sampling_vars = ret.sampl_vars;
+  a->new_vars(ret.nvars);
+  for (const auto& cl : ret.cnf)
+  {
+    a->add_clause(cl);
+  }
+
+  a->set_multiplier_weight(ret.multiplier_weight);
+
   std::cout << "c [appmc->arjun] sampling var size [from arjun] "
             << sampling_vars.size() << "\n";
 
@@ -134,16 +155,15 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 
   auto sol_count = a->count();
 
-  std::cout << "c [stp->appmc] Number of Solutions " << sol_count.cellSolCount
-            << "*2**" << sol_count.hashCount << std::endl;
   // use gmp to get the absolute count of solutions
   mpz_class result;
   mpz_class cellSolCount_gmp(sol_count.cellSolCount);
-  mpz_mul_2exp(result.get_mpz_t(), cellSolCount_gmp.get_mpz_t(), sol_count.hashCount);
+  mpz_mul_2exp(result.get_mpz_t(), cellSolCount_gmp.get_mpz_t(),
+               sol_count.hashCount);
+
+  result *= a->get_multiplier_weight() / 2;
 
   std::cout << "s mc " << result << std::endl;
-
-
 
   exit(0);
   return true;
@@ -158,9 +178,8 @@ uint8_t ApxMC::modelValue(uint32_t x) const
 
 uint32_t ApxMC::newVar()
 {
-  a->new_var();
   arjun->new_var();
-  return a->nVars() - 1;
+  return arjun->nVars() - 1;
 }
 
 void ApxMC::setVerbosity(int v)
@@ -171,7 +190,7 @@ void ApxMC::setVerbosity(int v)
 
 unsigned long ApxMC::nVars() const
 {
-  return a->nVars();
+  return arjun->nVars();
 }
 
 void ApxMC::printStats() const

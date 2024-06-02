@@ -175,10 +175,12 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   a->set_sampl_vars(sampling_vars);
 
   std::cout << "c [unigen->arjun] sampling var size [from arjun] "
-            << sampling_vars.size() << "\n";
+            << sampling_vars.size() << " orig size "
+            << sampling_vars_orig.size() << "\n";
 
   auto sol_count = a->count();
   s->set_full_sampling_vars(sampling_vars_orig);
+
   // std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
   // << "*2**" << sol_count.hashCount << std::endl;
 
