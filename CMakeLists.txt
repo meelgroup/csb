@@ -44,6 +44,7 @@ project(STP)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include(GenerateExportHeader)
 include(GNUInstallDirs)

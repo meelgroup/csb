@@ -13,7 +13,7 @@ cd "${dep_dir}"
 git clone https://github.com/stp/minisat "${dep}"
 cd "${dep}"
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
+cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
 cd ..
