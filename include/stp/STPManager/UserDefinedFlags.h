@@ -70,7 +70,7 @@ public:
   int64_t AIG_rewrites_iterations = 0; // Number of iterations of AIG rewrites.
   int64_t bitblast_simplification = 0;
   int64_t size_reducing_fixed_point = 0;
-  
+
 
   bool simplify_to_constants_only = false;
 
@@ -141,7 +141,7 @@ public:
   int64_t timeout_max_conflicts = -1;
   int num_solver_threads = 1;
   uint64_t unisamp_seed = 12345;
-  uint64_t num_samples = 500;
+  uint64_t num_samples = 10;
   uint64_t samples_generated = 0;
   int64_t timeout_max_time = -1; // seconds
 

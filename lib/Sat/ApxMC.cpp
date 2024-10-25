@@ -133,6 +133,7 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   sampling_vars_orig = sampling_vars;
   arjun->set_sampl_vars(sampling_vars_orig);
   sampling_vars = arjun->run_backwards();
+  auto empty_sampl_vars = arjun->get_empty_sampl_vars();
   const auto ret = arjun->get_fully_simplified_renumbered_cnf(sc);
   sampling_vars = ret.sampl_vars;
   a->new_vars(ret.nvars);
@@ -154,6 +155,7 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   a->set_sampl_vars(sampling_vars);
 
   auto sol_count = a->count();
+  sol_count.hashCount += empty_sampl_vars.size();
 
   // use gmp to get the absolute count of solutions
   mpz_class result;
