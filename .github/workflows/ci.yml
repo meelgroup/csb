@@ -30,6 +30,7 @@ jobs:
           flex \
           gcc \
           git \
+          libmpfr-dev \
           libboost-program-options-dev \
           ninja-build \
           python3 \
