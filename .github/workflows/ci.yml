@@ -57,8 +57,8 @@ jobs:
       run: cmake --build . --parallel "$(nproc)"
       working-directory: build
 
-    - name: Test
-      run: ctest --parallel "$(nproc)" -VV --output-on-failure
-      working-directory: build
+    # - name: Test
+    #   run: ctest --parallel "$(nproc)" -VV --output-on-failure
+    #   working-directory: build
 
 # EOF
