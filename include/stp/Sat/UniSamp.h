@@ -50,8 +50,9 @@ class UniSamp : public SATSolver
 #endif
 
 {
+  vector<vector<int>> unigen_models;
   ApproxMC::AppMC* a;
-  UniGen::UniG* s;
+  UniGen::UniG* unigen;
   ArjunNS::Arjun* arjun;
   uint64_t seed;
   uint64_t samples_generated = 0;

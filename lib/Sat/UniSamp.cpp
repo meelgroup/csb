@@ -32,14 +32,20 @@ using std::vector;
 using namespace CMSat;
 using namespace UniGen; // namespace in UniGen library
 
+using std::cout;
+using std::endl;
+
 namespace stp
 {
 
-static vector<vector<int>> unigen_models;
 
-void mycallback(const std::vector<int>& solution, void*)
+void mycallback(const std::vector<int>& solution, void* data)
 {
-  unigen_models.push_back(solution);
+    vector<vector<int>>* unigen_models = (vector<vector<int>>*)data;
+    std::cout << "solution size " << solution.size() << std::endl;
+    for (auto s : solution) std::cout << (s ? "1" : "0");
+    std::cout << std::endl;
+    unigen_models->push_back(solution);
 }
 
 void UniSamp::enableRefinement(const bool enable)
@@ -56,16 +62,16 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
 {
 
   a = new ApproxMC::AppMC;
-  s = new UniG(a);
+  unigen = new UniG(a);
   arjun = new ArjunNS::Arjun;
   seed = unisamp_seed;
   samples_needed = _samples_needed;
   samples_generated = _samples_generated;
   // unisamp_ran = false;
-  s->set_callback(mycallback, NULL);
+  unigen->set_callback(mycallback, &unigen_models);
   a->set_verbosity(0);
   arjun->set_verbosity(0);
-  s->set_verbosity(0);
+  unigen->set_verbosity(0);
 
   a->set_seed(seed);
 
@@ -78,7 +84,7 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
 
 UniSamp::~UniSamp()
 {
-  delete s;
+  delete unigen;
   vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
   delete real_temp_cl;
 }
@@ -179,12 +185,12 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
             << sampling_vars_orig.size() << "\n";
 
   auto sol_count = a->count();
-  s->set_full_sampling_vars(sampling_vars_orig);
+  unigen->set_full_sampling_vars(sampling_vars_orig);
 
   // std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
   // << "*2**" << sol_count.hashCount << std::endl;
 
-  s->sample(&sol_count, samples_needed);
+  unigen->sample(&sol_count, samples_needed);
   unisamp_ran = true;
   return true;
 }
@@ -193,7 +199,9 @@ uint8_t UniSamp::modelValue(uint32_t x) const
 {
   //   if (unigen_models[0].size() < sampling_vars.size())
   //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
-  return (unigen_models[samples_generated].at(x) > 0);
+  cout << "samples_generated: " << samples_generated << endl;
+  cout << "actual num samples: " << unigen_models.size() << endl;
+  return (unigen_models.at(samples_generated).at(x) > 0);
 }
 
 uint32_t UniSamp::newVar()
