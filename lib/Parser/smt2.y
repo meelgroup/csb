@@ -366,6 +366,7 @@
 %token CHECK_SAT_ASSUMING_TOK
 %token DECLARE_CONST_TOK
 %token DECLARE_FUNCTION_TOK
+%token DECLARE_PROJ_VAR_TOK
 %token DECLARE_SORT_TOK
 %token DEFINE_FUNCTION_TOK
 %token DECLARE_FUN_REC_TOK
@@ -429,6 +430,11 @@ cmdi:
     }
 |
      DECLARE_CONST_TOK const_decl
+    {
+      stp::GlobalParserInterface->success();
+    }
+|
+     DECLARE_PROJ_VAR_TOK projvar_decl
     {
       stp::GlobalParserInterface->success();
     }
@@ -692,7 +698,18 @@ SOURCE_TOK
 | LICENSE_TOK
 ;
 
-
+projvar_decl:
+STRING_TOK
+{
+  // TODO AS: There should be a check saying that the variable is already declared.
+  ASTNode s = stp::GlobalParserInterface->LookupOrCreateSymbol($1->c_str());
+  stp::GlobalParserInterface->addProjSymbol(s);
+  //Sort_symbs has the indexwidth/valuewidth. Set those fields in
+  //var
+  s.SetIndexWidth(0);
+  delete $1;
+}
+;
 
 var_decl:
 STRING_TOK LPAREN_TOK RPAREN_TOK LPAREN_TOK UNDERSCORE_TOK BITVEC_TOK NUMERAL_TOK RPAREN_TOK

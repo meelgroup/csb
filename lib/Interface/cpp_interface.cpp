@@ -92,6 +92,11 @@ ASTVec& Cpp_interface::getCurrentSymbols()
   return frames.back()->getSymbols();
 }
 
+ASTVec& Cpp_interface::getCurrentProjSymbols()
+{
+  return frames.back()->getProjSymbols();
+}
+
 vector<std::string>& Cpp_interface::getCurrentFunctions()
 {
   return frames.back()->getFunctions();
@@ -330,6 +335,11 @@ void Cpp_interface::deleteNode(ASTNode* n)
 }
 
 void Cpp_interface::addSymbol(ASTNode& s)
+{
+  getCurrentSymbols().push_back(s);
+}
+
+void Cpp_interface::addProjSymbol(ASTNode& s)
 {
   getCurrentSymbols().push_back(s);
 }
@@ -709,4 +719,9 @@ ASTVec& Cpp_interface::SolverFrame::getSymbols()
 {
   return _scoped_symbols;
 }
+
+ASTVec& Cpp_interface::SolverFrame::getProjSymbols()
+{
+  return _scoped_proj_symbols;
 }
+} // namespace stp

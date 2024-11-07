@@ -96,18 +96,21 @@ class Cpp_interface
 
     // Obtain the symbols for the current frame
     ASTVec& getSymbols();
+    ASTVec& getProjSymbols();
 
   private:
     vector<std::string> _scoped_functions;
     ASTVec _scoped_symbols;
+    ASTVec _scoped_proj_symbols;
     std::unordered_map<std::string, Function>* _global_function_context;
   };
 
   // The vector of all frames that have been created by calling push
-  std::vector< SolverFrame* > frames;
+  std::vector<SolverFrame*> frames;
 
   // Obtain the symbols/functions for the current frame
   ASTVec& getCurrentSymbols();
+  ASTVec& getCurrentProjSymbols();
   vector<std::string>& getCurrentFunctions();
 
   void checkInvariant();
@@ -196,6 +199,7 @@ public:
 
   DLL_PUBLIC void deleteNode(ASTNode* n);
   DLL_PUBLIC void addSymbol(ASTNode& s);
+  DLL_PUBLIC void addProjSymbol(ASTNode& s);
 
   DLL_PUBLIC void success();
   DLL_PUBLIC void error(std::string msg);
