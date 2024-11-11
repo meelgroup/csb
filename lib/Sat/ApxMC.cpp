@@ -111,7 +111,7 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   std::cout << "c [stp->appmc] ApxMC solving instance with " << arjun->nVars()
             << " variables" << std::endl;
 
-  vector<uint32_t> sampling_vars, sampling_vars_orig;
+  vector<uint32_t> sampling_vars;
   for (uint32_t i = 0; i < arjun->nVars(); i++)
     sampling_vars.push_back(i);
 
@@ -130,7 +130,9 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   sc.iter1 = 2;
   sc.iter2 = 0;
 
-  sampling_vars_orig = sampling_vars;
+  if (sampling_vars_orig.size() == 0)
+    sampling_vars_orig = sampling_vars;
+
   arjun->set_sampl_vars(sampling_vars_orig);
   sampling_vars = arjun->run_backwards();
   auto empty_sampl_vars = arjun->get_empty_sampl_vars();

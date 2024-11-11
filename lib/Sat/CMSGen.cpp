@@ -26,8 +26,8 @@ THE SOFTWARE.
 #include "stp/Sat/CMSGen.h"
 #include "cmsgen/cmsgen.h"
 #include "cmsgen/solvertypesmini.h"
-#include <unordered_set>
 #include <algorithm>
+#include <unordered_set>
 using std::vector;
 
 namespace stp
@@ -115,6 +115,11 @@ bool CMSGenC::solve(bool& timeout_expired) // Search without assumptions.
 uint8_t CMSGenC::modelValue(uint32_t x) const
 {
   return (s->get_model().at(x) == CMSGen::l_True);
+}
+
+uint32_t CMSGenC::newProjVar()
+{
+  return 42;
 }
 
 uint32_t CMSGenC::newVar()

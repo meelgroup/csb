@@ -117,6 +117,11 @@ uint8_t CryptoMiniSat5::modelValue(uint32_t x) const
   return (s->get_model().at(x) == CMSat::l_True);
 }
 
+uint32_t CryptoMiniSat5::newProjVar()
+{
+  return 42;
+}
+
 uint32_t CryptoMiniSat5::newVar()
 {
   s->new_var();

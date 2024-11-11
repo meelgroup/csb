@@ -29,10 +29,11 @@ THE SOFTWARE.
 #ifndef CMSGEN_H_
 #define CMSGEN_H_
 
+// clang-format off
 #include "stp/Sat/SATSolver.h"
 #include "cmsgen/cmsgen.h"
 #include <unordered_set>
-
+// clang-format on
 namespace CMSGenNS
 {
 class SATSolver;
@@ -65,6 +66,8 @@ public:
   bool solve(bool& timeout_expired); // Search without assumptions.
 
   virtual uint8_t modelValue(uint32_t x) const;
+
+  virtual uint32_t newProjVar();
 
   virtual uint32_t newVar();
 

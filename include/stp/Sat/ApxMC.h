@@ -53,6 +53,7 @@ class ApxMC : public SATSolver
   ApproxMC::AppMC* a;
   ArjunNS::Arjun* arjun;
   uint64_t seed;
+  vector<uint32_t> sampling_vars_orig;
 
 public:
   ApxMC(uint64_t unisamp_seed);
@@ -72,6 +73,8 @@ public:
   virtual uint8_t modelValue(uint32_t x) const;
 
   virtual uint32_t newVar();
+
+  virtual uint32_t newProjVar();
 
   void setVerbosity(int v);
 

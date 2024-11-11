@@ -99,6 +99,11 @@ uint32_t SimplifyingMinisat::newVar()
   return s->newVar();
 }
 
+uint32_t SimplifyingMinisat::newProjVar()
+{
+  return 42;
+}
+
 unsigned long SimplifyingMinisat::nVars() const
 {
   return s->nVars();

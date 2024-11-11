@@ -77,6 +77,8 @@ public:
 
   virtual uint8_t modelValue(uint32_t x) const;
 
+  virtual uint32_t newProjVar();
+
   virtual uint32_t newVar();
 
   void setVerbosity(int v);

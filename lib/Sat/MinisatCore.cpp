@@ -101,6 +101,11 @@ uint8_t MinisatCore::modelValue(uint32_t x) const
   return Minisat::toInt(s->modelValue(x));
 }
 
+uint32_t MinisatCore::newProjVar()
+{
+  return 42;
+}
+
 uint32_t MinisatCore::newVar()
 {
   return s->newVar();
