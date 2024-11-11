@@ -1,5 +1,5 @@
 /********************************************************************
- * AUTHORS: Vijay Ganesh, Trevor Hansen
+ * AUTHORS: Vijay Ganesh
  *
  * BEGIN DATE: November, 2005
  *
@@ -531,6 +531,7 @@ ASTNode BVSolver::TopLevelBVSolve(const ASTNode& _input,
 
   ASTVec eveneqns;
   bool any_solved = false;
+  ASTNodeMap cache;
   for (ASTVec::iterator it = c.begin(), itend = c.end(); it != itend; it++)
   {
     /*
@@ -558,7 +559,7 @@ ASTNode BVSolver::TopLevelBVSolve(const ASTNode& _input,
 
     ASTNode aaa =
         (any_solved && EQ == it->GetKind())
-            ? simplifyNode(_simp->applySubstitutionMapUntilArrays(*it))
+            ? simplifyNode(_simp->applySubstitutionMapUntilArrays(*it,cache))
             : *it;
 
     if (ASTFalse == aaa)
@@ -584,6 +585,7 @@ ASTNode BVSolver::TopLevelBVSolve(const ASTNode& _input,
     if (ASTTrue == aaa)
     {
       any_solved = true;
+      cache.clear();
     }
   }
 
@@ -606,6 +608,8 @@ ASTNode BVSolver::TopLevelBVSolve(const ASTNode& _input,
   if (evens != ASTTrue)
     output = nf->CreateNode(AND, output, evens);
 
+  _bm->GetRunTimes()->stop(RunTimes::BVSolver);
+
   // Imagine in the last conjunct A is replaced by B. But there could
   // be variable A's in the first conjunct. This gets rid of 'em.
   if (_simp->hasUnappliedSubstitutions())
@@ -615,7 +619,6 @@ ASTNode BVSolver::TopLevelBVSolve(const ASTNode& _input,
   }
 
   UpdateAlreadySolvedMap(_input, output);
-  _bm->GetRunTimes()->stop(RunTimes::BVSolver);
   return output;
 }
 

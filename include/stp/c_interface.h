@@ -1178,6 +1178,10 @@ DLL_PUBLIC int vc_parseMemExpr(VC vc, const char* s, Expr* outQuery,
 //!
 DLL_PUBLIC bool vc_supportsMinisat(VC vc);
 
+//! \brief Sets seed for ApproxMC/UniSamp
+//!
+bool vc_setSeed ( VC vc, long long unsigned int seed );
+
 //! \brief Sets underlying SAT solver to minisat
 //!
 DLL_PUBLIC bool vc_useMinisat(VC vc);
@@ -1212,6 +1216,18 @@ DLL_PUBLIC bool vc_useCryptominisat(VC vc);
 //! \brief Checks if underlying SAT solver is cryptominisat
 //!
 DLL_PUBLIC bool vc_isUsingCryptominisat(VC vc);
+
+//! \brief Checks if STP was compiled with support for unigen
+//!
+DLL_PUBLIC bool vc_supportsUnigen(VC vc);
+
+//! \brief Sets underlying SAT solver to unigen
+//!
+DLL_PUBLIC bool vc_useUnigen(VC vc);
+
+//! \brief Checks if underlying SAT solver is unigen
+//!
+DLL_PUBLIC bool vc_isUsingUnigen(VC vc);
 
 //! \brief Checks if STP was compiled with support for riss
 //!

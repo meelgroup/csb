@@ -28,8 +28,8 @@ THE SOFTWARE.
 namespace po = boost::program_options;
 
 using namespace stp;
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
 /********************************************************************
@@ -154,9 +154,10 @@ void ExtraMain::create_options()
   simplification_options.add_options()("disable-simplifications",
                                        "disable all simplifications")(
       "switch-word,w", "switch off wordlevel solver")(
-      "disable-opt-inc,a", "disable potentially size-increasing optimisations")(
-      "disable-cbitp", "disable constant bit propagation")(
-      "disable-equality", "disable equality propagation")
+      "disable-opt-inc,a", "disable rewriting simplifier")(
+      "disable-cbitp", "disable constant bit propagation")
+      ("disable-equality", "disable equality propagation")
+      ("size-reducing-only", "size reducing simplifications only")
 
       ("unconstrained-variable-elimination", 
       BOOL_ARG(bm->UserFlags.enable_unconstrained),
@@ -169,6 +170,14 @@ void ExtraMain::create_options()
       ("flattening", 
       BOOL_ARG(bm->UserFlags.enable_flatten),
       "Enable sharing-aware flattening of >2 arity nodes")
+
+      ("rewriting", 
+      BOOL_ARG(bm->UserFlags.enable_sharing_aware_rewriting),
+      "Enable sharing-aware rewriting")
+
+      ("split-extracts",
+      BOOL_ARG(bm->UserFlags.enable_split_extracts),
+      "Create new variables for some extracts")
 
       ("ite-context-simplifications", 
       BOOL_ARG(bm->UserFlags.enable_ite_context),
@@ -189,14 +198,29 @@ void ExtraMain::create_options()
       ("always-true", 
       BOOL_ARG(bm->UserFlags.enable_always_true),
       "Nodes that are always true (e.g. asserted) are replaced through out the problem by true")
+
+      ("merge-same", 
+      BOOL_ARG(bm->UserFlags.enable_merge_same),
+      "Uses simple boolean algebra rules to combine conjuncts at the top level")
+
   
       ("bit-blast-simplification", 
       INT64_ARG(bm->UserFlags.bitblast_simplification),
       "Part-way through simplifying, convert to AIGs and look for bits that the AIGs figure out are true/false or the same as another node. If the difficulty is less than this number. -1 means always.")
-
       ("size-reducing-fixed-point-limit", 
       INT64_ARG(bm->UserFlags.size_reducing_fixed_point),
-      "If the number of non-leaf nodes is fewer than this number, run size-reducing simplifications to a fixed-point. -1 means always.");
+      "If the number of non-leaf nodes is fewer than this number, run size-reducing simplifications to a fixed-point. -1 means always.")
+
+      ("simplify-to-constants-only,simply_to_constants_only", 
+      BOOL_ARG(bm->UserFlags.simplify_to_constants_only),
+      "Use just the simplifications from the potentially size increasing suite that transform nodes to constants")
+
+      ("difficulty-reversion,difficulty_reversion", 
+      BOOL_ARG(bm->UserFlags.difficulty_reversion),
+      "Undo size increasing simplifications if they haven't made the problem simpler");
+
+   
+
 
 
   po::options_description solver_options("SAT Solver options");
@@ -225,7 +249,20 @@ void ExtraMain::create_options()
                          "(default)"
 #endif
 #endif
-              );
+          )("unisamp,u", "use unisamp as solver -- behave as a almost-uniform sampler")(
+          "cmsgen,s",
+          "use cmsgen as solver -- behave as a uniform like sampler")(
+          "approxmc,c",
+          "use approxmc as solver -- behave as a approximate counter")(
+          "seed",
+          po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+              ->default_value(bm->UserFlags.unisamp_seed),
+          "Seed for counting and sampling")(
+          "num-samples,ns",
+          po::value<uint64_t>(&bm->UserFlags.num_samples)
+              ->default_value(bm->UserFlags.num_samples),
+          "Number of samples to generate in sampling mode");
+  ;
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(
@@ -253,7 +290,7 @@ void ExtraMain::create_options()
       po::bool_switch(&(bm->UserFlags.print_STPinput_back_dot_flag)),
       "print dotty/neato's graph format, then exit")(
       "print-counterex,p",
-      po::bool_switch(&(bm->UserFlags.print_counterexample_flag)),
+      po::bool_switch(&(bm->UserFlags.print_counterexample_flag)), 
       "print counterexample")(
       "print-counterexbin,y",
       po::bool_switch(&(bm->UserFlags.print_binary_flag)),
@@ -261,7 +298,7 @@ void ExtraMain::create_options()
       "print-arrayval,q",
       po::bool_switch(&(bm->UserFlags.print_arrayval_declaredorder_flag)),
       "print arrayval declared order")(
-      "print-functionstat,s", po::bool_switch(&(bm->UserFlags.stats_flag)),
+      "print-functionstat", po::bool_switch(&(bm->UserFlags.stats_flag)),
       "print function statistics")(
       "print-quickstat,t",
       po::bool_switch(&(bm->UserFlags.quick_statistics_flag)),
@@ -332,12 +369,12 @@ void ExtraMain::create_options()
        po::bool_switch(&(bm->UserFlags.exit_after_CNF)),
        "exit after the CNF has been generated")
 
-      ("max_num_confl,g", 
+      ("max-num-confl,max_num_confl,g", 
       INT64_ARG(bm->UserFlags.timeout_max_conflicts),
       "Number of conflicts after which the SAT solver gives up. "
       "-1 means never")
 
-      ("max_time,g", 
+      ("max-time,max_time,k", 
       INT64_ARG(bm->UserFlags.timeout_max_time),
       "Number of seconds after which the SAT solver gives up. "
       "-1 means never.")
@@ -345,6 +382,7 @@ void ExtraMain::create_options()
       ("check-sanity,d", 
         po::bool_switch(&(bm->UserFlags.check_counterexample_flag)),
         "construct counterexample and check it");
+
 
 #undef BOOL_ARG
 #undef INT64_ARG
@@ -447,9 +485,49 @@ int ExtraMain::parse_options(int argc, char** argv)
   }
 #endif
 
+#ifdef USE_UNIGEN
+  if (vm.count("unisamp"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::UNIGEN_SOLVER;
+    bm->UserFlags.sampling_mode = true;
+    bm->UserFlags.almost_uniform_sampling = true;
+  }
+  if (vm.count("cmsgen"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::CMSGEN_SOLVER;
+    bm->UserFlags.sampling_mode = true;
+    bm->UserFlags.uniform_like_sampling = true;
+  }
+  if (vm.count("approxmc"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::APPROXMC_SOLVER;
+    bm->UserFlags.counting_mode = true;
+  }
+
+  if (bm->UserFlags.sampling_mode && bm->UserFlags.counting_mode)
+  {
+    cout << "ERROR: You have selected both sampling and counting mode" << endl;
+    std::exit(-1);
+  }
+
+  if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
+  {
+    // disable all simplifications while counting or sampling
+    bm->UserFlags.bitConstantProp_flag = false;
+    bm->UserFlags.optimize_flag = false;
+    bm->UserFlags.disableSimplifications();
+    bm->UserFlags.propagate_equalities = false;
+  }
+#endif
+
   if (vm.count("disable-simplifications"))
   {
     bm->UserFlags.disableSimplifications();
+  }
+
+  if (vm.count("size-reducing-only"))
+  {
+    bm->UserFlags.disableSizeIncreasingSimplifications();
   }
 
   if (vm.count("disable-equality"))

@@ -25,7 +25,8 @@ THE SOFTWARE.
 /*
  *  Takes the result of an analysis and uses it to simplify, for example,
  *  if both operands of a signed division have the same MSB, it can be converted
- *  to an unsigned division, instead.
+ *  to an unsigned division, instead. This does the replacements both for fixed bits 
+ *  and the unsigned intervals.
  */
 
 #ifndef STRENGTHREDUCTION_H_
@@ -34,8 +35,10 @@ THE SOFTWARE.
 #include "stp/AST/AST.h"
 #include "stp/STPManager/STPManager.h"
 #include "stp/Simplifier/UnsignedInterval.h"
+#include "stp/Simplifier/NodeDomainAnalysis.h"
 #include "stp/Simplifier/constantBitP/FixedBits.h"
-#include <map>
+
+#include <unordered_map>
 #include <string>
 
 namespace stp
@@ -45,21 +48,30 @@ using simplifier::constantBitP::FixedBits;
 
 class StrengthReduction 
 {
-  unsigned replaceWithConstant;
-  unsigned replaceWithSimpler;
-  unsigned unimplementedReduction;
+  unsigned replaceWithConstant =0;
+  unsigned replaceWithSimpler =0;
+  unsigned unimplementedReduction =0;
 
   CBV littleOne;
   CBV littleZero;
   NodeFactory* nf;
+  UserDefinedFlags* uf;
 
   // A special version that handles the lhs appearing in the rhs of the fromTo
   // map.
   ASTNode replace(const ASTNode& n, ASTNodeMap& fromTo, ASTNodeMap& cache);
 
+  ASTNode visit(const ASTNode& n, stp::NodeDomainAnalysis& nda, ASTNodeMap& fromTo);
+  
+  ASTNode strengthReduction(const ASTNode& n, const NodeToFixedBitsMap& visited);
+  ASTNode strengthReduction(const ASTNode& n, const NodeToUnsignedIntervalMap& visited);
+
 public:
 
-  StrengthReduction(NodeFactory *nf);
+  using NodeToUnsignedIntervalMap = std::unordered_map<const ASTNode, UnsignedInterval*, ASTNode::ASTNodeHasher, ASTNode::ASTNodeEqual>;
+  using NodeToFixedBitsMap = std::unordered_map<const ASTNode, FixedBits*, ASTNode::ASTNodeHasher, ASTNode::ASTNodeEqual>;
+
+  StrengthReduction(NodeFactory *nf, UserDefinedFlags *uf);
   
   StrengthReduction(const StrengthReduction&) = delete;
   StrengthReduction& operator=(const StrengthReduction&) = delete;
@@ -67,12 +79,15 @@ public:
   ~StrengthReduction();
 
   //TODO merge these two toplevel funtions, they do the same thing..
-  ASTNode topLevel(const ASTNode& top, const std::map<ASTNode, FixedBits*>& visited);
+  //Replace nodes with simpler nodes.
+  ASTNode topLevel(const ASTNode& top, const NodeToFixedBitsMap& visited);
+  ASTNode topLevel(const ASTNode& top, const NodeToUnsignedIntervalMap& visited);
 
-  // Replace some of the things that unsigned intervals can figure out for us.
-  // Reduce from signed to unsigned if possible.
-  ASTNode topLevel(const ASTNode& top, const std::map<const ASTNode, UnsignedInterval*>& visited);
-  
+  // New style invocation.
+  ASTNode topLevel(const ASTNode& top, NodeDomainAnalysis& nda);
+
+ 
+    
   void stats(string name = "StrengthReduction");
 };
 }

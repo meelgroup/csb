@@ -40,7 +40,7 @@ namespace stp
 // Foward declarations
 struct UserDefinedFlags;
 class STPMgr;
-class LETMgr;
+class LetMgr;
 
 class Cpp_interface
 {
@@ -96,18 +96,21 @@ class Cpp_interface
 
     // Obtain the symbols for the current frame
     ASTVec& getSymbols();
+    ASTVec& getProjSymbols();
 
   private:
     vector<std::string> _scoped_functions;
     ASTVec _scoped_symbols;
+    ASTVec _scoped_proj_symbols;
     std::unordered_map<std::string, Function>* _global_function_context;
   };
 
   // The vector of all frames that have been created by calling push
-  std::vector< SolverFrame* > frames;
+  std::vector<SolverFrame*> frames;
 
   // Obtain the symbols/functions for the current frame
   ASTVec& getCurrentSymbols();
+  ASTVec& getCurrentProjSymbols();
   vector<std::string>& getCurrentFunctions();
 
   void checkInvariant();
@@ -119,8 +122,13 @@ class Cpp_interface
   bool changed_model_status;
 
 public:
-  std::unique_ptr<LETMgr> letMgr;
+  std::unique_ptr<LetMgr> letMgr;
   NodeFactory* nf;
+
+  ~Cpp_interface()
+  {
+    cleanUp();
+  }
 
   DLL_PUBLIC Cpp_interface(STPMgr& bm_);
   DLL_PUBLIC Cpp_interface(STPMgr& bm_, NodeFactory* factory);
@@ -191,6 +199,7 @@ public:
 
   DLL_PUBLIC void deleteNode(ASTNode* n);
   DLL_PUBLIC void addSymbol(ASTNode& s);
+  DLL_PUBLIC void addProjSymbol(ASTNode& s);
 
   DLL_PUBLIC void success();
   DLL_PUBLIC void error(std::string msg);

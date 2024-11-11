@@ -1,4 +1,4 @@
-# AUTHORS: Dan Liew, Ryan Gvostes, Mate Soos
+# AUTHORS: Dan Liew, Ryan Govostes, Mate Soos
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,7 @@ project(STP)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include(GenerateExportHeader)
 include(GNUInstallDirs)
@@ -152,7 +153,7 @@ if (STATICCOMPILE)
 endif()
 add_feature_info(Static STATICCOMPILE "Compiles static library and executable")
 
-if ((${CMAKE_SYSTEM_NAME} MATCHES "Windows") AND (NOT BUILD_SHARED_LIBS))
+if ((${CMAKE_SYSTEM_NAME} MATCHES "Windows") OR (NOT BUILD_SHARED_LIBS))
     set(Boost_USE_STATIC_LIBS ON)
     set(Minisat_USE_STATIC_LIBS ON)
 endif()
@@ -486,6 +487,7 @@ if (NOT NOCRYPTOMINISAT)
     message(STATUS "CryptoMiniSat5 include dirs: ${CRYPTOMINISAT5_INCLUDE_DIRS}")
     add_definitions(-DUSE_CRYPTOMINISAT)
     set(USE_CRYPTOMINISAT ON)
+    include_directories(SYSTEM ${CRYPTOMINISAT5_INCLUDE_DIRS})
   else()
   endif()
 endif()
@@ -494,6 +496,78 @@ add_feature_info(CryptoMiniSat USE_CRYPTOMINISAT "Enables CryptoMiniSat solver, 
 option(FORCE_CMS "Must build with CryptoMiniSat" OFF)
 if (FORCE_CMS AND NOT USE_CRYPTOMINISAT)
     message(FATAL_ERROR "CryptoMiniSat 5.x was not found but it was requested. Exiting.")
+endif()
+
+# -----------------------------------------------------------------------------
+# Find UniGen
+# -----------------------------------------------------------------------------
+option(NOUNIGEN "Don't try to use UniSamp" OFF)
+
+if (NOT NOUNIGEN)
+  set(unigen_DIR "" CACHE PATH "Path to directory containing unigenConfig.cmake") #AS: No clue
+
+  find_package(louvain_communities CONFIG)
+  if (louvain_communities_FOUND)
+      message(STATUS "Found Louvain Communities library")
+      message(STATUS "Louvain Communities dynamic lib: ${LOUVAIN_COMMUNITIES_LIBRARIES}")
+      message(STATUS "Louvain Communities include dirs: ${LOUVAIN_COMMUNITIES_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find Louvain Communities libraries.")
+  endif()
+  find_package(arjun CONFIG)
+  if (arjun_FOUND)
+      message(STATUS "Found Arjun")
+      message(STATUS "Arjun dynamic lib : ${ARJUN_LIBRARIES}")
+      message(STATUS "Arjun include dirs: ${ARJUN_INCLUDE_DIRS}")
+      include_directories(SYSTEM ${ARJUN_INCLUDE_DIRS})
+  else()
+      message(FATAL_ERROR "Cannot find Arjun. Please install it! Exiting.")
+  endif()
+  find_package(approxmc CONFIG REQUIRED)
+
+    message(STATUS "Found approxmc")
+    message(STATUS "ApproxMC dynamic lib: ${APPROXMC_LIBRARIES}")
+    message(STATUS "ApproxMC static lib:  ${APPROXMC_STATIC_LIBRARIES}")
+    message(STATUS "ApproxMC static lib deps: ${APPROXMC_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "ApproxMC include dirs: ${APPROXMC_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${APPROXMC_INCLUDE_DIRS})
+
+  find_package(sbva CONFIG REQUIRED)
+    message(STATUS "Found sbva")
+    message(STATUS "sbva dynamic lib: ${SBVA_LIBRARIES}")
+    message(STATUS "sbva static lib:  ${SBVA_STATIC_LIBRARIES}")
+    message(STATUS "sbva static lib deps: ${SBVA_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "sbva include dirs: ${SBVA_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${SBVA_INCLUDE_DIRS})
+
+
+  find_package(cmsgen CONFIG REQUIRED)
+    message(STATUS "Found cmsgen")
+    message(STATUS "CMSGen dynamic lib: ${CMSGEN_LIBRARIES}")
+    message(STATUS "CMSGen static lib:  ${CMSGEN_STATIC_LIBRARIES}")
+    message(STATUS "CMSGen static lib deps: ${CMSGEN_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "CMSGen include dirs: ${CMSGEN_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${CMSGEN_INCLUDE_DIRS})
+
+
+  find_package(unigen CONFIG)
+  if (unigen_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOUNIGEN))
+    message(STATUS "UniGen dynamic lib: ${UNIGEN_LIBRARIES}")
+    message(STATUS "UniGen static lib:  ${UNIGEN_STATIC_LIBRARIES}")
+    message(STATUS "UniGen static lib deps: ${UNIGEN_STATIC_LIBRARIES_DEPS}")
+    message(STATUS "UniGen include dirs: ${UNIGEN_INCLUDE_DIRS}")
+    add_definitions(-DUSE_UNIGEN)
+    set(USE_UNIGEN ON)
+    include_directories(SYSTEM ${UNIGEN_INCLUDE_DIRS})
+  else()
+    message(STATUS "UniGen NOT found")
+  endif()
+endif()
+add_feature_info(UniGen USE_UNIGEN "Enables Uniform Sampling, allows --unisamp option")
+
+option(FORCE_UNIG "Must build with UniGen" OFF)
+if (FORCE_UNIG AND NOT USE_UNIGEN)
+    message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -568,7 +642,7 @@ set(LIBS ${LIBS} ${MINISAT_LIBRARIES})
 # not provide new enough versions for us to use.
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     execute_process(
-        COMMAND brew --prefix bison 
+        COMMAND brew --prefix bison
         RESULT_VARIABLE BREW_BISON
         OUTPUT_VARIABLE BREW_BISON_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -597,6 +671,9 @@ find_package(FLEX REQUIRED)
 if (BISON_VERSION VERSION_LESS "2.6")
     message(FATAL_ERROR "STP requires Bison 2.6 or newer")
 endif()
+
+# required for genkinds.pl and a few other scripts
+find_package(Perl REQUIRED)
 
 # -----------------------------------------------------------------------------
 # Query definitions
@@ -776,3 +853,4 @@ install(FILES
 install(EXPORT ${STP_EXPORT_NAME} DESTINATION
   "${STP_INSTALL_CMAKE_DIR}"
 )
+

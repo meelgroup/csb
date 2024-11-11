@@ -161,9 +161,19 @@ ASTNode Simplifier::applySubstitutionMap(const ASTNode& n)
   return substitutionMap.applySubstitutionMap(n);
 }
 
+ASTNode Simplifier::applySubstitutionMapAtTopLevel(const ASTNode& topLevel)
+{
+  return substitutionMap.applySubstitutionMapAtTopLevel(topLevel);
+}
+
 ASTNode Simplifier::applySubstitutionMapUntilArrays(const ASTNode& n)
 {
   return substitutionMap.applySubstitutionMapUntilArrays(n);
+}
+
+ASTNode Simplifier::applySubstitutionMapUntilArrays(const ASTNode& n, ASTNodeMap& cache)
+{
+  return substitutionMap.applySubstitutionMapUntilArrays(n,cache);
 }
 
 bool Simplifier::InsideSubstitutionMap(const ASTNode& key)
@@ -277,8 +287,30 @@ void Simplifier::checkIfInSimplifyMap(const ASTNode& n, ASTNodeSet visited)
   visited.insert(n);
 }
 
+ASTNodeMap Simplifier::FindConsts_TopLevel(const ASTNode& b, bool pushNeg,ASTNodeMap* VarConstMap)
+{
+  assert(_bm->UserFlags.optimize_flag);
+  _bm->GetRunTimes()->start(RunTimes::SimplifyTopLevel);
+  ASTNode out = SimplifyFormula(b, pushNeg, VarConstMap);
+
+  ASTNodeMap constants;
+  
+  for (const auto e: *SimplifyMap)
+  {
+    if (e.second.isConstant())
+    {
+      constants.insert(e);
+    }
+  }
+    
+  ResetSimplifyMaps();
+  _bm->GetRunTimes()->stop(RunTimes::SimplifyTopLevel);
+  return constants;
+}
+
+
 // The SimplifyMaps on entry to the topLevel functions may contain
-// useful entries.  E.g. The BVSolver calls SimplifyTerm()
+// useful entries.  E.g. The BVSolver may call SimplifyTerm()
 ASTNode Simplifier::SimplifyFormula_TopLevel(const ASTNode& b, bool pushNeg,
                                              ASTNodeMap* VarConstMap)
 {
@@ -1769,7 +1801,8 @@ ASTNode Simplifier::SimplifyTerm(const ASTNode& actualInputterm,
         // If we didn't flatten these, then we'd start flattening each of these
         // from the bottom up. Potentially creating tons of the nodes along the
         // way.
-        toProcess = FlattenKind(actualInputterm.GetKind(), toProcess,50);
+
+        toProcess = FlattenKind(actualInputterm.GetKind(), toProcess,15);
       }
 
       v.reserve(toProcess.size());
@@ -2448,8 +2481,11 @@ ASTNode Simplifier::simplify_term_switch(const ASTNode& actualInputterm,
           /* FALLTHROUGH*/
         // follow on
         default:
-          output = inputterm;
-          break;
+        {
+            const ASTNode max = _bm->CreateMaxConst(inputValueWidth);
+            output = nf->CreateTerm(BVPLUS, inputValueWidth, nf->CreateTerm(BVUMINUS, inputValueWidth, a0), max);
+          }
+        break;
       }
       break;
     }

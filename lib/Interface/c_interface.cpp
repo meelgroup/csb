@@ -1844,6 +1844,7 @@ Expr vc_parseExpr(VC vc, const char* infile)
   {
     stp::GlobalSTP = stp_i;
     stp::GlobalParserBM = b;
+    stp::GlobalParserInterface->letMgr->frameMode = false;
     cvcparse((void*)AssertsQuery);
     stp::GlobalSTP = NULL;
     stp::GlobalParserBM = NULL;
@@ -2198,6 +2199,15 @@ bool _vc_isUsingSolver(VC vc, stp::UserDefinedFlags::SATSolvers solver)
   return b->UserFlags.solver_to_use == solver;
 }
 
+bool vc_setSeed(VC vc, long long unsigned int this_seed)
+{
+  stp::STP* stp_i = (stp::STP*)vc;
+  stp::STPMgr* bm = stp_i->bm;
+  bm->UserFlags.unisamp_seed = this_seed;
+  return true;
+}
+
+
 bool vc_supportsMinisat(VC /*vc*/)
 {
   return true;
@@ -2261,6 +2271,42 @@ vc
 {
 #ifdef USE_CRYPTOMINISAT
   return _vc_isUsingSolver(vc, stp::UserDefinedFlags::CRYPTOMINISAT5_SOLVER);
+#else
+  return false;
+#endif
+}
+
+bool vc_supportsUnigen(VC /*vc*/)
+{
+#ifdef USE_UNIGEN
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool vc_useUnigen(VC
+#ifdef USE_UNIGEN
+vc
+#endif
+)
+{
+#ifdef USE_UNIGEN
+  _vc_useSolver(vc, stp::UserDefinedFlags::UNIGEN_SOLVER);
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool vc_isUsingUnigen(VC
+#ifdef USE_UNIGEN
+vc
+#endif
+)
+{
+#ifdef USE_UNIGEN
+  return _vc_isUsingSolver(vc, stp::UserDefinedFlags::UNIGEN_SOLVER);
 #else
   return false;
 #endif

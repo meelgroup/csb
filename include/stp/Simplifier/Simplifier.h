@@ -104,10 +104,18 @@ public:
 
   DLL_PUBLIC ASTNode applySubstitutionMap(const ASTNode& n);
   DLL_PUBLIC ASTNode applySubstitutionMapUntilArrays(const ASTNode& n);
+  ASTNode applySubstitutionMapUntilArrays(const ASTNode& n, ASTNodeMap& cache);
+
+  
+  DLL_PUBLIC ASTNode applySubstitutionMapAtTopLevel(const ASTNode& topLevel) __attribute__((warn_unused_result));
+
 
   /****************************************************************
    * Simplification functions                                     *
    ****************************************************************/
+
+  ASTNodeMap FindConsts_TopLevel(const ASTNode& b, bool pushNeg, ASTNodeMap* VarConstMap = nullptr);
+
 
   ASTNode SimplifyFormula_TopLevel(const ASTNode& a, bool pushNeg,
                                    ASTNodeMap* VarConstMap = NULL);

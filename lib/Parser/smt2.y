@@ -185,6 +185,7 @@
 
   extern char* smt2text;
   extern int smt2lineno;
+  extern bool stringOnly;
 
   int yyerror(const char *s) {
     cout << "(error \"syntax error: line " << smt2lineno << " " << s << "  token: " << smt2text << "\")" << endl;
@@ -365,6 +366,7 @@
 %token CHECK_SAT_ASSUMING_TOK
 %token DECLARE_CONST_TOK
 %token DECLARE_FUNCTION_TOK
+%token DECLARE_PROJ_VAR_TOK
 %token DECLARE_SORT_TOK
 %token DEFINE_FUNCTION_TOK
 %token DECLARE_FUN_REC_TOK
@@ -428,6 +430,11 @@ cmdi:
     }
 |
      DECLARE_CONST_TOK const_decl
+    {
+      stp::GlobalParserInterface->success();
+    }
+|
+     DECLARE_PROJ_VAR_TOK projvar_decl
     {
       stp::GlobalParserInterface->success();
     }
@@ -691,7 +698,18 @@ SOURCE_TOK
 | LICENSE_TOK
 ;
 
-
+projvar_decl:
+STRING_TOK
+{
+  // TODO AS: There should be a check saying that the variable is already declared.
+  ASTNode s = stp::GlobalParserInterface->LookupOrCreateSymbol($1->c_str());
+  stp::GlobalParserInterface->addProjSymbol(s);
+  //Sort_symbs has the indexwidth/valuewidth. Set those fields in
+  //var
+  s.SetIndexWidth(0);
+  delete $1;
+}
+;
 
 var_decl:
 STRING_TOK LPAREN_TOK RPAREN_TOK LPAREN_TOK UNDERSCORE_TOK BITVEC_TOK NUMERAL_TOK RPAREN_TOK
@@ -1039,13 +1057,9 @@ TRUE_TOK
     fatal_yyerror("too few arguments to formula eq."); 
   }
 }
-| LPAREN_TOK LET_TOK LPAREN_TOK
+| LPAREN_TOK LET_TOK lets an_formula RPAREN_TOK
   {
-    stp::GlobalParserInterface->letMgr->push();  // TODO this isn't going to clear properly if it's an_term later.
-  }
-  lets RPAREN_TOK an_formula RPAREN_TOK
-  {
-    $$ = $7;
+    $$ = $4;
     stp::GlobalParserInterface->letMgr->pop();
   }
 | LPAREN_TOK BOOLEAN_FUNCTIONID_TOK an_mixed RPAREN_TOK
@@ -1084,38 +1098,37 @@ TRUE_TOK
 }
 ;
 
-lets: let lets
+lets: LPAREN_TOK
+{
+    stp::GlobalParserInterface->letMgr->push();
+}
+inside-lets
+RPAREN_TOK
+{
+  // We don't want any of the lets we've just created to intefere with each other, so keep them out of resolution until now.
+
+  stp::GlobalParserInterface->letMgr->commit();
+};
+
+inside-lets: let inside-lets
 | let
 {};
 
-let: LPAREN_TOK STRING_TOK an_formula RPAREN_TOK
+let: LPAREN_TOK
 {
-  //populate the hashtable from LET-var -->
-  //LET-exprs and then process them:
-  //
-  //1. ensure that LET variables do not clash
-  //1. with declared variables.
-  //
-  //2. Ensure that LET variables are not
-  //2. defined more than once
-  stp::GlobalParserInterface->letMgr->LetExprMgr(*$2,*$3);
-  delete $2;
-  stp::GlobalParserInterface->deleteNode( $3);
+  // Set lexer to only return symbols.
+  stringOnly = true;
+} 
+  STRING_TOK 
+{
+  // Set it back to normal.
+  stringOnly = false;
 }
-| LPAREN_TOK STRING_TOK an_term RPAREN_TOK
+  an_mixed RPAREN_TOK
 {
-  //populate the hashtable from LET-var -->
-  //LET-exprs and then process them:
-  //
-  //1. ensure that LET variables do not clash
-  //1. with declared variables.
-  //
-  //2. Ensure that LET variables are not
-  //2. defined more than once
-  stp::GlobalParserInterface->letMgr->LetExprMgr(*$2,*$3);
-  delete $2;
-  stp::GlobalParserInterface->deleteNode( $3);
-
+  stp::GlobalParserInterface->letMgr->LetExprMgr(*$3,($5->back()));
+  delete $3;
+  delete $5;
 }
 ;
 
@@ -1246,9 +1259,9 @@ TERMID_TOK
 {
   $$ = createTerm(BVXOR, $3);
 }
-| LPAREN_TOK BVXNOR_TOK an_terms RPAREN_TOK
+| LPAREN_TOK BVXNOR_TOK an_term an_term RPAREN_TOK
 {
-  ASTNode *temp = createTerm(BVXOR, $3);
+  ASTNode *temp = createTerm(BVXOR, $3, $4);
   const unsigned int width = temp->GetValueWidth();
   $$ = stp::GlobalParserInterface->newNode(stp::GlobalParserInterface->nf->CreateTerm(BVNOT, width, *temp));
   stp::GlobalParserInterface->deleteNode( temp);
@@ -1441,22 +1454,18 @@ TERMID_TOK
 
   $$ = $3;
 }
-| LPAREN_TOK LET_TOK LPAREN_TOK
+| LPAREN_TOK LET_TOK lets an_term RPAREN_TOK
   {
-    stp::GlobalParserInterface->letMgr->push();
-  }
-  lets RPAREN_TOK an_term RPAREN_TOK
-  {
-    $$ = $7;
+    $$ = $4;
     stp::GlobalParserInterface->letMgr->pop();
   }
-
 ;
 
 %%
 
 namespace stp {
   int SMT2Parse() {
+    GlobalParserInterface->letMgr->frameMode = true;
     return smt2parse();
   }
 }

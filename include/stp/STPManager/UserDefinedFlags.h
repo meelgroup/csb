@@ -34,7 +34,7 @@ namespace stp
  * options.
  ******************************************************************/
 
-struct UserDefinedFlags // not copyable
+struct UserDefinedFlags
 {
   UserDefinedFlags(UserDefinedFlags const&) = delete;
   UserDefinedFlags& operator=(UserDefinedFlags const&) = delete;
@@ -58,14 +58,21 @@ public:
   bool bitConstantProp_flag = true; // Constant bit propagation enabled.
   bool enable_unconstrained = true;
   bool enable_flatten = false;
-  bool enable_ite_context = true;
+  bool enable_ite_context = false;
   bool enable_aig_core_simplify = false;
   bool enable_use_intervals = true;
   bool enable_pure_literals = true;
   bool enable_always_true = false;
+  bool enable_split_extracts = true;
+  bool enable_sharing_aware_rewriting = true;
+  bool enable_merge_same = false;
+
   int64_t AIG_rewrites_iterations = 0; // Number of iterations of AIG rewrites.
   int64_t bitblast_simplification = 0;
-  int64_t size_reducing_fixed_point = 1000000;
+  int64_t size_reducing_fixed_point = 0;
+
+
+  bool simplify_to_constants_only = false;
 
   // given a/b = c, propagates that c<=a even if b may be zero.
   bool cBitP_propagateForDivisionByZero = true;
@@ -109,14 +116,14 @@ public:
   // You can select these with any combination you want of true & false.
   bool division_variant_1 = true;
   bool division_variant_2 = true;
-  bool division_variant_3 = true;
+  bool division_variant_3 = false;
   bool adder_variant = true;
   bool bbbvle_variant =true;
   bool upper_multiplication_bound = false;
   bool bvplus_variant = true;
-  bool conjoin_to_top = true;
+  bool conjoin_to_top = false;
 
-  int64_t multiplication_variant = 7;
+  int64_t multiplication_variant = 1;
 
   // If the bit-blaster discovers new constants, should the term simplifier be
   // re-run.
@@ -133,14 +140,21 @@ public:
 
   int64_t timeout_max_conflicts = -1;
   int num_solver_threads = 1;
+  uint64_t unisamp_seed = 12345;
+  uint64_t num_samples = 10;
+  uint64_t samples_generated = 0;
   int64_t timeout_max_time = -1; // seconds
+
+  /* Counting and Sampling mode options */
+  bool sampling_mode = false;
+  bool counting_mode = false;
+  bool almost_uniform_sampling = false;
+  bool uniform_like_sampling = false;
 
   // check the counterexample against the original input to STP
   bool check_counterexample_flag = false;
   //This is derived from other settings.
   bool construct_counterexample_flag = false;
-
-
 
   // Available back-end SAT solvers.
   enum SATSolvers
@@ -148,6 +162,9 @@ public:
     MINISAT_SOLVER = 0,
     SIMPLIFYING_MINISAT_SOLVER,
     CRYPTOMINISAT5_SOLVER,
+    APPROXMC_SOLVER,
+    UNIGEN_SOLVER,
+    CMSGEN_SOLVER,
     RISS_SOLVER
   };
 
@@ -172,8 +189,22 @@ public:
     wordlevel_solve_flag = false;
     propagate_equalities = false;
     enable_flatten = false;
+    enable_split_extracts = false;
+    enable_sharing_aware_rewriting = false;
+    enable_merge_same = false;
+    enable_ite_context = false;
 
     bitblast_simplification = 0;
+  }
+
+  void disableSizeIncreasingSimplifications()
+  {
+     simplify_to_constants_only = true;
+     enable_ite_context = false;
+
+     // Can't get bigger so we won't need to revert.
+     array_difficulty_reversion = false;
+     difficulty_reversion = false;
   }
 
   UserDefinedFlags()

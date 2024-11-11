@@ -60,7 +60,7 @@ bool FindPureLiterals::topLevel(ASTNode& n, Simplifier* simplifier,
   build(n, truePolarity);
   bool changed = false;
 
-  map<ASTNode, polarity_type>::const_iterator it = nodeToPolarity.begin();
+  auto it = nodeToPolarity.begin();
   while (it != nodeToPolarity.end())
   {
     const ASTNode& n = it->first;
@@ -88,7 +88,7 @@ void FindPureLiterals::build(const ASTNode& n, polarity_type polarity)
   if (n.isConstant())
     return;
 
-  map<ASTNode, polarity_type>::iterator it = nodeToPolarity.find(n);
+  auto it = nodeToPolarity.find(n);
   if (it != nodeToPolarity.end())
   {
     int lookupPolarity = it->second;
@@ -114,6 +114,13 @@ void FindPureLiterals::build(const ASTNode& n, polarity_type polarity)
       polarity = swap(polarity);
       build(n[0], polarity);
       break;
+
+    case ITE:
+      build(n[0], bothPolarity);
+      build(n[1], polarity);
+      build(n[2], polarity);
+      break;
+
 
     default:
       polarity = bothPolarity; // both

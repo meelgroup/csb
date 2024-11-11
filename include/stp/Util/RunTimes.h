@@ -59,7 +59,12 @@ public:
     AIGSimplifyCore,
     IntervalPropagation,
     AlwaysTrue,
-    Flatten
+    Flatten,
+    NodeDomainAnalysis,
+    StrengthReduction,
+    SplitExtracts,
+    Rewriting,
+    MergeSame
   };
 
   std::vector<std::string> CategoryNames = {"Transforming",
@@ -82,7 +87,14 @@ public:
                                             "AIG core simplification",
                                             "Interval Propagation",
                                             "Always True",
-                                            "Sharing-aware Flattening"};
+                                            "Sharing-aware Flattening",
+                                            "Node Domain Analysis",
+                                            "Strength Reduction",
+                                            "Spliting Extracts",
+                                            "Sharing-aware rewriting",
+                                            "Merge Same"
+                                          };
+
 
   typedef std::pair<Category, long> Element;
 

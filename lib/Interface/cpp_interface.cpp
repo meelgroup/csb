@@ -82,7 +82,7 @@ void Cpp_interface::removeFrame()
 }
 
 Cpp_interface::Cpp_interface(STPMgr& bm_, NodeFactory* factory)
-    : bm(bm_), letMgr(new LETMgr(bm.ASTUndefined)), nf(factory)
+    : bm(bm_), letMgr(new LetMgr(bm.ASTUndefined)), nf(factory)
 {
   init();
 }
@@ -90,6 +90,11 @@ Cpp_interface::Cpp_interface(STPMgr& bm_, NodeFactory* factory)
 ASTVec& Cpp_interface::getCurrentSymbols()
 {
   return frames.back()->getSymbols();
+}
+
+ASTVec& Cpp_interface::getCurrentProjSymbols()
+{
+  return frames.back()->getProjSymbols();
 }
 
 vector<std::string>& Cpp_interface::getCurrentFunctions()
@@ -334,6 +339,11 @@ void Cpp_interface::addSymbol(ASTNode& s)
   getCurrentSymbols().push_back(s);
 }
 
+void Cpp_interface::addProjSymbol(ASTNode& s)
+{
+  getCurrentSymbols().push_back(s);
+}
+
 void Cpp_interface::success()
 {
   if (print_success)
@@ -450,10 +460,11 @@ void Cpp_interface::printStatus()
 // Does some simple caching of prior results.
 void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 {
+  static uint64_t samples_generated = 0;
   if (ignoreCheckSatRequest)
     return;
 
-  bm.GetRunTimes()->stop(RunTimes::Parsing);
+  // bm.GetRunTimes()->stop(RunTimes::Parsing);
 
   checkInvariant();
   assert(assertionsSMT2.size() == cache.size());
@@ -478,8 +489,9 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
   // unsat. If it was sat,
   // we've stored the result (but not the model), so we can shortcut and return
   // what we know.
+  // Do not use the shortcut, if we are in sampling mode.
   if (!((last_run.result == SOLVER_SATISFIABLE) ||
-        last_run.result == SOLVER_UNSATISFIABLE))
+        last_run.result == SOLVER_UNSATISFIABLE) || bm.UserFlags.sampling_mode)
   {
     resetSolver();
 
@@ -521,6 +533,17 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
    {
       getModel();
    }
+   if(bm.UserFlags.sampling_mode)
+   {
+      getModel();
+      samples_generated++;
+      if(samples_generated < bm.UserFlags.num_samples)
+      {
+        bm.UserFlags.unisamp_seed++;
+        bm.UserFlags.samples_generated++;
+        checkSat(assertionsSMT2);
+      }
+   }
 
 
   bm.GetRunTimes()->start(RunTimes::Parsing);
@@ -528,7 +551,7 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 
 // This method sets up some of the globally required data.
 Cpp_interface::Cpp_interface(STPMgr& bm_)
-    : bm(bm_), letMgr(new LETMgr(bm.ASTUndefined)), nf(bm_.defaultNodeFactory)
+    : bm(bm_), letMgr(new LetMgr(bm.ASTUndefined)), nf(bm_.defaultNodeFactory)
 {
   nf = bm.defaultNodeFactory;
   startup();
@@ -623,9 +646,9 @@ void Cpp_interface::getValue(const ASTVec& v)
     GlobalSTP->Ctr_Example->PrintSMTLIB2(os, n);
     os << std::endl;
   }
-  os << ")" << std::endl;
+  os << ")";
 
-  cout << os.str();
+  cout << os.str() << std::endl;
 }
 
 // Note, doesn't consider that extra assertions might have been applied?
@@ -696,4 +719,9 @@ ASTVec& Cpp_interface::SolverFrame::getSymbols()
 {
   return _scoped_symbols;
 }
+
+ASTVec& Cpp_interface::SolverFrame::getProjSymbols()
+{
+  return _scoped_proj_symbols;
 }
+} // namespace stp

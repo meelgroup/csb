@@ -43,6 +43,7 @@
 
   extern char *smt2text;
   extern int smt2error (const char *msg);
+  bool stringOnly = false;
 
 #ifdef _MSC_VER
   #include <io.h>
@@ -71,16 +72,24 @@
       }
     }
 
+    if (stringOnly)
+    {
+      smt2lval.str = new std::string(s);
+      if (cleaned)
+        free (cleaned);
+      return STRING_TOK;
+    }
+
     stp::ASTNode nptr;
     bool found = false;
 
-    if (stp::GlobalParserInterface->LookupSymbol(s,nptr)) // it's a symbol.
-    {
-      found = true;
-    }
-    else if (stp::GlobalParserInterface->letMgr->isLetDeclared(s)) // a let.
+    if (stp::GlobalParserInterface->letMgr->isLetDeclared(s)) // Lets shadow everything else.
     {
       nptr = stp::GlobalParserInterface->letMgr->resolveLet(s);
+      found = true;
+    }
+    else if (stp::GlobalParserInterface->LookupSymbol(s,nptr)) // it's a symbol.
+    {
       found = true;
     }
     else if (stp::GlobalParserInterface->isBitVectorFunction(s))
@@ -185,6 +194,7 @@ bv{DIGIT}+             { smt2lval.str = new std::string(smt2text+2); return BVCO
 "check-sat-assuming"      { return CHECK_SAT_ASSUMING_TOK;}
 "declare-const"           { return DECLARE_CONST_TOK;}
 "declare-fun"             { return DECLARE_FUNCTION_TOK; }
+"proj-var"                { return DECLARE_PROJ_VAR_TOK; }
 "declare-sort"            { return DECLARE_SORT_TOK;}
 "define-fun"              { return DEFINE_FUNCTION_TOK; }
 "define-fun-rec"          { return DECLARE_FUN_REC_TOK;}

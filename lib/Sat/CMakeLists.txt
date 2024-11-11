@@ -25,7 +25,19 @@ set(sat_lib_to_add
 
 if (USE_CRYPTOMINISAT)
     include_directories(${CRYPTOMINISAT5_INCLUDE_DIRS})
+    message(STATUS "Including CryptoMiniSat")
     set(sat_lib_to_add ${sat_lib_to_add} CryptoMinisat5.cpp)
+endif()
+
+if (USE_UNIGEN)
+    include_directories(${UNIGEN_INCLUDE_DIRS})
+    include_directories(${APPROXMC_INCLUDE_DIRS})
+    include_directories(${CMSGEN_INCLUDE_DIRS})
+    include_directories(${ARJUN_INCLUDE_DIRS})
+    message(STATUS "Including ApproxMC, CMSGen and UniGen")
+    set(sat_lib_to_add ${sat_lib_to_add} ApxMC.cpp)
+    set(sat_lib_to_add ${sat_lib_to_add} UniSamp.cpp)
+    set(sat_lib_to_add ${sat_lib_to_add} CMSGen.cpp)
 endif()
 
 if (USE_RISS)

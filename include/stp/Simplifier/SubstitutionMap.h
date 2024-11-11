@@ -44,7 +44,6 @@ class DLL_PUBLIC SubstitutionMap
   ASTNodeMap* SolverMap;
   STPMgr* bm;
   ASTNode ASTTrue, ASTFalse, ASTUndefined;
-  NodeFactory* nf;
 
   // These are used to avoid substituting {x = f(y,z), z = f(x)}
   typedef std::unordered_map<ASTNode, Symbols*, ASTNode::ASTNodeHasher>
@@ -77,7 +76,6 @@ public:
     SolverMap = new ASTNodeMap(INITIAL_TABLE_SIZE);
     loopCount = 0;
     substitutionsLastApplied = 0;
-    nf = bm->defaultNodeFactory;
   }
 
   SubstitutionMap(const SubstitutionMap&) = delete;
@@ -169,6 +167,7 @@ public:
   ASTNode applySubstitutionMap(const ASTNode& n);
 
   ASTNode applySubstitutionMapUntilArrays(const ASTNode& n);
+  ASTNode applySubstitutionMapUntilArrays(const ASTNode& n, ASTNodeMap& cache);
 
   // Replace any nodes in "n" that exist in the fromTo map.
   // NB the fromTo map is changed.
@@ -177,6 +176,8 @@ public:
   static ASTNode replace(const ASTNode& n, ASTNodeMap& fromTo,
                          ASTNodeMap& cache, NodeFactory* nf, bool stopAtArrays,
                          bool preventInfiniteLoops);
+
+  ASTNode applySubstitutionMapAtTopLevel(const ASTNode& n)  __attribute__((warn_unused_result));
 };
 }
 
