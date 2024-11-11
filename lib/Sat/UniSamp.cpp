@@ -38,13 +38,14 @@ using std::endl;
 namespace stp
 {
 
+static vector<vector<int>> unigen_models;
 
 void mycallback(const std::vector<int>& solution, void* data)
 {
-    vector<vector<int>>* unigen_models = (vector<vector<int>>*)data;
-    /* for (auto s : solution) std::cout << (s>0 ? "1" : "0"); */
-    /* std::cout << std::endl; */
-    unigen_models->push_back(solution);
+  // vector<vector<int>>* unigen_models = (vector<vector<int>>*)data;
+  /* for (auto s : solution) std::cout << (s>0 ? "1" : "0"); */
+  /* std::cout << std::endl; */
+  unigen_models.push_back(solution);
 }
 
 void UniSamp::enableRefinement(const bool enable)
@@ -131,11 +132,12 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   if (samples_generated > 1)
     return true;
 
-  std::cout << "c [stp->unigen] UniSamp solving instance with " << arjun->nVars()
-            << " variables." << std::endl;
+  std::cout << "c [stp->unigen] UniSamp solving instance with "
+            << arjun->nVars() << " variables." << std::endl;
 
   vector<uint32_t> sampling_vars, sampling_vars_orig;
-  for (uint32_t i = 0; i < arjun->nVars(); i++) sampling_vars.push_back(i);
+  for (uint32_t i = 0; i < arjun->nVars(); i++)
+    sampling_vars.push_back(i);
   sampling_vars_orig = sampling_vars;
   arjun->set_sampl_vars(sampling_vars_orig);
 
@@ -145,23 +147,28 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   bool ret = true;
   arjun->start_getting_constraints(false);
   vector<Lit> clause;
-  while (ret) {
+  while (ret)
+  {
     bool is_xor, rhs;
     ret = arjun->get_next_constraint(clause, is_xor, rhs);
     assert(rhs);
     assert(!is_xor);
-    if (!ret) break;
+    if (!ret)
+      break;
 
     bool ok = true;
-    for (auto l : clause) {
-      if (l.var() >= orig_num_vars) {
+    for (auto l : clause)
+    {
+      if (l.var() >= orig_num_vars)
+      {
         ok = false;
         break;
       }
     }
-    if (ok) {
-        /* cout << "adding clause to appmc " << clause << endl; */
-        appmc->add_clause(clause);
+    if (ok)
+    {
+      /* cout << "adding clause to appmc " << clause << endl; */
+      appmc->add_clause(clause);
     }
   }
   arjun->end_getting_constraints();
@@ -176,8 +183,8 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
             << sampling_vars_orig.size() << "\n";
 
   auto sol_count = appmc->count();
-  cout << "c Sol count: " << sol_count.cellSolCount
-      << "*2**" << (sol_count.hashCount+empty_sampl_vars.size()) << endl;
+  cout << "c Sol count: " << sol_count.cellSolCount << "*2**"
+       << (sol_count.hashCount + empty_sampl_vars.size()) << endl;
 
   // std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
   // << "*2**" << sol_count.hashCount << std::endl;
@@ -186,7 +193,7 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   unigen->set_kappa(0.1);
   unigen->set_multisample(false);
   unigen->set_full_sampling_vars(sampling_vars_orig);
-unigen->set_empty_sampling_vars(empty_sampl_vars);
+  unigen->set_empty_sampling_vars(empty_sampl_vars);
 
   unigen->sample(&sol_count, samples_needed);
   unisamp_ran = true;
@@ -199,8 +206,10 @@ uint8_t UniSamp::modelValue(uint32_t x) const
   //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
   if (samples_generated >= unigen_models.size())
   {
-    std::cout << "c [stp->unigen] ERROR! samples_generated: " << samples_generated
-              << " but unigen_models.size(): " << unigen_models.size() << std::endl;
+    std::cout << "c [stp->unigen] ERROR! samples_generated: "
+              << samples_generated
+              << " but unigen_models.size(): " << unigen_models.size()
+              << std::endl;
     exit(-1);
   }
   return (unigen_models.at(samples_generated).at(x) > 0);

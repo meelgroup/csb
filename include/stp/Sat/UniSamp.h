@@ -50,7 +50,7 @@ class UniSamp : public SATSolver
 #endif
 
 {
-  vector<vector<int>> unigen_models;
+  // vector<vector<int>> unigen_models;
   ApproxMC::AppMC* appmc;
   UniGen::UniG* unigen;
   ArjunNS::Arjun* arjun;
