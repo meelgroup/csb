@@ -699,14 +699,13 @@ SOURCE_TOK
 ;
 
 projvar_decl:
-STRING_TOK
+an_terms
 {
-  // TODO AS: There should be a check saying that the variable is already declared.
-  ASTNode s = stp::GlobalParserInterface->LookupOrCreateSymbol($1->c_str());
-  stp::GlobalParserInterface->addProjSymbol(s);
-  //Sort_symbs has the indexwidth/valuewidth. Set those fields in
-  //var
-  s.SetIndexWidth(0);
+  ASTVec& v = *$1;
+
+  for (uint32_t i = 0; i < v.size(); i++) {
+    stp::GlobalParserInterface->addProjSymbol(v[i]);
+  }
   delete $1;
 }
 ;
@@ -884,7 +883,7 @@ TRUE_TOK
   {
     $$ = createNode(EQ, $3);
   }
-  else  if (terms.size() >2) 
+  else  if (terms.size() >2)
   {
     ASTVec result;
     result.reserve(terms.size()-1);
@@ -897,7 +896,7 @@ TRUE_TOK
   }
   else
   {
-    fatal_yyerror("too few arguments to eq."); 
+    fatal_yyerror("too few arguments to eq.");
   }
 }
 | LPAREN_TOK DISTINCT_TOK an_terms RPAREN_TOK
@@ -1041,7 +1040,7 @@ TRUE_TOK
     $$ = stp::GlobalParserInterface->newNode(stp::GlobalParserInterface->CreateNode(IFF, forms));
     delete $3;
   }
-  else  if (forms.size() >2) 
+  else  if (forms.size() >2)
   {
     ASTVec result;
     result.reserve(forms.size()-1);
@@ -1054,7 +1053,7 @@ TRUE_TOK
   }
   else
   {
-    fatal_yyerror("too few arguments to formula eq."); 
+    fatal_yyerror("too few arguments to formula eq.");
   }
 }
 | LPAREN_TOK LET_TOK lets an_formula RPAREN_TOK
@@ -1118,8 +1117,8 @@ let: LPAREN_TOK
 {
   // Set lexer to only return symbols.
   stringOnly = true;
-} 
-  STRING_TOK 
+}
+  STRING_TOK
 {
   // Set it back to normal.
   stringOnly = false;
