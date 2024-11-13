@@ -180,6 +180,11 @@ uint8_t ApxMC::modelValue(uint32_t x) const
   return true;
 }
 
+uint32_t ApxMC::newProjVar()
+{
+  return 42;
+}
+
 uint32_t ApxMC::newVar()
 {
   arjun->new_var();
