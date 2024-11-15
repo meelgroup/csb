@@ -135,10 +135,10 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   std::cout << "c [stp->unigen] UniSamp solving instance with "
             << arjun->nVars() << " variables." << std::endl;
 
-  vector<uint32_t> sampling_vars, sampling_vars_orig;
+  vector<uint32_t> sampling_vars, all_vars;
   for (uint32_t i = 0; i < arjun->nVars(); i++)
-    sampling_vars.push_back(i);
-  sampling_vars_orig = sampling_vars;
+    all_vars.push_back(i);
+
   arjun->set_sampl_vars(sampling_vars_orig);
 
   const uint32_t orig_num_vars = arjun->nVars();
@@ -192,8 +192,8 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   unigen->set_verb_sampler_cls(0);
   unigen->set_kappa(0.1);
   unigen->set_multisample(false);
-  unigen->set_full_sampling_vars(sampling_vars_orig);
-  unigen->set_empty_sampling_vars(empty_sampl_vars);
+  unigen->set_full_sampling_vars(all_vars);
+  // unigen->set_empty_sampling_vars(empty_sampl_vars);
 
   unigen->sample(&sol_count, samples_needed);
   unisamp_ran = true;
@@ -217,7 +217,8 @@ uint8_t UniSamp::modelValue(uint32_t x) const
 
 uint32_t UniSamp::newProjVar(uint32_t x)
 {
-  return 42;
+  sampling_vars_orig.push_back(x);
+  return 1;
 }
 
 uint32_t UniSamp::newVar()

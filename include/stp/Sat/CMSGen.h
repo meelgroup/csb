@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include "stp/Sat/SATSolver.h"
 #include "cmsgen/cmsgen.h"
 #include <unordered_set>
+#include <vector>
 // clang-format on
 namespace CMSGenNS
 {

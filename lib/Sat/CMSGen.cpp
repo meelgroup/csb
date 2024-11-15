@@ -104,6 +104,8 @@ bool CMSGenC::solve(bool& timeout_expired) // Search without assumptions.
      s->set_max_time(max_time);
   }
 
+  s->set_sampling_vars(&sampling_vars_orig);
+
   CMSGen::lbool ret = s->solve();
   if (ret == CMSGen::l_Undef)
   {
@@ -119,7 +121,8 @@ uint8_t CMSGenC::modelValue(uint32_t x) const
 
 uint32_t CMSGenC::newProjVar(uint32_t x)
 {
-  return 42;
+  sampling_vars_orig.push_back(x);
+  return 1;
 }
 
 uint32_t CMSGenC::newVar()

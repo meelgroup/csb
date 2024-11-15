@@ -58,6 +58,7 @@ class UniSamp : public SATSolver
   uint64_t samples_generated = 0;
   uint64_t samples_needed = 0;
   bool unisamp_ran;
+  vector<uint32_t> sampling_vars_orig;
 
 public:
   UniSamp(uint64_t unisamp_seed, uint64_t samples_needed,

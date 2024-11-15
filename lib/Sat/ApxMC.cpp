@@ -116,7 +116,6 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   for (uint32_t i = 0; i < arjun->nVars(); i++)
     sampling_vars.push_back(i);
 
-  arjun->set_seed(5);
   arjun->set_seed(seed);
   arjun->set_verbosity(0);
   arjun->set_simp(1);
@@ -148,9 +147,6 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
             << sampling_vars.size() << "\n";
 
   delete arjun;
-
-  //TODO AS: this is debugging as Arjun is not performing correctly
-  //sampling_vars = sampling_vars_orig;
 
   a->set_sampl_vars(sampling_vars);
 
