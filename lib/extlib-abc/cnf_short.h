@@ -55,30 +55,32 @@ extern "C" {
 
 #include "vec.h"
 #include "aig.h"
-//#include "darInt.h"
+#include "vec.h"
+  //#include "darInt.h"
 
-////////////////////////////////////////////////////////////////////////
-///                         PARAMETERS                               ///
-////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////
+  ///                         PARAMETERS                               ///
+  ////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////
-///                         BASIC TYPES                              ///
-////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////
+  ///                         BASIC TYPES                              ///
+  ////////////////////////////////////////////////////////////////////////
 
-typedef struct Cnf_Man_t_            Cnf_Man_t;
-typedef struct Cnf_Dat_t_            Cnf_Dat_t;
-typedef struct Cnf_Cut_t_            Cnf_Cut_t;
+  typedef struct Cnf_Man_t_ Cnf_Man_t;
+  typedef struct Cnf_Dat_t_ Cnf_Dat_t;
+  typedef struct Cnf_Cut_t_ Cnf_Cut_t;
 
-// the CNF asserting outputs of AIG to be 1
-struct Cnf_Dat_t_
-{
-    Aig_Man_t *     pMan;            // the AIG manager, for which CNF is computed
-    int             nVars;           // the number of variables
-    int             nLiterals;       // the number of CNF literals
-    int             nClauses;        // the number of CNF clauses
-    int **          pClauses;        // the CNF clauses
-    int *           pVarNums;        // the number of CNF variable for each node ID (-1 if unused)
-};
+  // the CNF asserting outputs of AIG to be 1
+  struct Cnf_Dat_t_
+  {
+    Aig_Man_t* pMan; // the AIG manager, for which CNF is computed
+    int nVars;       // the number of variables
+    int nLiterals;   // the number of CNF literals
+    int nClauses;    // the number of CNF clauses
+    int** pClauses;  // the CNF clauses
+    int* pVarNums; // the number of CNF variable for each node ID (-1 if unused)
+    int* lProjVars; // the projection variables
+  };
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
