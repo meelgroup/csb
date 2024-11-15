@@ -74,7 +74,7 @@ public:
 
   virtual uint32_t newVar();
 
-  virtual uint32_t newProjVar();
+  virtual uint32_t newProjVar(uint32_t x);
 
   void setVerbosity(int v);
 

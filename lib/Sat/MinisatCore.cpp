@@ -101,7 +101,7 @@ uint8_t MinisatCore::modelValue(uint32_t x) const
   return Minisat::toInt(s->modelValue(x));
 }
 
-uint32_t MinisatCore::newProjVar()
+uint32_t MinisatCore::newProjVar(uint32_t x)
 {
   return 42;
 }
@@ -135,4 +135,4 @@ bool MinisatCore::simplify()
 {
   return s->simplify();
 }
-}
+} // namespace stp

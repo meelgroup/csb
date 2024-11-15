@@ -82,7 +82,7 @@ public:
 
   virtual uint32_t newVar() = 0;
 
-  virtual uint32_t newProjVar() = 0;
+  virtual uint32_t newProjVar(uint32_t x) = 0;
 
   virtual unsigned long nVars() const = 0;
 

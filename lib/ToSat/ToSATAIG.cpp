@@ -147,7 +147,14 @@ void ToSATAIG::add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData)
   // Create a new sat variable for each of the variables in the CNF.
   int satV = satSolver.nVars();
   for (int i = 0; i < cnfData->nVars - satV; i++)
+  {
     satSolver.newVar();
+    if (cnfData->lProjVars[i] == 1)
+    {
+      std::cout << "proj var: " << i << std::endl;
+      satSolver.newProjVar(i); // TODO AS check for off by one
+    }
+  }
 
   SATSolver::vec_literals satSolverClause;
   for (int i = 0; i < cnfData->nClauses; i++)

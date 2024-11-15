@@ -109,7 +109,8 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 
   // CMSat::lbool ret = s->solve(); // TODO AS
   std::cout << "c [stp->appmc] ApxMC solving instance with " << arjun->nVars()
-            << " variables" << std::endl;
+            << " variables, " << sampling_vars_orig.size() << " projection vars"
+            << std::endl;
 
   vector<uint32_t> sampling_vars;
   for (uint32_t i = 0; i < arjun->nVars(); i++)
@@ -131,7 +132,16 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   sc.iter2 = 0;
 
   if (sampling_vars_orig.size() == 0)
+  {
     sampling_vars_orig = sampling_vars;
+    std::cout << "c [stp->appmc] Setting all variables as projection vars "
+              << std::endl;
+  }
+  else
+  {
+    std::cout << "c [stp->appmc] Using " << sampling_vars_orig.size()
+              << " projection vars " << std::endl;
+  }
 
   arjun->set_sampl_vars(sampling_vars_orig);
   sampling_vars = arjun->run_backwards();
@@ -180,14 +190,19 @@ uint8_t ApxMC::modelValue(uint32_t x) const
   return true;
 }
 
-uint32_t ApxMC::newProjVar()
+uint32_t ApxMC::newProjVar(uint32_t x)
 {
+  sampling_vars_orig.push_back(x + 1);
+  std::cout << "c [stp->appmc] ApxMC adding new proj variable " << x
+            << std::endl;
   return 42;
 }
 
 uint32_t ApxMC::newVar()
 {
   arjun->new_var();
+  std::cout << "c [stp->appmc] ApxMC adding new variable " << arjun->nVars() - 1
+            << std::endl;
   return arjun->nVars() - 1;
 }
 

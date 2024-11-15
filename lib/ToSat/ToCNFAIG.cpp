@@ -167,10 +167,16 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         Aig_Obj_t* pObj;
         pObj = (Aig_Obj_t*)Vec_PtrEntry(mgr.aigMgr->vPis, b[i].symbol_index);
         v[i] = cnfData->pVarNums[pObj->Id];
+        if (uf.counting_mode || uf.sampling_mode)
+        {
+          cnfData->lProjVars[v[i]] = 1;
+        }
+
+        std::cout << "n: " << n << " v: " << v[i] << std::endl;
       }
     }
 
     nodeToVars.insert(make_pair(n, v));
   }
 }
-}
+} // namespace stp

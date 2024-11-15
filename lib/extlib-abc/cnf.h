@@ -78,6 +78,8 @@ struct Cnf_Dat_t_
     int             nClauses;        // the number of CNF clauses
     int **          pClauses;        // the CNF clauses
     int *           pVarNums;        // the number of CNF variable for each node ID (-1 if unused)
+    int *           lProjVars;       // projection variables
+
 };
 
 // the cut used to represent node in the AIG

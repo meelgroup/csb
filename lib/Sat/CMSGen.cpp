@@ -117,7 +117,7 @@ uint8_t CMSGenC::modelValue(uint32_t x) const
   return (s->get_model().at(x) == CMSGen::l_True);
 }
 
-uint32_t CMSGenC::newProjVar()
+uint32_t CMSGenC::newProjVar(uint32_t x)
 {
   return 42;
 }

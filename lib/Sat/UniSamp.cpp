@@ -215,7 +215,7 @@ uint8_t UniSamp::modelValue(uint32_t x) const
   return (unigen_models.at(samples_generated).at(x) > 0);
 }
 
-uint32_t UniSamp::newProjVar()
+uint32_t UniSamp::newProjVar(uint32_t x)
 {
   return 42;
 }

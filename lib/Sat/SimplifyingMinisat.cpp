@@ -99,7 +99,7 @@ uint32_t SimplifyingMinisat::newVar()
   return s->newVar();
 }
 
-uint32_t SimplifyingMinisat::newProjVar()
+uint32_t SimplifyingMinisat::newProjVar(uint32_t x)
 {
   return 42;
 }
