@@ -151,8 +151,7 @@ void ToSATAIG::add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData)
     satSolver.newVar();
     if (cnfData->lProjVars[i] == 1)
     {
-      std::cout << "proj var: " << i << std::endl;
-      satSolver.newProjVar(i); // TODO AS check for off by one
+      satSolver.newProjVar(i);
     }
   }
 
@@ -223,4 +222,4 @@ ToSATAIG::~ToSATAIG()
 {
   ClearAllTables();
 }
-}
+} // namespace stp

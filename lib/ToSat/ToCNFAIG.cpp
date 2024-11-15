@@ -169,10 +169,9 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         v[i] = cnfData->pVarNums[pObj->Id];
         if (uf.counting_mode || uf.sampling_mode)
         {
+          // TODO AS keep check for projection variables here
           cnfData->lProjVars[v[i]] = 1;
         }
-
-        std::cout << "n: " << n << " v: " << v[i] << std::endl;
       }
     }
 
