@@ -40,7 +40,7 @@ if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif()
 
-project(STP)
+project(CSB)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)

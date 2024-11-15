@@ -50,6 +50,7 @@ namespace stp
 
 {
   CMSGen::SATSolver* s;
+  std::vector<uint32_t> sampling_vars_orig;
 
 public:
   CMSGenC(uint32_t *seed);

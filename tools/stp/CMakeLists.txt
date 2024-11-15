@@ -28,7 +28,7 @@ if(BUILD_EXECUTABLES AND NOT ONLY_SIMPLE)
     )
 
     set_target_properties(stp-bin PROPERTIES
-        OUTPUT_NAME stp
+        OUTPUT_NAME csb
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
         INSTALL_RPATH_USE_LINK_PATH TRUE
     )
