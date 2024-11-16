@@ -44,7 +44,7 @@ The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recomme
 The samples should be uniform in practice. Run with an SMT-LIB2 file:
 
 ```
-./stp -s --ns 10 --seed 6 myproblem.smt2
+./csb -s --ns 10 --seed 6 myproblem.smt2
 ```
 
 
@@ -52,7 +52,7 @@ The samples should be uniform in practice. Run with an SMT-LIB2 file:
 
 The samples are generated with theoretical guarantees on uniformity. But this procedure might be slower than uniform-like sampler.
 ```
-./stp -u --ns 10 --seed 6 myproblem.smt2
+./csb -u --ns 10 --seed 6 myproblem.smt2
 ```
 
 Change seed value to get different samples. Refer to [this post](https://www.msoos.org/2022/06/checking-uniform-like-samplers/) to know more about uniform, almost-uniform and uniform like samplers.
@@ -61,7 +61,7 @@ Change seed value to get different samples. Refer to [this post](https://www.mso
 
 Run with an SMT-LIB2 file:
 ```
-./stp -c myproblem.smt2
+./csb -c myproblem.smt2
 ```
 
 ## Architecture
