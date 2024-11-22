@@ -364,25 +364,26 @@ void ExtraMain::create_options()
 
 
   po::options_description misc_options("Output options");
-  misc_options.add_options()
-      ("exit-after-CNF",
-       po::bool_switch(&(bm->UserFlags.exit_after_CNF)),
-       "exit after the CNF has been generated")
+  misc_options.add_options()("exit-after-CNF",
+                             po::bool_switch(&(bm->UserFlags.exit_after_CNF)),
+                             "exit after the CNF has been generated")
 
-      ("max-num-confl,max_num_confl,g", 
-      INT64_ARG(bm->UserFlags.timeout_max_conflicts),
-      "Number of conflicts after which the SAT solver gives up. "
-      "-1 means never")
+      ("max-num-confl,max_num_confl,g",
+       INT64_ARG(bm->UserFlags.timeout_max_conflicts),
+       "Number of conflicts after which the SAT solver gives up. "
+       "-1 means never")
 
-      ("max-time,max_time,k", 
-      INT64_ARG(bm->UserFlags.timeout_max_time),
-      "Number of seconds after which the SAT solver gives up. "
-      "-1 means never.")
+          ("max-time,max_time,k", INT64_ARG(bm->UserFlags.timeout_max_time),
+           "Number of seconds after which the SAT solver gives up. "
+           "-1 means never.")
 
-      ("check-sanity,d", 
-        po::bool_switch(&(bm->UserFlags.check_counterexample_flag)),
-        "construct counterexample and check it");
+              ("verb-count,x",
+               po::bool_switch(&(bm->UserFlags.verbose_in_counting)),
+               "Be verbose in counting/sampling mode")
 
+                  ("check-sanity,d",
+                   po::bool_switch(&(bm->UserFlags.check_counterexample_flag)),
+                   "construct counterexample and check it");
 
 #undef BOOL_ARG
 #undef INT64_ARG

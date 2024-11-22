@@ -110,6 +110,7 @@ public:
   // output flags
   bool output_CNF_flag = false;
   bool output_bench_flag = false;
+  bool verbose_in_counting = false;
 
   /* Bitblasting options */
 

@@ -230,11 +230,13 @@ Cnf_Dat_t * Cnf_ManWriteCnf( Cnf_Man_t * p, Vec_Ptr_t * vMapped, int nOutputs )
     pCnf->pClauses = ALLOC( int *, nClauses + 1 );
     pCnf->pClauses[0] = ALLOC( int, nLiterals );
     pCnf->pClauses[nClauses] = pCnf->pClauses[0] + nLiterals;
-    pCnf->lProjVars = ALLOC(  int, nLiterals );
 
     // create room for variable numbers
     pCnf->pVarNums = ALLOC( int, Aig_ManObjNumMax(p->pManAig) );
     memset( pCnf->pVarNums, 0xff, sizeof(int) * Aig_ManObjNumMax(p->pManAig) );
+    pCnf->lProjVars = ALLOC(  int, Aig_ManObjNumMax(p->pManAig) );
+    memset( pCnf->lProjVars, 0xff, sizeof(int) * Aig_ManObjNumMax(p->pManAig) );
+
     // assign variables to the last (nOutputs) POs
     Number = 1;
     if ( nOutputs )

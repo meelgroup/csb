@@ -143,6 +143,7 @@ void Cnf_DataFree( Cnf_Dat_t * p )
     free( p->pClauses[0] );
     free( p->pClauses );
     free( p->pVarNums );
+    free( p->lProjVars );
     free( p );
 }
 
