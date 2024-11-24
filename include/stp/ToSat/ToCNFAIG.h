@@ -38,6 +38,7 @@ class ASTtoCNF;
 class ToCNFAIG // not copyable
 {
   UserDefinedFlags& uf;
+  STPMgr* bm;
 
   void dag_aware_aig_rewrite(const bool needAbsRef, BBNodeManagerAIG& mgr);
 
@@ -46,7 +47,7 @@ class ToCNFAIG // not copyable
                         BBNodeManagerAIG& mgr);
 
 public:
-  ToCNFAIG(UserDefinedFlags& _uf) : uf(_uf) {}
+  ToCNFAIG(STPMgr* _bm, UserDefinedFlags& _uf) : uf(_uf), bm(_bm) {}
 
   void toCNF(const BBNodeAIG& top, Cnf_Dat_t*& cnfData,
              ToSATBase::ASTNodeToSATVar& nodeToVars, bool needAbsRef,

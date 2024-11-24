@@ -35,7 +35,7 @@ void addVariables(BBNodeManagerAIG& mgr, Cnf_Dat_t*& cnfData,
   // Each symbol maps to a vector of CNF variables.
   for (it = mgr.symbolToBBNode.begin(); it != mgr.symbolToBBNode.end(); it++)
   {
-    const ASTNode& n = it->first;
+    ASTNode& n = const_cast<ASTNode&>(it->first);
     const vector<BBNodeAIG>& b = it->second;
 
     const int width = (n.GetType() == BOOLEAN_TYPE) ? 1 : n.GetValueWidth();
@@ -151,10 +151,13 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
   // Each symbol maps to a vector of CNF variables.
   for (it = mgr.symbolToBBNode.begin(); it != mgr.symbolToBBNode.end(); it++)
   {
-    const ASTNode& n = it->first;
+    ASTNode& n = const_cast<ASTNode&>(it->first);
     const vector<BBNodeAIG>& b = it->second;
     assert(nodeToVars.find(n) == nodeToVars.end());
-
+    if (bm->isProjSymbol(n))
+      std::cout << "proj symbol" << n.GetName() << std::endl;
+    else
+      std::cout << "not proj symbol" << n.GetName() << std::endl;
     const int width = (n.GetType() == BOOLEAN_TYPE) ? 1 : n.GetValueWidth();
 
     // INT_MAX for parts of symbols that didn't get encoded.
@@ -170,7 +173,8 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         if (uf.counting_mode || uf.sampling_mode)
         {
           // TODO AS keep check for projection variables here
-          cnfData->lProjVars[v[i]] = 1;
+          if(bm->isProjSymbol(n))
+            cnfData->lProjVars[v[i]] = 1;
         }
       }
     }

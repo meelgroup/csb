@@ -81,7 +81,7 @@ public:
   bool cbIsDestructed() { return cb == NULL; }
 
   ToSATAIG(STPMgr* bm, ArrayTransformer* at)
-      : ToSATBase(bm), toCNF(bm->UserFlags)
+      : ToSATBase(bm), toCNF(bm, bm->UserFlags)
   {
     cb = NULL;
     init();
@@ -90,7 +90,7 @@ public:
 
   ToSATAIG(STPMgr* bm, simplifier::constantBitP::ConstantBitPropagation* cb_,
            ArrayTransformer* at)
-      : ToSATBase(bm), cb(cb_), toCNF(bm->UserFlags)
+      : ToSATBase(bm), cb(cb_), toCNF(bm, bm->UserFlags)
   {
     cb = cb_;
     init();
