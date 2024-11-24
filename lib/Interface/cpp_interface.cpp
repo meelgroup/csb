@@ -341,7 +341,7 @@ void Cpp_interface::addSymbol(ASTNode& s)
 
 void Cpp_interface::addProjSymbol(ASTNode& s)
 {
-  getCurrentSymbols().push_back(s);
+    bm.addProjSymbol(s);
 }
 
 void Cpp_interface::success()

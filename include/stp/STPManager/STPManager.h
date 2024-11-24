@@ -72,6 +72,8 @@ private:
   // Table for variable names, let names etc.
   ASTSymbolSet _symbol_unique_table;
 
+  ASTNodeSet _proj_symbol_list;
+
   // Table to uniquefy bvconst
   ASTBVConstSet _bvconst_unique_table;
 
@@ -390,6 +392,19 @@ public:
     Introduced_SymbolsSet.insert(CurrentSymbol);
     return CurrentSymbol;
   }
+
+  bool addProjSymbol(ASTNode& s)
+  {
+    _proj_symbol_list.insert(s);
+    std::cout << "Adding proj symbol: " << s << std::endl;
+    return true;
+  }
+
+  bool isProjSymbol(ASTNode& s)
+  {
+    return _proj_symbol_list.find(s) != _proj_symbol_list.end();
+  }
+
 
   bool FoundIntroducedSymbolSet(const ASTNode& in)
   {
