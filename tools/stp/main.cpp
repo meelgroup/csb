@@ -521,7 +521,7 @@ int ExtraMain::parse_options(int argc, char** argv)
     std::exit(-1);
   }
 #endif
-#ifdef USE_GANAK or USE_UNIGEN
+#ifdef USE_GANAK
 
   if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
   {
