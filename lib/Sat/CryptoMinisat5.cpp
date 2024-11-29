@@ -42,6 +42,7 @@ void CryptoMiniSat5::enableRefinement(const bool enable)
 
 CryptoMiniSat5::CryptoMiniSat5(int num_threads)
 {
+  assert(false);
   s = new CMSat::SATSolver;
   // s->log_to_file("stp.cnf");
   s->set_num_threads(num_threads);
@@ -158,10 +159,8 @@ uint32_t CryptoMiniSat5::getFixedCountWithAssumptions(const stp::SATSolver::vec_
   const uint64_t conf = s->get_sum_conflicts();
   assert(conf == 0);
 
+  const CMSat::lbool r = s->simplify();
 
-  const CMSat::lbool r = s->simplify();  
-
-   
   // Add the assumptions are clauses.
   vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
   for (int i = 0; i < assumps.size(); i++)
@@ -181,12 +180,10 @@ uint32_t CryptoMiniSat5::getFixedCountWithAssumptions(const stp::SATSolver::vec_
       if (literals.find(l.var()) != literals.end())
         assigned++;
   }
- 
- 
-       
+
   //std::cerr << assigned << " assignments at end" <<std::endl;
 
-  // The assumptions are each single literals (corresponding to bits) that are true/false. 
+  // The assumptions are each single literals (corresponding to bits) that are true/false.
   // so in the result they should be all be set
   assert(assumps.size() >= 0);
   assert(assigned >= static_cast<uint32_t>(assumps.size()));

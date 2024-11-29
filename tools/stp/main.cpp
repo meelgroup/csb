@@ -155,73 +155,113 @@ void ExtraMain::create_options()
                                        "disable all simplifications")(
       "switch-word,w", "switch off wordlevel solver")(
       "disable-opt-inc,a", "disable rewriting simplifier")(
-      "disable-cbitp", "disable constant bit propagation")
-      ("disable-equality", "disable equality propagation")
-      ("size-reducing-only", "size reducing simplifications only")
+      "disable-cbitp", "disable constant bit propagation")(
+      "disable-equality", "disable equality propagation")(
+      "size-reducing-only", "size reducing simplifications only")
 
-      ("unconstrained-variable-elimination", 
-      BOOL_ARG(bm->UserFlags.enable_unconstrained),
-      "Unconstrained variables are eliminated.")
+      ("unconstrained-variable-elimination",
+       BOOL_ARG(bm->UserFlags.enable_unconstrained),
+       "Unconstrained variables are eliminated.")
 
-      ("aig-rewrite-passes", 
-      INT64_ARG(bm->UserFlags.AIG_rewrites_iterations),
-      "Iterations of AIG rewriting to perform")
+          ("aig-rewrite-passes",
+           INT64_ARG(bm->UserFlags.AIG_rewrites_iterations),
+           "Iterations of AIG rewriting to perform")
 
-      ("flattening", 
-      BOOL_ARG(bm->UserFlags.enable_flatten),
-      "Enable sharing-aware flattening of >2 arity nodes")
+              ("flattening", BOOL_ARG(bm->UserFlags.enable_flatten),
+               "Enable sharing-aware flattening of >2 arity nodes")
 
-      ("rewriting", 
-      BOOL_ARG(bm->UserFlags.enable_sharing_aware_rewriting),
-      "Enable sharing-aware rewriting")
+                  ("rewriting",
+                   BOOL_ARG(bm->UserFlags.enable_sharing_aware_rewriting),
+                   "Enable sharing-aware rewriting")
 
-      ("split-extracts",
-      BOOL_ARG(bm->UserFlags.enable_split_extracts),
-      "Create new variables for some extracts")
+                      ("split-extracts",
+                       BOOL_ARG(bm->UserFlags.enable_split_extracts),
+                       "Create new variables for some extracts")
 
-      ("ite-context-simplifications", 
-      BOOL_ARG(bm->UserFlags.enable_ite_context),
-      "Use what is known to be true in an if-then-else node to simplify the true or false branches")
+                          ("ite-context-simplifications",
+                           BOOL_ARG(bm->UserFlags.enable_ite_context),
+                           "Use what is known to be true in an if-then-else "
+                           "node to simplify the true or false branches")
 
-      ("aig-core-simplification", 
-      BOOL_ARG(bm->UserFlags.enable_aig_core_simplify),
-      "Simplify the propositional core with AIGs")
+                              ("aig-core-simplification",
+                               BOOL_ARG(bm->UserFlags.enable_aig_core_simplify),
+                               "Simplify the propositional core with AIGs")
 
-      ("use-intervals", 
-      BOOL_ARG(bm->UserFlags.enable_use_intervals),
-      "Simplify with interval analysis")
+                                  ("use-intervals",
+                                   BOOL_ARG(bm->UserFlags.enable_use_intervals),
+                                   "Simplify with interval analysis")
 
-      ("pure-literals", 
-      BOOL_ARG(bm->UserFlags.enable_pure_literals),
-      "Pure literals are replaced.")
+                                      ("pure-literals",
+                                       BOOL_ARG(
+                                           bm->UserFlags.enable_pure_literals),
+                                       "Pure literals are replaced.")
 
-      ("always-true", 
-      BOOL_ARG(bm->UserFlags.enable_always_true),
-      "Nodes that are always true (e.g. asserted) are replaced through out the problem by true")
+                                          ("always-true",
+                                           BOOL_ARG(bm->UserFlags
+                                                        .enable_always_true),
+                                           "Nodes that are always true (e.g. "
+                                           "asserted) are replaced through out "
+                                           "the problem by true")
 
-      ("merge-same", 
-      BOOL_ARG(bm->UserFlags.enable_merge_same),
-      "Uses simple boolean algebra rules to combine conjuncts at the top level")
+                                              ("merge-same",
+                                               BOOL_ARG(bm->UserFlags
+                                                            .enable_merge_same),
+                                               "Uses simple boolean algebra "
+                                               "rules to combine conjuncts at "
+                                               "the top level")
 
-  
-      ("bit-blast-simplification", 
-      INT64_ARG(bm->UserFlags.bitblast_simplification),
-      "Part-way through simplifying, convert to AIGs and look for bits that the AIGs figure out are true/false or the same as another node. If the difficulty is less than this number. -1 means always.")
-      ("size-reducing-fixed-point-limit", 
-      INT64_ARG(bm->UserFlags.size_reducing_fixed_point),
-      "If the number of non-leaf nodes is fewer than this number, run size-reducing simplifications to a fixed-point. -1 means always.")
+                                                  ("bit-blast-simplification",
+                                                   INT64_ARG(
+                                                       bm->UserFlags
+                                                           .bitblast_simplification),
+                                                   "Part-way through "
+                                                   "simplifying, convert to "
+                                                   "AIGs and look for bits "
+                                                   "that the AIGs figure out "
+                                                   "are true/false or the same "
+                                                   "as another node. If the "
+                                                   "difficulty is less than "
+                                                   "this number. -1 means "
+                                                   "always.")(
+                                                      "size-reducing-fixed-"
+                                                      "point-limit",
+                                                      INT64_ARG(
+                                                          bm->UserFlags
+                                                              .size_reducing_fixed_point),
+                                                      "If the number of "
+                                                      "non-leaf nodes is fewer "
+                                                      "than this number, run "
+                                                      "size-reducing "
+                                                      "simplifications to a "
+                                                      "fixed-point. -1 means "
+                                                      "always.")
 
-      ("simplify-to-constants-only,simply_to_constants_only", 
-      BOOL_ARG(bm->UserFlags.simplify_to_constants_only),
-      "Use just the simplifications from the potentially size increasing suite that transform nodes to constants")
+                                                      ("simplify-to-constants-"
+                                                       "only,simply_to_"
+                                                       "constants_only",
+                                                       BOOL_ARG(
+                                                           bm->UserFlags
+                                                               .simplify_to_constants_only),
+                                                       "Use just the "
+                                                       "simplifications from "
+                                                       "the potentially size "
+                                                       "increasing suite that "
+                                                       "transform nodes to "
+                                                       "constants")
 
-      ("difficulty-reversion,difficulty_reversion", 
-      BOOL_ARG(bm->UserFlags.difficulty_reversion),
-      "Undo size increasing simplifications if they haven't made the problem simpler");
-
-   
-
-
+                                                          ("difficulty-"
+                                                           "reversion,"
+                                                           "difficulty_"
+                                                           "reversion",
+                                                           BOOL_ARG(
+                                                               bm->UserFlags
+                                                                   .difficulty_reversion),
+                                                           "Undo size "
+                                                           "increasing "
+                                                           "simplifications if "
+                                                           "they haven't made "
+                                                           "the problem "
+                                                           "simpler");
 
   po::options_description solver_options("SAT Solver options");
   solver_options.add_options()
@@ -254,7 +294,7 @@ void ExtraMain::create_options()
                   "use cmsgen as solver -- behave as a uniform like sampler")(
                   "approxmc,c",
                   "use approxmc as solver -- behave as a approximate counter")(
-                  "ganak,e",
+                  "ganak,g",
                   "use ganak as solver -- behave as a exact counter")(
                   "seed",
                   po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
@@ -292,7 +332,7 @@ void ExtraMain::create_options()
       po::bool_switch(&(bm->UserFlags.print_STPinput_back_dot_flag)),
       "print dotty/neato's graph format, then exit")(
       "print-counterex,p",
-      po::bool_switch(&(bm->UserFlags.print_counterexample_flag)), 
+      po::bool_switch(&(bm->UserFlags.print_counterexample_flag)),
       "print counterexample")(
       "print-counterexbin,y",
       po::bool_switch(&(bm->UserFlags.print_binary_flag)),
@@ -485,6 +525,7 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (vm.count("cryptominisat"))
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::CRYPTOMINISAT5_SOLVER;
+    std::cout << "CryptoMiniSat5 solver selected" << std::endl;
   }
 #endif
 
@@ -493,9 +534,17 @@ int ExtraMain::parse_options(int argc, char** argv)
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::GANAK_SOLVER;
     bm->UserFlags.counting_mode = true;
+    std::cout << "Ganak solver selected" << std::endl;
   }
 #endif
 
+#ifndef USE_GANAK
+  if (vm.count("ganak"))
+  {
+    cout << "ERROR: Ganak support was not enabled at configure time." << endl;
+    std::exit(-1);
+  }
+#endif
 #ifdef USE_UNIGEN
   if (vm.count("unisamp"))
   {

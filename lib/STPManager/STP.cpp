@@ -33,6 +33,10 @@ THE SOFTWARE.
 #include "stp/Sat/CryptoMinisat5.h"
 #endif
 
+#ifdef USE_GANAK
+#include "stp/Sat/GnK.h"
+#endif
+
 #ifdef USE_UNIGEN
 #include "stp/Sat/ApxMC.h"
 #include "stp/Sat/UniSamp.h"
@@ -105,7 +109,7 @@ SATSolver* STP::get_new_sat_solver()
       newS = new SimplifyingMinisat;
       break;
     case UserDefinedFlags::CRYPTOMINISAT5_SOLVER:
-#ifdef USE_CRYPTOMINISAT
+#if defined(USE_CRYPTOMINISAT) && !defined(USE_GANAK)
       newS = new CryptoMiniSat5(bm->UserFlags.num_solver_threads);
 #else
       std::cerr << "CryptoMiniSat5 support was not enabled at configure time."
@@ -132,14 +136,8 @@ SATSolver* STP::get_new_sat_solver()
                 << std::endl;
       exit(-1);
 #endif
+      break;
     case UserDefinedFlags::APPROXMC_SOLVER:
-#ifdef USE_GANAK
-      newS = new GnK(bm->UserFlags.unisamp_seed);
-#else
-      std::cout << "ApproxMC support was not enabled at configure time."
-                << std::endl;
-      exit(-1);
-#endif
 #ifdef USE_UNIGEN
       newS = new ApxMC(bm->UserFlags.unisamp_seed);
 #else
@@ -508,20 +506,20 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
       // Applying the substitution map fixes this case.
       //
 
-      
       if (bm->UserFlags.simplify_to_constants_only)
-      {    
-          auto constants = simp->FindConsts_TopLevel(inputToSat, false);
+      {
+        auto constants = simp->FindConsts_TopLevel(inputToSat, false);
 
-          if (bm->UserFlags.stats_flag)
-                cerr << "constants found:" << constants.size() << endl;
+        if (bm->UserFlags.stats_flag)
+          cerr << "constants found:" << constants.size() << endl;
 
-          ASTNodeMap cache;
-          inputToSat = stp::SubstitutionMap::replace(inputToSat, constants, cache, bm->defaultNodeFactory);
+        ASTNodeMap cache;
+        inputToSat = stp::SubstitutionMap::replace(inputToSat, constants, cache,
+                                                   bm->defaultNodeFactory);
       }
       else
         inputToSat = simp->SimplifyFormula_TopLevel(inputToSat, false);
-      
+
       bm->ASTNodeStats(size_inc_message.c_str(), inputToSat);
 
       if (bm->UserFlags.wordlevel_solve_flag)

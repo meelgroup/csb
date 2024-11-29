@@ -575,6 +575,8 @@ endif()
 option(NOGANAK "Don't try to use Ganak" OFF)
 
 if(NOT NOGANAK)
+    add_definitions(-DUSE_GANAK)
+    set(USE_GANAK ON)
   add_feature_info(Ganak USE_GANAK "Enables Ganak Model Counter solver, allows --exactcount option")
   find_package(GMP REQUIRED)
 find_package(MPFR REQUIRED)
