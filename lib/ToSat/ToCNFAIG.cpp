@@ -146,6 +146,7 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
 {
   BBNodeManagerAIG::SymbolToBBNode::const_iterator it;
   assert(nodeToVars.size() == 0);
+  uint32_t proj_var_num = 0, non_proj_var_num = 0;
 
   // todo. cf. with addvariables above...
   // Each symbol maps to a vector of CNF variables.
@@ -155,9 +156,9 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
     const vector<BBNodeAIG>& b = it->second;
     assert(nodeToVars.find(n) == nodeToVars.end());
     if (bm->isProjSymbol(n))
-      std::cout << "proj symbol" << n.GetName() << std::endl;
+      proj_var_num++;
     else
-      std::cout << "not proj symbol" << n.GetName() << std::endl;
+      non_proj_var_num++;
     const int width = (n.GetType() == BOOLEAN_TYPE) ? 1 : n.GetValueWidth();
 
     // INT_MAX for parts of symbols that didn't get encoded.
@@ -181,5 +182,13 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
 
     nodeToVars.insert(make_pair(n, v));
   }
+  if (!bm->isAnyProjSymbolDeclared())
+  {
+    std::cout << "c No variables declared as projection var, moving to "
+                 "non-projection mode"
+              << std::endl;
+  }
+  std::cout << "c Projection variables: " << proj_var_num
+            << " Other variables: " << non_proj_var_num << std::endl;
 }
 } // namespace stp

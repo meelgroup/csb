@@ -402,9 +402,17 @@ public:
 
   bool isProjSymbol(ASTNode& s)
   {
+    if (_proj_symbol_list.size() == 0)
+      return true;
     return _proj_symbol_list.find(s) != _proj_symbol_list.end();
   }
 
+  bool isAnyProjSymbolDeclared()
+  {
+    if (_proj_symbol_list.size() == 0)
+      return false;
+    return true;
+  }
 
   bool FoundIntroducedSymbolSet(const ASTNode& in)
   {
