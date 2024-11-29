@@ -117,26 +117,32 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
    */
 
   // CMSat::lbool ret = s->solve(); // TODO AS
+  arjun->set_verb(0);
+  cnf.set_sampl_vars(sampling_vars_orig);
+  std::cout << "c [stp->gnk] Arjun solving instance with " << cnf.nVars()
+            << " variables, " << cnf.clauses.size() << " clauses "
+            << sampling_vars_orig.size() << " projection vars" << std::endl;
   arjun->standalone_minimize_indep(cnf);
   assert(!etof_conf.all_indep);
   arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
-
-  std::cout << "c [stp->appmc] GnK solving instance with " << cnf.nVars()
-            << " variables, " << sampling_vars_orig.size() << " projection vars"
-            << std::endl;
 
   vector<uint32_t> sampling_vars;
   for (uint32_t i = 0; i < cnf.nVars(); i++)
     sampling_vars.push_back(i);
 
+  std::cout << "c [stp->gnk] GnK solving instance with " << cnf.nVars()
+            << " variables, " << sampling_vars.size() << " projection vars"
+            << std::endl;
   // arjun->set_seed(seed);
   // arjun->set_verbosity(0);
   // arjun->set_simp(1);
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
+  conf.verb = 0;
   Ganak counter(conf, false, true);
   counter.new_vars(cnf.nVars());
+
   std::set<uint32_t> tmp;
   for (auto const& s : cnf.sampl_vars)
     tmp.insert(s + 1);
