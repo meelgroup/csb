@@ -123,7 +123,23 @@ SATSolver* STP::get_new_sat_solver()
       exit(-1);
 #endif
       break;
+    case UserDefinedFlags::GANAK_SOLVER:
+#ifdef USE_GANAK
+      newS = new GnK(bm->UserFlags.unisamp_seed);
+      std::cout << "Ganak !!!" << std::endl;
+#else
+      std::cerr << "Ganak support was not enabled at configure time."
+                << std::endl;
+      exit(-1);
+#endif
     case UserDefinedFlags::APPROXMC_SOLVER:
+#ifdef USE_GANAK
+      newS = new GnK(bm->UserFlags.unisamp_seed);
+#else
+      std::cout << "ApproxMC support was not enabled at configure time."
+                << std::endl;
+      exit(-1);
+#endif
 #ifdef USE_UNIGEN
       newS = new ApxMC(bm->UserFlags.unisamp_seed);
 #else
@@ -222,7 +238,7 @@ ASTNode STP::sizeReducing(ASTNode inputToSat,
     inputToSat = pe->topLevel(inputToSat);
     bm->ASTNodeStats(pe_message.c_str(), inputToSat);
   }
-  
+
   if (bm->UserFlags.enable_unconstrained)
   {
     RemoveUnconstrained r1(*bm);
@@ -429,7 +445,7 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
                                             bm->defaultNodeFactory);
       bm->ASTNodeStats(bb_message.c_str(), inputToSat);
     }
-    
+
     bitblasted_difficulty = bitblast_nodemgr.totalNumberOfNodes();
   }
 

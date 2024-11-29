@@ -234,34 +234,36 @@ void ExtraMain::create_options()
                      "Number of threads for cryptominisat")
 #endif
 #ifdef USE_RISS
-      ("riss",
-       "use Riss as the solver"
+          ("riss", "use Riss as the solver"
 #ifndef USE_CRYPTOMINISAT
-       "(default)."
+                   "(default)."
 #endif
-      )
+           )
 #endif
-         ("simplifying-minisat",
-           "use installed simplifying minisat version as the solver")(
-              "minisat", "use installed minisat version as the solver "
+              ("simplifying-minisat",
+               "use installed simplifying minisat version as the solver")(
+                  "minisat", "use installed minisat version as the solver "
 #ifndef USE_CRYPTOMINISAT
 #ifndef USE_RISS
-                         "(default)"
+                             "(default)"
 #endif
 #endif
-          )("unisamp,u", "use unisamp as solver -- behave as a almost-uniform sampler")(
-          "cmsgen,s",
-          "use cmsgen as solver -- behave as a uniform like sampler")(
-          "approxmc,c",
-          "use approxmc as solver -- behave as a approximate counter")(
-          "seed",
-          po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
-              ->default_value(bm->UserFlags.unisamp_seed),
-          "Seed for counting and sampling")(
-          "num-samples,ns",
-          po::value<uint64_t>(&bm->UserFlags.num_samples)
-              ->default_value(bm->UserFlags.num_samples),
-          "Number of samples to generate in sampling mode");
+                  )("unisamp,u", "use unisamp as solver -- behave as a "
+                                 "almost-uniform sampler")(
+                  "cmsgen,s",
+                  "use cmsgen as solver -- behave as a uniform like sampler")(
+                  "approxmc,c",
+                  "use approxmc as solver -- behave as a approximate counter")(
+                  "ganak,e",
+                  "use ganak as solver -- behave as a exact counter")(
+                  "seed",
+                  po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+                      ->default_value(bm->UserFlags.unisamp_seed),
+                  "Seed for counting and sampling")(
+                  "num-samples,ns",
+                  po::value<uint64_t>(&bm->UserFlags.num_samples)
+                      ->default_value(bm->UserFlags.num_samples),
+                  "Number of samples to generate in sampling mode");
   ;
 
   po::options_description refinement_options("Refinement options");
@@ -486,6 +488,14 @@ int ExtraMain::parse_options(int argc, char** argv)
   }
 #endif
 
+#ifdef USE_GANAK
+  if (vm.count("ganak"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::GANAK_SOLVER;
+    bm->UserFlags.counting_mode = true;
+  }
+#endif
+
 #ifdef USE_UNIGEN
   if (vm.count("unisamp"))
   {
@@ -510,6 +520,8 @@ int ExtraMain::parse_options(int argc, char** argv)
     cout << "ERROR: You have selected both sampling and counting mode" << endl;
     std::exit(-1);
   }
+#endif
+#ifdef USE_GANAK or USE_UNIGEN
 
   if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
   {

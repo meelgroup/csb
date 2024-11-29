@@ -43,7 +43,7 @@ endif()
 project(CSB)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include(GenerateExportHeader)
@@ -570,6 +570,58 @@ if (FORCE_UNIG AND NOT USE_UNIGEN)
     message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
 endif()
 
+
+
+option(NOGANAK "Don't try to use Ganak" OFF)
+
+if(NOT NOGANAK)
+  add_feature_info(Ganak USE_GANAK "Enables Ganak Model Counter solver, allows --exactcount option")
+
+  find_package(arjun CONFIG REQUIRED)
+  if (arjun_FOUND)
+      message(STATUS "Found Arjun library")
+      message(STATUS "Arjun dynamic lib: ${ARJUN_LIBRARIES}")
+      message(STATUS "Arjun include dirs: ${ARJUN_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find Arjun libraries.")
+  endif()
+find_package(sbva CONFIG REQUIRED)
+  if (sbva_FOUND)
+      message(STATUS "Found sbva library")
+      message(STATUS "sbva dynamic lib: ${SBVA_LIBRARIES}")
+      message(STATUS "sbva include dirs: ${SBVA_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find sbva libraries.")
+  endif()
+find_package(breakid CONFIG REQUIRED)
+  if (breakid_FOUND)
+      message(STATUS "Found BreakID library")
+      message(STATUS "BreakID dynamic lib: ${BREAKID_LIBRARIES}")
+      message(STATUS "BreakID include dirs: ${BREAKID_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find BreakID libraries.")
+  endif()
+find_package(approxmc CONFIG REQUIRED)
+  if (approxmc_FOUND)
+      message(STATUS "Found approxmc library")
+      message(STATUS "approxmc dynamic lib: ${APPROXMC_LIBRARIES}")
+      message(STATUS "approxmc include dirs: ${APPROXMC_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find Arjun libraries.")
+  endif()
+  find_package(ganak CONFIG REQUIRED)
+  if (ganak_FOUND)
+      message(STATUS "Found Ganak library")
+      message(STATUS "Ganak dynamic lib: ${GANAK_LIBRARIES}")
+      message(STATUS "Ganak include dirs: ${GANAK_INCLUDE_DIRS}")
+  else()
+      message(WARNING "Cannot find Ganak libraries.")
+  endif()
+    else()
+    message(STATUS "Ganak NOT found")
+  endif()
+
+
 # -----------------------------------------------------------------------------
 # Find ZLIB (needed for MiniSat)
 # yes, we need to include the zlib header location or STP will not build
@@ -651,9 +703,9 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
         message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
         set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
     endif()
-    
+
     execute_process(
-        COMMAND brew --prefix flex 
+        COMMAND brew --prefix flex
         RESULT_VARIABLE BREW_FLEX
         OUTPUT_VARIABLE BREW_FLEX_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE

@@ -164,6 +164,7 @@ public:
     SIMPLIFYING_MINISAT_SOLVER,
     CRYPTOMINISAT5_SOLVER,
     APPROXMC_SOLVER,
+    GANAK_SOLVER,
     UNIGEN_SOLVER,
     CMSGEN_SOLVER,
     RISS_SOLVER
@@ -219,6 +220,9 @@ public:
 #else
     solver_to_use = MINISAT_SOLVER;
 #endif
+#endif
+#ifdef USE_GANAK
+    solver_to_use = GANAK_SOLVER;
 #endif
   }
 };
