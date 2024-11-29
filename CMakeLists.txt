@@ -576,7 +576,12 @@ option(NOGANAK "Don't try to use Ganak" OFF)
 
 if(NOT NOGANAK)
   add_feature_info(Ganak USE_GANAK "Enables Ganak Model Counter solver, allows --exactcount option")
-
+  find_package(GMP REQUIRED)
+find_package(MPFR REQUIRED)
+MESSAGE(STATUS "MPFR include dir: ${MPFR_INCLUDE_DIR}")
+MESSAGE(STATUS "MPFR lib dir: ${MPFR_LIBRARIES}")
+MESSAGE(STATUS "GMP include dir: ${GMP_INCLUDE_DIR}")
+MESSAGE(STATUS "GMP lib dir: ${GMP_LIBRARIES}")
   find_package(arjun CONFIG REQUIRED)
   if (arjun_FOUND)
       message(STATUS "Found Arjun library")
@@ -617,9 +622,9 @@ find_package(approxmc CONFIG REQUIRED)
   else()
       message(WARNING "Cannot find Ganak libraries.")
   endif()
-    else()
+else()
     message(STATUS "Ganak NOT found")
-  endif()
+endif()
 
 
 # -----------------------------------------------------------------------------

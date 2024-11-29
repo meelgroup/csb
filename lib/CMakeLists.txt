@@ -130,10 +130,38 @@ if (USE_CRYPTOMINISAT)
         ${stp_link_libs}
         ${CRYPTOMINISAT5_STATIC_LIBRARIES}
         ${CRYPTOMINISAT5_STATIC_LIBRARIES_DEPS})
+        message(STATUS "Including CryptoMiniSat Static Libraries")
     else()
       set(stp_link_libs
         ${stp_link_libs}
-        ${CRYPTOMINISAT5_LIBRARIES})
+        ${CRYPTOMINISAT5_LIBRARIESX})
+        message(STATUS "Including CryptoMiniSat DYNAMIC Libraries")
+        endif()
+endif()
+
+if (USE_GANAK)
+    if (STATICCOMPILE)
+      set(stp_link_libs
+        ${stp_link_libs}
+        ${ARJUN_STATIC_LIBRARIES}
+        ${BREAKKID_STATIC_LIBRARIES}
+        ${APPROXMC_STATIC_LIBRARIES}
+        ${GANAK_STATIC_LIBRARIES}
+        ${MPFR_LIBRARIES}
+        ${GMPXX_LIBRARY}
+        ${GMP_LIBRARY}
+)
+        message(STATUS "Including MPFR Libraries" ${MPFR_LIBRARIES})
+        message(STATUS "Including GMP Libraries" ${GMPXX_LIBRARY} "and" ${GMP_LIBRARY})
+    else()
+      set(stp_link_libs
+        ${stp_link_libs}
+        ${GMP_LIBRARIES}
+        ${ARJUN_LIBRARIES}
+        ${MPFR_LIBRARIES}
+        ${BREAKKID_LIBRARIES}
+        ${APPROXMC_LIBRARIES}
+        ${GANAK_LIBRARIES})
     endif()
 endif()
 
@@ -167,6 +195,7 @@ endif()
 target_link_libraries(stp
     LINK_PUBLIC ${stp_link_libs}
 )
+message(STATUS "Linking against ${stp_link_libs}")
 
 install(TARGETS stp
     EXPORT ${STP_EXPORT_NAME}
