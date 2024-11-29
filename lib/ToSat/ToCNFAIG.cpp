@@ -182,6 +182,12 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
 
     nodeToVars.insert(make_pair(n, v));
   }
+  if (!bm->isAnyProjSymbolDeclared())
+  {
+    std::cout << "c No variables declared as projection var, moving to "
+                 "non-projection mode"
+              << std::endl;
+  }
   std::cout << "c Projection variables: " << proj_var_num
             << " Other variables: " << non_proj_var_num << std::endl;
 }
