@@ -396,7 +396,6 @@ public:
   bool addProjSymbol(ASTNode& s)
   {
     _proj_symbol_list.insert(s);
-    std::cout << "Adding proj symbol: " << s << std::endl;
     return true;
   }
 
