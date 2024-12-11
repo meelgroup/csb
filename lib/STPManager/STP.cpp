@@ -130,7 +130,6 @@ SATSolver* STP::get_new_sat_solver()
     case UserDefinedFlags::GANAK_SOLVER:
 #ifdef USE_GANAK
       newS = new GnK(bm->UserFlags.unisamp_seed);
-      std::cout << "Ganak !!!" << std::endl;
 #else
       std::cerr << "Ganak support was not enabled at configure time."
                 << std::endl;
