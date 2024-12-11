@@ -294,7 +294,7 @@ void ExtraMain::create_options()
                   "use cmsgen as solver -- behave as a uniform like sampler")(
                   "approxmc,c",
                   "use approxmc as solver -- behave as a approximate counter")(
-                  "ganak,g",
+                  "ganak,e",
                   "use ganak as solver -- behave as a exact counter")(
                   "seed",
                   po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
@@ -534,7 +534,6 @@ int ExtraMain::parse_options(int argc, char** argv)
   {
     bm->UserFlags.solver_to_use = UserDefinedFlags::GANAK_SOLVER;
     bm->UserFlags.counting_mode = true;
-    std::cout << "Ganak solver selected" << std::endl;
   }
 #endif
 

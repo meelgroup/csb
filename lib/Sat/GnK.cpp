@@ -131,7 +131,8 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
     sampling_vars.push_back(i);
 
   std::cout << "c [stp->gnk] GnK solving instance with " << cnf.nVars()
-            << " variables, " << sampling_vars.size() << " projection vars"
+            << " variables, " << sampling_vars.size() << " projection vars, "
+            << cnf.opt_sampl_vars.size() << " optional projection vars"
             << std::endl;
   // arjun->set_seed(seed);
   // arjun->set_verbosity(0);
@@ -140,6 +141,9 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   //           << std::endl;
 
   conf.verb = 0;
+  if (seed == 0)
+    conf.appmc_timeout = 1;
+
   Ganak counter(conf, false, true);
   counter.new_vars(cnf.nVars());
 
@@ -169,7 +173,8 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   delete arjun;
   mpz_class cnt;
   cnt = counter.unw_outer_count();
-  assert(!counter.get_is_approximate());
+  if (counter.get_is_approximate())
+    std::cout << "c count its approximate\n";
   cnt *= cnf.multiplier_weight;
 
   // use gmp to get the absolute count of solutions
