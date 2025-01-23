@@ -1,5 +1,11 @@
-on: [push, pull_request]
-name: CI
+on:
+  push:
+    branches:
+      - main
+      - release
+  pull_request:
+
+name: CI and Release
 
 jobs:
   build:
@@ -12,14 +18,15 @@ jobs:
           - name: clang
             env: CC=clang CXX=clang++
 
-    name: ${{ matrix.name }}
-    runs-on: [ubuntu-latest]
+    name: Build with ${{ matrix.name }}
+    runs-on: ubuntu-latest
 
     steps:
-
+    # Checkout repository
     - uses: actions/checkout@v2
 
-    - name: Packages
+    # Install dependencies
+    - name: Install Packages
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -39,7 +46,8 @@ jobs:
           zlib1g-dev
         sudo pip3 install -U lit
 
-    - name: Dependencies
+    # Set up dependencies
+    - name: Set Up Dependencies
       run: |
         ./scripts/deps/setup-minisat.sh
         ./scripts/deps/setup-cms.sh
@@ -47,18 +55,58 @@ jobs:
         ./scripts/deps/setup-unisamp.sh
         ./scripts/deps/setup-outputcheck.sh
 
+    # Configure with static linking enabled
     - name: Configure
       run: |
         mkdir build
         cd build
-        ${{ matrix.env }} cmake -DNOCRYPTOMINISAT:BOOL=OFF -DENABLE_TESTING:BOOL=ON -DPYTHON_EXECUTABLE:PATH="$(which python3)" -G Ninja ..
+        ${{ matrix.env }} cmake -DNOCRYPTOMINISAT:BOOL=OFF -DENABLE_TESTING:BOOL=ON -DBUILD_SHARED_LIBS:BOOL=OFF -DPYTHON_EXECUTABLE:PATH="$(which python3)" -G Ninja ..
 
+    # Build the static binary
     - name: Build
-      run: cmake --build . --parallel "$(nproc)"
+      run: cmake --build . --target csb --parallel "$(nproc)"
       working-directory: build
 
-    # - name: Test
-    #   run: ctest --parallel "$(nproc)" -VV --output-on-failure
-    #   working-directory: build
+    # Upload the binary as a build artifact
+    - name: Upload Binary Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: static-binary-${{ matrix.name }}
+        path: build/csb
 
-# EOF
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/release' && github.event_name == 'push'
+
+    steps:
+    # Checkout repository
+    - uses: actions/checkout@v2
+
+    # Download the binary artifacts
+    - name: Download Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: static-binary-${{ matrix.name }}
+        path: build/
+
+    # Create a release and upload binaries
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: "Release v${{ github.run_number }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/csb
+        asset_name: csb-${{ matrix.name }}
+        asset_content_type: application/octet-stream
