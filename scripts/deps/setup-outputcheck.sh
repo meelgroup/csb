@@ -10,7 +10,7 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 dep="OutputCheck"
 
 cd "${dep_dir}"
-git clone https://github.com/stp/OutputCheck "${dep}"
+git clone https://github.com/stp/OutputCheck "${dep}" || true
 cd ..
 
 # EOF

@@ -10,7 +10,7 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 dep="minisat"
 
 cd "${dep_dir}"
-git clone https://github.com/stp/minisat "${dep}"
+git clone https://github.com/stp/minisat "${dep}" || true
 cd "${dep}"
 mkdir build && cd build
 cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
