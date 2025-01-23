@@ -25,7 +25,6 @@ cd ..
 
 dep="cms"
 
-cd "${dep_dir}"
 
 git clone https://github.com/meelgroup/cadical || true
 cd cadical
