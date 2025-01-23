@@ -25,8 +25,8 @@ cd csb
 git submodule init && git submodule update
 ./scripts/deps/setup-gtest.sh
 ./scripts/deps/setup-outputcheck.sh
-./scripts/deps/setup-cms.sh
 ./scripts/deps/setup-minisat.sh
+./scripts/deps/setup-cms.sh
 ./scripts/deps/setup-unisamp.sh
 mkdir build
 cd build

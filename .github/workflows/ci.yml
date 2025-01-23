@@ -67,6 +67,10 @@ jobs:
 
     - name: Run CSB
       run: |
+        lddout=$(ldd ./csb)
+        echo "$lddout"
+        lsout=$(ls -1 ../deps/install/lib/)
+        echo "$lsout"
         output=$(./csb -c ../examples/bench_1059.smt2)
         echo "$output"
         echo "$output" | grep -q "s mc 483328" || { echo "Not expected count found!"; exit 1; }
