@@ -51,10 +51,6 @@ cmake --install .
 cd ..
 
 
-
-
-cd "${dep_dir}"
-
 git clone https://github.com/meelgroup/louvain-community || true
 cd louvain-community
 mkdir build && cd build
