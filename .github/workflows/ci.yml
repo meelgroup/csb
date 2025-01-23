@@ -5,12 +5,10 @@ jobs:
   build:
     strategy:
       matrix:
-        name: [gcc, clang]
+        name: [gcc]
         include:
           - name: gcc
             env: CC=gcc CXX=g++
-          - name: clang
-            env: CC=clang CXX=clang++
 
     name: ${{ matrix.name }}
     runs-on: [ubuntu-latest]
@@ -54,7 +52,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DNOCRYPTOMINISAT:BOOL=OFF -DENABLE_TESTING:BOOL=OFF -DPYTHON_EXECUTABLE:PATH="$(which python3)" ..
+        cmake -DNOCRYPTOMINISAT:BOOL=OFF -DSTATICCOMPILE=ON -DENABLE_TESTING:BOOL=OFF -DPYTHON_EXECUTABLE:PATH="$(which python3)" ..
 
     - name: Build
       run: cmake --build . --parallel "$(nproc)"
