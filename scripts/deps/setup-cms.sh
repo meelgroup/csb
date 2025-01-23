@@ -12,21 +12,27 @@ dep="cms"
 cd "${dep_dir}"
 
 
-git clone https://github.com/meelgroup/cadical
+# rm -rf "${dep}" || true
+# rm -rf cadical || true
+# rm -rf cadiback || true
+
+git clone https://github.com/meelgroup/cadical || true
 cd cadical
 git checkout mate-only-libraries-1.8.0
 ./configure
 make
+cp build/libcadical.* ${install_dir}/lib
 cd ..
 
-git clone https://github.com/meelgroup/cadiback
+git clone https://github.com/meelgroup/cadiback || true
 cd cadiback
 git checkout mate
 ./configure
 make
+cp build/libcadiback.* ${install_dir}/lib
 cd ..
 
-git clone https://github.com/msoos/cryptominisat "${dep}"
+git clone https://github.com/msoos/cryptominisat "${dep}" || true
 cd "${dep}"
 mkdir build && cd build
 cmake -DNOSQLITE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..

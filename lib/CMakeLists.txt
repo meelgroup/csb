@@ -133,8 +133,6 @@ if (USE_CRYPTOMINISAT)
     else()
       set(stp_link_libs
         ${stp_link_libs}
-        ${cadiback}
-        ${cadical}
         ${CRYPTOMINISAT5_LIBRARIES})
     endif()
 endif()
