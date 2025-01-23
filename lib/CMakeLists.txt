@@ -122,7 +122,10 @@ endif()
 # Clients of stp that don't use CMake will have to link the Boost libraries
 # in manually.
 # -----------------------------------------------------------------------------
-set(stp_link_libs ${MINISAT_LIBRARIES})
+set(stp_link_libs
+    ${MINISAT_LIBRARIES}
+    ${cadical}
+    ${cadiback})
 
 if (USE_CRYPTOMINISAT)
     if (STATICCOMPILE)
@@ -167,6 +170,9 @@ endif()
 target_link_libraries(stp
     LINK_PUBLIC ${stp_link_libs}
 )
+
+message(STATUS "--- Linking libraries: ${stp_link_libs}")
+
 
 install(TARGETS stp
     EXPORT ${STP_EXPORT_NAME}
