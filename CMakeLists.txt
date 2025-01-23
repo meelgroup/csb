@@ -479,11 +479,11 @@ option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
 
 if (NOT NOCRYPTOMINISAT)
     find_library(cadiback
-        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../deps/cadiback/
+        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/deps/cadiback/
         NAMES cadiback
         REQUIRED)
     find_library(cadical
-        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../deps/cadical/build/
+        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/deps/cadical/build/
         NAMES cadical
         REQUIRED)
     if (cadical)
