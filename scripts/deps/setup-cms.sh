@@ -15,7 +15,7 @@ git clone https://github.com/meelgroup/cadical || true
 cd cadical
 git checkout mate-only-libraries-1.8.0
 ./configure
-make --parallel "$(nproc)"
+make -j "$(nproc)"
 cp build/libcadical.* ${install_dir}/lib/
 cd ..
 
@@ -23,14 +23,14 @@ git clone https://github.com/meelgroup/cadiback || true
 cd cadiback
 git checkout mate
 ./configure
-make --parallel "$(nproc)"
+make -j "$(nproc)"
 cp libcadiback.* ${install_dir}/lib/
 cd ..
 
 git clone https://github.com/msoos/cryptominisat "${dep}" || true
 cd "${dep}"
 mkdir build && cd build
-cmake -DNOSQLITE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
+cmake -DSTATS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
 cd ..
