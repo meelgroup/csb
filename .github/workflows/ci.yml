@@ -59,14 +59,21 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -DNOCRYPTOMINISAT:BOOL=ON -DENABLE_TESTING:BOOL=OFF -DPYTHON_EXECUTABLE:PATH="$(which python3)" ..
+        cmake -DNOCRYPTOMINISAT:BOOL=OFF -DENABLE_TESTING:BOOL=OFF -DPYTHON_EXECUTABLE:PATH="$(which python3)" ..
 
     - name: Build
       run: cmake --build . --parallel "$(nproc)"
       working-directory: build
 
-    # - name: Test
-    #   run: ctest --parallel "$(nproc)" -VV --output-on-failure
-    #   working-directory: build
+    - name: Run CSB
+      run: |
+        output=$(./csb -c ../examples/bench_1059.smt2)
+        echo "$output"
+        echo "$output" | grep -q "s mc 483328" || { echo "Not expected count found!"; exit 1; }
+      working-directory: build
+
+      # - name: Test
+      #   run: ctest --parallel "$(nproc)" -VV --output-on-failure
+      #   working-directory: build
 
 # EOF
