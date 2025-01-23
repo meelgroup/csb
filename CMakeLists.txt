@@ -478,6 +478,24 @@ endif()
 option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
 
 if (NOT NOCRYPTOMINISAT)
+    find_library(cadiback
+        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../deps/cadiback/
+        NAMES cadiback
+        REQUIRED)
+    find_library(cadical
+        PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../deps/cadical/build/
+        NAMES cadical
+        REQUIRED)
+    if (cadical)
+        message(STATUS "Found CaDiCaL library at ${cadical}")
+    else()
+        message(FATAL_ERROR "CaDiCaL library not found")
+    endif()
+    if (cadiback)
+        message(STATUS "Found CaDiBack library at ${cadiback}")
+    else()
+        message(FATAL_ERROR "CaDiBack library not found")
+    endif()
   set(cryptominisat5_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
   find_package(cryptominisat5 CONFIG)
   if (cryptominisat5_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOCRYPTOMINISAT))
@@ -651,9 +669,9 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
         message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
         set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
     endif()
-    
+
     execute_process(
-        COMMAND brew --prefix flex 
+        COMMAND brew --prefix flex
         RESULT_VARIABLE BREW_FLEX
         OUTPUT_VARIABLE BREW_FLEX_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
