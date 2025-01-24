@@ -19,13 +19,10 @@ git clone https://github.com/stp/minisat "${dep}" || true
 cd "${dep}"
 mkdir build || true
 cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
+cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
 cd ../..
-
-dep="cms"
-
 
 git clone https://github.com/meelgroup/cadical || true
 cd cadical
@@ -42,6 +39,8 @@ git checkout mate
 make -j "$(nproc)"
 ln -s libcadiback.* ${install_dir}/lib/
 cd ..
+
+dep="cms"
 
 git clone https://github.com/msoos/cryptominisat "${dep}" || true
 cd "${dep}"
