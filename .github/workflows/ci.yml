@@ -1,5 +1,5 @@
 on: [push, pull_request]
-name: CI
+name: Linux Build
 
 jobs:
   build:
@@ -73,6 +73,7 @@ jobs:
         path: build/csb
 
   release:
+    if: contains(github.event.head_commit.message, '[release]')
     needs: build
     runs-on: ubuntu-latest
 

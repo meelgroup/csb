@@ -1,7 +1,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-<!-- [![Linux build](https://travis-ci.org/stp/stp.svg?branch=master)](https://travis-ci.org/stp/stp) -->
+![Linux Build](https://github.com/meelgroup/csb/actions/workflows/ci.yml/badge.svg)
+<!-- [![Linux build](https://travis-ci.org/meelgroup/csb.svg?branch=main)](https://travis-ci.org/meelgroup/csb) -->
+
 <!-- [![Windows build](https://ci.appveyor.com/api/projects/status/35983b7cnrg37whk?svg=true)](https://ci.appveyor.com/project/msoos/stp) -->
-<!-- [![Documentation](https://readthedocs.org/projects/stp/badge/?version=latest)](https://stp.readthedocs.io/en/latest/?badge=latest) -->
+<!-- [![Documentation](https://readthedocs.org/projects/stp/badge/?version=latest)](https://stp.readthedocs.io/en/latest/?*badge*=latest) -->
 <!-- [![Coverity](https://scan.coverity.com/projects/861/badge.svg)](https://scan.coverity.com/projects/861) -->
 <!-- [![Codacy Badge](https://api.codacy.com/project/badge/Grade/f043efa22ea64e9ba44fde0f3a4fb09f)](https://www.codacy.com/app/soos.mate/cryptominisat?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=msoos/cryptominisat&amp;utm_campaign=Badge_Grade) -->
 
@@ -28,9 +30,7 @@ cmake --build .
 ```
 
 
-## Input format
-
-The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+## Usage
 
 ### Usage as Uniform-like Sampler:
 The samples should be uniform in practice. Run with an SMT-LIB2 file:
@@ -54,6 +54,30 @@ Change seed value to get different samples. Refer to [this post](https://www.mso
 Run with an SMT-LIB2 file:
 ```
 ./csb -c myproblem.smt2
+```
+
+## Input format
+
+The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+
+### Support for Projection Variables
+CSB supports projection variables for counting and sampling. Variables can be designated as projection variables using the `proj-var` keyword. Each `proj-var` command can include one or more variables and multiple `proj-var` commands are supported. Projection variables can be declared at any point in the file, provided they are specified after the variable declaration and before the `proj-var` command. Here is an example of extending the SMT-LIB2 format to include projection variables.
+```
+(set-logic QF_BV)
+
+(declare-const a (_ BitVec 6))
+(declare-const b (_ BitVec 6))
+(declare-const c (_ BitVec 6))
+(declare-const d (_ BitVec 6))
+
+(proj-var a b)
+(proj-var d)
+
+(assert (bvult a #b001010))
+(assert (bvult b #b011110))
+(assert (= (bvadd c d) #b001000))
+
+(check-sat)
 ```
 
 ## Architecture
