@@ -17,11 +17,12 @@ dep="minisat"
 cd "${dep_dir}"
 git clone https://github.com/stp/minisat "${dep}" || true
 cd "${dep}"
-mkdir build && cd build
-cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
+mkdir build || true
+cd build
+cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
-cd ..
+cd ../..
 
 dep="cms"
 
@@ -31,7 +32,7 @@ cd cadical
 git checkout mate-only-libraries-1.8.0
 ./configure
 make -j "$(nproc)"
-cp build/libcadical.* ${install_dir}/lib/
+ln -s build/libcadical.* ${install_dir}/lib/
 cd ..
 
 git clone https://github.com/meelgroup/cadiback || true
@@ -39,12 +40,13 @@ cd cadiback
 git checkout mate
 ./configure
 make -j "$(nproc)"
-cp libcadiback.* ${install_dir}/lib/
+ln -s libcadiback.* ${install_dir}/lib/
 cd ..
 
 git clone https://github.com/msoos/cryptominisat "${dep}" || true
 cd "${dep}"
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake -DSTATS=OFF -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
@@ -53,42 +55,48 @@ cd ..
 
 git clone https://github.com/meelgroup/louvain-community || true
 cd louvain-community
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" -DSTATICCOMPILE=ON ..
 make -j10
 cd ../..
 
 git clone https://github.com/meelgroup/sbva || true
 cd sbva
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}"  -DSTATICCOMPILE=ON ..
 make -j8
 cd ../..
 
 git clone https://github.com/meelgroup/arjun || true
 cd arjun
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}"  -DSTATICCOMPILE=ON ..
 make -j8
 cd ../..
 
 git clone https://github.com/meelgroup/approxmc || true
 cd approxmc
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake  -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 make -j8
 cd ../..
 
 git clone https://github.com/meelgroup/unigen/ || true
 cd unigen
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake  -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 make -j8
 cd ../..
 
 git clone https://github.com/arijitsh/cmsgen/ || true
 cd cmsgen
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake  -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 make -j8
 cd ../..

@@ -124,8 +124,8 @@ endif()
 # -----------------------------------------------------------------------------
 set(stp_link_libs
     ${MINISAT_LIBRARIES}
-    ${cadical}
-    ${cadiback})
+    ${cadiback}
+    ${cadical})
 
 if (USE_CRYPTOMINISAT)
     if (STATICCOMPILE)

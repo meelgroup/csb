@@ -29,7 +29,8 @@ cd ..
 
 git clone https://github.com/msoos/cryptominisat "${dep}" || true
 cd "${dep}"
-mkdir build && cd build
+mkdir build || true
+cd build
 cmake -DSTATS=OFF -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
 cmake --build . --parallel "$(nproc)"
 cmake --install .
