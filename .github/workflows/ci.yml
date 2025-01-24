@@ -65,6 +65,49 @@ jobs:
         echo "$output" | grep -q "s mc 483328" || { echo "Not expected count found!"; exit 1; }
       working-directory: build
 
+    # Upload the binary as a build artifact
+    - name: Upload Binary Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: static-binary
+        path: build/csb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout repository
+    - uses: actions/checkout@v2
+
+    # Download the binary artifacts
+    - name: Download Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: static-binary-csb
+        path: build/
+
+    # Create a release and upload binaries
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: "Release v${{ github.run_number }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/csb
+        asset_name: csb-${{ github.run_number }}
+        asset_content_type: application/octet-stream
       # - name: Test
       #   run: ctest --parallel "$(nproc)" -VV --output-on-failure
       #   working-directory: build
