@@ -30,11 +30,11 @@ THE SOFTWARE.
 // clang-format off
 // TODO AS : cmakelist cant find libraries, why????
 
-// #include "ganak/mpreal.h"
+#include "/home/arijit/solvers/ganak/build/include/ganak/mpreal.h"
 #include "stp/Sat/SATSolver.h"
-#include "ganak/ganak.hpp"
-#include "ganak/counter_config.hpp"
-#include "ganak/lit.hpp"
+#include "/home/arijit/solvers/ganak/build/include/ganak/ganak.hpp"
+#include "/home/arijit/solvers/ganak/build/include/ganak/counter_config.hpp"
+#include "/home/arijit/solvers/ganak/build/include/ganak/lit.hpp"
 #include </home/arijit/solvers/approxmc/build/include/approxmc/approxmc.h>
 #include </home/arijit/solvers/arjun/build/include/arjun/arjun.h>
 

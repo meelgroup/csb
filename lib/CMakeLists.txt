@@ -145,8 +145,8 @@ if (USE_GANAK)
         ${stp_link_libs}
         ${ARJUN_STATIC_LIBRARIES}
         ${BREAKKID_STATIC_LIBRARIES}
-        ${APPROXMC_STATIC_LIBRARIES}
         ${GANAK_STATIC_LIBRARIES}
+        ${APPROXMC_STATIC_LIBRARIES}
         ${MPFR_LIBRARIES}
         ${GMPXX_LIBRARY}
         ${GMP_LIBRARY}

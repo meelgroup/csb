@@ -23,8 +23,9 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/Sat/GnK.h"
+#include "/home/arijit/solvers/ganak/build/include/ganak/ganak.hpp"
 #include "arjun/arjun.h"
-#include "ganak/ganak.hpp"
+
 #include <algorithm>
 #include <set>
 #include <unordered_set>
