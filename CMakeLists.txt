@@ -55,6 +55,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 # Search for packages in the deps directory
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps/install")
+message(STATUS "CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
 
 # generate JSON file of compile commands -- useful for code extension
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -616,10 +617,11 @@ find_package(approxmc CONFIG REQUIRED)
   else()
       message(WARNING "Cannot find Arjun libraries.")
   endif()
-  find_package(ganak CONFIG REQUIRED)
+  find_package(ganak MODULE REQUIRED)
   if (ganak_FOUND)
       message(STATUS "Found Ganak library")
       message(STATUS "Ganak dynamic lib: ${GANAK_LIBRARIES}")
+      message(STATUS "Ganak static lib:  ${GANAK_STATIC_LIBRARIES}")
       message(STATUS "Ganak include dirs: ${GANAK_INCLUDE_DIRS}")
   else()
       message(WARNING "Cannot find Ganak libraries.")

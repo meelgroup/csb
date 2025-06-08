@@ -30,15 +30,16 @@ THE SOFTWARE.
 // clang-format off
 // TODO AS : cmakelist cant find libraries, why????
 
-#include "/home/arijit/solvers/ganak/build/include/ganak/mpreal.h"
+// #include "ganak/mpreal.h"
 #include "stp/Sat/SATSolver.h"
-#include "/home/arijit/solvers/ganak/build/include/ganak/ganak.hpp"
-#include "/home/arijit/solvers/ganak/build/include/ganak/counter_config.hpp"
-#include "/home/arijit/solvers/ganak/build/include/ganak/lit.hpp"
+#include "ganak/ganak.hpp"
+#include "ganak/counter_config.hpp"
+#include "ganak/lit.hpp"
 #include </home/arijit/solvers/approxmc/build/include/approxmc/approxmc.h>
 #include </home/arijit/solvers/arjun/build/include/arjun/arjun.h>
 
 #include <unordered_set>
+// clang-format on
 
 using std::vector;
 
@@ -65,6 +66,7 @@ class GnK : public SATSolver
   Ganak* ganak;
   uint64_t seed;
   vector<uint32_t> sampling_vars_orig;
+  std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
   ArjunNS::SimplifiedCNF cnf;
 
 public:

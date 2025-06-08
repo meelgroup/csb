@@ -62,6 +62,7 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
 {
 
   appmc = new ApproxMC::AppMC;
+
   unigen = new UniG(appmc);
   arjun = new ArjunNS::Arjun;
   seed = unisamp_seed;
@@ -70,7 +71,7 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
   // unisamp_ran = false;
   unigen->set_callback(mycallback, &unigen_models);
   appmc->set_verbosity(0);
-  arjun->set_verbosity(0);
+  arjun->set_verb(0);
   unigen->set_verbosity(0);
   appmc->set_seed(seed);
 

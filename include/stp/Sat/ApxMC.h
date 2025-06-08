@@ -34,7 +34,10 @@ THE SOFTWARE.
 
 #include <unordered_set>
 
+using CMSat::FieldGen;
 using std::vector;
+
+using FG = std::unique_ptr<FieldGen>;
 
 namespace ApxMC
 {
@@ -50,8 +53,11 @@ class ApxMC : public SATSolver
 #endif
 
 {
-  ApproxMC::AppMC* a;
-  ArjunNS::Arjun* arjun;
+  std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
+
+  ApproxMC::AppMC appmc;
+  ArjunNS::SimplifiedCNF cnf;
+
   uint64_t seed;
   vector<uint32_t> sampling_vars_orig;
 

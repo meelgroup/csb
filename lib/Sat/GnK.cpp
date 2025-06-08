@@ -23,6 +23,7 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/Sat/GnK.h"
+#include "arjun/arjun.h"
 #include "ganak/ganak.hpp"
 #include <algorithm>
 #include <set>
@@ -55,18 +56,14 @@ void GnK::enableRefinement(const bool enable)
 }
 
 GnK::GnK(uint64_t unisamp_seed)
+    : fg(std::make_unique<ArjunNS::FGenMpz>()), // init member fg
+      cnf(fg),                                  // init member cnf with fg
+      ganak(new Ganak(conf, fg)),               // init member ganak
+      // arjun(new Arjun),                         // init member arjun
+      seed(unisamp_seed), temp_cl(nullptr), max_confl(0), max_time(0)
 {
-
-  ganak = new Ganak(conf, false, true);
-  arjun = new ArjunNS::Arjun;
-
-  seed = unisamp_seed;
-
-  // s->log_to_file("stp.cnf");
-  //s->set_num_threads(num_threads);
-  //s->set_default_polarity(false);
-  //s->set_allow_otf_gauss();
-  temp_cl = (void*)new vector<CMSat::Lit>;
+  // now allocate temp_cl
+  temp_cl = new std::vector<CMSat::Lit>();
 }
 
 GnK::~GnK()
@@ -122,7 +119,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   std::cout << "c [stp->gnk] Arjun solving instance with " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
             << sampling_vars_orig.size() << " projection vars" << std::endl;
-  arjun->standalone_minimize_indep(cnf);
+  arjun->standalone_minimize_indep(cnf, false);
   assert(!etof_conf.all_indep);
   arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
 
@@ -144,7 +141,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   if (seed == 0)
     conf.appmc_timeout = 1;
 
-  Ganak counter(conf, false, true);
+  Ganak counter(conf, fg);
   counter.new_vars(cnf.nVars());
 
   std::set<uint32_t> tmp;
@@ -171,15 +168,16 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
             << sampling_vars.size() << "\n";
 
   delete arjun;
-  mpz_class cnt;
-  cnt = counter.unw_outer_count();
+  std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+  if (!cnf.multiplier_weight->is_zero())
+    *cnt = *counter.count();
+
   if (counter.get_is_approximate())
     std::cout << "c count its approximate\n";
-  cnt *= cnf.multiplier_weight;
 
   // use gmp to get the absolute count of solutions
 
-  std::cout << "s mc " << std::fixed << cnt << std::endl;
+  std::cout << "s mc " << std::fixed << *cnt << std::endl;
 
   exit(0);
   return true;

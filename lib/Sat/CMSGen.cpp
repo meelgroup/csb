@@ -38,7 +38,7 @@ void CMSGenC::enableRefinement(const bool enable)
   // might break if we simplify with refinement enabled..
   if (enable)
   {
-    s->set_no_simplify_at_startup();
+    s->set_no_simplify();
   }
 }
 
@@ -157,12 +157,14 @@ void CMSGenC::solveAndDump()
 // Count how many literals/bits get fixed subject to the assumptions..
 uint32_t CMSGenC::getFixedCountWithAssumptions(const stp::SATSolver::vec_literals& assumps, const std::unordered_set<unsigned>& literals )
 {
+  std::cout << "ERROR: Did not expect to reach here in sampling" << std::endl;
+  assert(false);
   const uint64_t conf = s->get_sum_conflicts();
   assert(conf == 0);
 
-
-  const CMSGen::lbool r = s->simplify();
-
+  // s->simplify(); TODO AS: this is not implemented yet in CMSGen, so we just assume it is satisfiable.
+  // const CMSGen::lbool r = CMSGen::lit_Undef;
+  //  =  s->simplify();
 
   // Add the assumptions are clauses.
   vector<CMSGen::Lit>& real_temp_cl = *(vector<CMSGen::Lit>*)temp_cl;
@@ -177,14 +179,12 @@ uint32_t CMSGenC::getFixedCountWithAssumptions(const stp::SATSolver::vec_literal
   //std::cerr << assumps.size() << " assumptions" << std::endl;
 
   uint32_t assigned = 0;
-  std::vector<CMSGen::Lit> zero = s->get_zero_assigned_lits();
-  for (CMSGen::Lit l : zero)
-  {
-      if (literals.find(l.var()) != literals.end())
-        assigned++;
-  }
-
-
+  // std::vector<CMSGen::Lit> zero = s->get_zero_assigned_lits();
+  // for (CMSGen::Lit l : zero)
+  // {
+  //     if (literals.find(l.var()) != literals.end())
+  //       assigned++;
+  // }
 
   //std::cerr << assigned << " assignments at end" <<std::endl;
 
@@ -193,7 +193,7 @@ uint32_t CMSGenC::getFixedCountWithAssumptions(const stp::SATSolver::vec_literal
   assert(assumps.size() >= 0);
   assert(assigned >= static_cast<uint32_t>(assumps.size()));
   assert(s->get_sum_conflicts() == conf ); // no searching, so no conflicts.
-  assert(CMSGen::l_False != r); // always satisfiable.
+  // assert(CMSGen::l_False != r); // always satisfiable.
 
   return assigned;
 }

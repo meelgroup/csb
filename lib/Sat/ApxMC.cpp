@@ -48,12 +48,11 @@ void ApxMC::enableRefinement(const bool enable)
 ApxMC::ApxMC(uint64_t unisamp_seed)
 {
 
-  a = new ApproxMC::AppMC;
   arjun = new ArjunNS::Arjun;
+
   seed = unisamp_seed;
 
-  a->set_verbosity(0);
-  arjun->set_verbosity(0);
+  arjun->set_verb(0);
   // s->log_to_file("stp.cnf");
   //s->set_num_threads(num_threads);
   //s->set_default_polarity(false);
@@ -83,13 +82,14 @@ bool ApxMC::addClause(const vec_literals& ps) // Add a clause to the solver.
   // Cryptominisat uses a slightly different vec class.
   // Cryptominisat uses a slightly different Lit class too.
 
-  vector<CMSat::Lit>& real_temp_cl = *(vector<CMSat::Lit>*)temp_cl;
-  real_temp_cl.clear();
+  vector<CMSat::Lit>& cl = *(vector<CMSat::Lit>*)temp_cl;
+  cl.clear();
   for (int i = 0; i < ps.size(); i++)
   {
-    real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
+    cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-  return arjun->add_clause(real_temp_cl);
+  cnf.set_weighted(false);
+  return cnf.add_clause(cl);
 }
 
 bool ApxMC::okay() const // FALSE means solver is in a conflicting state
