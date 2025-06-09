@@ -139,7 +139,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
-  conf.verb = 1;
+  conf.verb = 0;
   if (seed == 0)
     conf.appmc_timeout = 1;
 

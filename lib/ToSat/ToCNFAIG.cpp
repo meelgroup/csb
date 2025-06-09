@@ -171,7 +171,7 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         Aig_Obj_t* pObj;
         pObj = (Aig_Obj_t*)Vec_PtrEntry(mgr.aigMgr->vPis, b[i].symbol_index);
         v[i] = cnfData->pVarNums[pObj->Id];
-        if (uf.counting_mode || uf.sampling_mode)
+        if (uf.counting_mode || uf.sampling_mode || true)
         {
           // TODO AS keep check for projection variables here
           if(bm->isProjSymbol(n))
@@ -188,7 +188,7 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
                  "non-projection mode"
               << std::endl;
   }
-  std::cout << "c Projection variables: " << proj_var_num
+  std::cout << "c Projection SMT variables: " << proj_var_num
             << " Other variables: " << non_proj_var_num << std::endl;
 }
 } // namespace stp

@@ -152,32 +152,66 @@ void Cnf_DataFree( Cnf_Dat_t * p )
   Synopsis    [Writes CNF into a file.]
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
 
 ***********************************************************************/
-void Cnf_DataWriteIntoFile( Cnf_Dat_t * p, char * pFileName, int fReadable )
+void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
 {
-    FILE * pFile;
-    int * pLit, * pStop, i;
-    pFile = fopen( pFileName, "w" );
-    if ( pFile == NULL )
+  FILE* pFile;
+  int *pLit, *pStop, i;
+  int projection = 0, numprojvars = 0;
+
+  pFile = fopen(pFileName, "w");
+  printf("Writing CNF into file %s\n", pFileName);
+  if (pFile == NULL)
+  {
+    printf("Cnf_WriteIntoFile(): Output file cannot be opened.\n");
+    return;
+  }
+  fprintf(pFile,
+          "c Result of efficient AIG-to-CNF conversion using package CNF\n");
+  fprintf(pFile, "p cnf %d %d\n", p->nVars, p->nClauses);
+
+  for (int i = 0; i < p->nVars; i++)
+  {
+    if (p->lProjVars[i] == 1)
     {
-        printf( "Cnf_WriteIntoFile(): Output file cannot be opened.\n" );
-        return;
+      projection = 1;
+      printf("c Projection variable exists\n");
+      break;
     }
-    fprintf( pFile, "c Result of efficient AIG-to-CNF conversion using package CNF\n" );
-    fprintf( pFile, "p cnf %d %d\n", p->nVars, p->nClauses );
-    for ( i = 0; i < p->nClauses; i++ )
+  }
+  if (projection == 1)
+  {
+    fprintf(pFile, "c p show ");
+    for (int i = 0; i < p->nVars; i++)
     {
-        for ( pLit = p->pClauses[i], pStop = p->pClauses[i+1]; pLit < pStop; pLit++ )
-            fprintf( pFile, "%d ", fReadable? Cnf_Lit2Var2(*pLit) : Cnf_Lit2Var(*pLit) );
-        fprintf( pFile, "0\n" );
+      if (p->lProjVars[i] == 1)
+      {
+        fprintf(pFile, "%d ", i + 1);
+        numprojvars++;
+      }
     }
-    fprintf( pFile, "\n" );
-    fclose( pFile );
+    fprintf(pFile, "0\n");
+  }
+
+  for (i = 0; i < p->nClauses; i++)
+  {
+    for (pLit = p->pClauses[i], pStop = p->pClauses[i + 1]; pLit < pStop;
+         pLit++)
+      fprintf(pFile, "%d ",
+              fReadable ? Cnf_Lit2Var2(*pLit) : Cnf_Lit2Var(*pLit));
+    fprintf(pFile, "0\n");
+  }
+  fprintf(pFile, "\n");
+  fclose(pFile);
+  if (projection)
+  {
+    printf("c Number of projection variables in CNF = %d\n", numprojvars);
+  }
 }
 
 /**Function*************************************************************
