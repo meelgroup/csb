@@ -699,7 +699,7 @@ SOURCE_TOK
 ;
 
 projvar_decl:
-an_terms
+an_mixed
 {
   ASTVec& v = *$1;
 

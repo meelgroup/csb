@@ -64,6 +64,7 @@ GnK::GnK(uint64_t unisamp_seed)
       seed(unisamp_seed), temp_cl(nullptr), max_confl(0), max_time(0)
 {
   // now allocate temp_cl
+  std::cout << "c [stp->gnk] GnK initialized" << std::endl;
   temp_cl = new std::vector<CMSat::Lit>();
 }
 
@@ -138,7 +139,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
-  conf.verb = 0;
+  conf.verb = 1;
   if (seed == 0)
     conf.appmc_timeout = 1;
 
