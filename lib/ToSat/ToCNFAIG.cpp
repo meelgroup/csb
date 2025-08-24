@@ -154,6 +154,7 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
   {
     ASTNode& n = const_cast<ASTNode&>(it->first);
     const vector<BBNodeAIG>& b = it->second;
+    int verbosity = 0;
     assert(nodeToVars.find(n) == nodeToVars.end());
     if (bm->isProjSymbol(n))
       proj_var_num++;
@@ -171,11 +172,20 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         Aig_Obj_t* pObj;
         pObj = (Aig_Obj_t*)Vec_PtrEntry(mgr.aigMgr->vPis, b[i].symbol_index);
         v[i] = cnfData->pVarNums[pObj->Id];
-        if (uf.counting_mode || uf.sampling_mode || true)
+        if ((uf.counting_mode || uf.sampling_mode) && verbosity > 1)
         {
-          // TODO AS keep check for projection variables here
-          if(bm->isProjSymbol(n))
+          // TODO AS keep qcheck for projection variables here
+          if (bm->isProjSymbol(n))
+          {
             cnfData->lProjVars[v[i]] = 1;
+            std::cout << "Projection variable: " << n.GetName() << " "
+                      << v[i] + 1 << endl;
+          }
+          else
+          {
+            std::cout << "Non-projection variable: " << n.GetName() << " "
+                      << v[i] + 1 << endl;
+          }
         }
       }
     }

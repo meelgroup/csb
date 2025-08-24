@@ -192,7 +192,7 @@
     return 1;
   }
 
-  int fatal_yyerror(const char *s) 
+  int fatal_yyerror(const char *s)
   {
     yyerror(s);
     stp::FatalError("");
@@ -222,7 +222,7 @@
   {
     assert(k != BVEXTRACT);
     assert(k != BVCONCAT); // width must be width of first operand.
-        
+
     if (c->size() < 2)
     {
       yyerror("Must be >=2 operands");

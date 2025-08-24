@@ -67,6 +67,7 @@ class GnK : public SATSolver
   uint64_t seed;
   vector<uint32_t> sampling_vars_orig;
   std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
+
   ArjunNS::SimplifiedCNF cnf;
 
 public:

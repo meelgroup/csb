@@ -57,13 +57,14 @@ void GnK::enableRefinement(const bool enable)
 }
 
 GnK::GnK(uint64_t unisamp_seed)
-    : fg(std::make_unique<ArjunNS::FGenMpz>()), // init member fg
+    :
       cnf(fg),                                  // init member cnf with fg
-      ganak(new Ganak(conf, fg)),               // init member ganak
       // arjun(new Arjun),                         // init member arjun
       seed(unisamp_seed), temp_cl(nullptr), max_confl(0), max_time(0)
 {
   // now allocate temp_cl
+  ganak = new Ganak(conf, fg);
+  arjun = new ArjunNS::Arjun();
   std::cout << "c [stp->gnk] GnK initialized" << std::endl;
   temp_cl = new std::vector<CMSat::Lit>();
 }
@@ -164,7 +165,6 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
     counter.add_irred_cl(cms_to_ganak_cl(cl));
   for (const auto& cl : cnf.red_clauses)
     counter.add_red_cl(cms_to_ganak_cl(cl));
-  counter.end_irred_cls();
 
   std::cout << "c [appmc->arjun] sampling var size [from arjun] "
             << sampling_vars.size() << "\n";

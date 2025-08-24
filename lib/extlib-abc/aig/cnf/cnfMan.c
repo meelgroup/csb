@@ -27,7 +27,7 @@ SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
   Synopsis    []
 
   Author      [Alan Mishchenko]
-  
+
   Affiliation [UC Berkeley]
 
   Date        [Ver. 1.0. Started - April 28, 2007.]
@@ -55,7 +55,7 @@ static inline int Cnf_Lit2Var2( int Lit )       { return (Lit & 1)? -(Lit >> 1) 
   Synopsis    [Starts the fraiging manager.]
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
@@ -86,7 +86,7 @@ Cnf_Man_t * Cnf_ManStart()
   Synopsis    [Stops the fraiging manager.]
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
@@ -108,7 +108,7 @@ void Cnf_ManStop( Cnf_Man_t * p )
   Synopsis    [Returns the array of CI IDs.]
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
@@ -130,7 +130,7 @@ Vec_Int_t * Cnf_DataCollectPiSatNums( Cnf_Dat_t * pCnf, Aig_Man_t * p )
   Synopsis    []
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
@@ -219,7 +219,7 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
   Synopsis    [Writes CNF into a file.]
 
   Description []
-               
+
   SideEffects []
 
   SeeAlso     []
