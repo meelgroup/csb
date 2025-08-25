@@ -189,7 +189,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
-  conf.verb = 2;
+  conf.verb = 0;
   if (seed == 0)
     conf.appmc_timeout = 1;
 
@@ -214,8 +214,19 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
       double w = lit_weights[i];
       if (w >= 0.0)
       {
-        counter.set_lit_weight(GanakInt::Lit(i + 1, true), w);
-        counter.set_lit_weight(GanakInt::Lit(i + 1, false), 1.0 - w);
+        // Construct/assign weight objects directly (set_value() not available in current API)
+        std::unique_ptr<CMSat::Field> pos;
+        std::unique_ptr<CMSat::Field> neg;
+        // pos = mpq_class::from_double(w);
+        // neg = mpq_class::from_double(1.0 - w);
+        mpq_class pw(w);
+        mpq_class nw(1.0 - w);
+
+        // pos = std::make_unique<CMSat::Field>(pw);
+        // neg = std::make_unique<CMSat::Field>(nw);
+
+        counter.set_lit_weight(GanakInt::Lit(i + 1, true), pos);
+        counter.set_lit_weight(GanakInt::Lit(i + 1, false), neg);
       }
     }
   }
