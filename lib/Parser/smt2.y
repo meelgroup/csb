@@ -252,6 +252,7 @@
 
 %union {
   unsigned uintval; /* for numerals in types. */
+  double floatval;
 
   //ASTNode,ASTVec
   stp::ASTNode *node;
@@ -269,6 +270,7 @@
 %type <node> an_term  an_formula function_param
 
 %token <uintval> NUMERAL_TOK
+%token <floatval> FLOAT_TOK
 %token <str> BVCONST_DECIMAL_TOK
 %token <str> BVCONST_BINARY_TOK
 %token <str> BVCONST_HEXIDECIMAL_TOK
@@ -367,6 +369,7 @@
 %token DECLARE_CONST_TOK
 %token DECLARE_FUNCTION_TOK
 %token DECLARE_PROJ_VAR_TOK
+%token DECLARE_WEIGHT_TOK
 %token DECLARE_SORT_TOK
 %token DEFINE_FUNCTION_TOK
 %token DECLARE_FUN_REC_TOK
@@ -435,6 +438,11 @@ cmdi:
     }
 |
      DECLARE_PROJ_VAR_TOK projvar_decl
+    {
+      stp::GlobalParserInterface->success();
+    }
+
+    DECLARE_WEIGHT_TOK weight_decl
     {
       stp::GlobalParserInterface->success();
     }
@@ -709,6 +717,18 @@ an_mixed
   delete $1;
 }
 ;
+
+weight_decl:
+an_mixed FLOAT_TOK
+{
+  ASTVec& v = *$1;
+  double weight = $2;
+
+  for (uint32_t i = 0; i < v.size(); i++) {
+    stp::GlobalParserInterface->addWeightSymbol(v[i], weight);
+  }
+  delete $1;
+}
 
 var_decl:
 STRING_TOK LPAREN_TOK RPAREN_TOK LPAREN_TOK UNDERSCORE_TOK BITVEC_TOK NUMERAL_TOK RPAREN_TOK

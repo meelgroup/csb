@@ -344,6 +344,11 @@ void Cpp_interface::addProjSymbol(ASTNode& s)
     bm.addProjSymbol(s);
 }
 
+void Cpp_interface::addWeightSymbol(ASTNode& s, double weight)
+{
+    bm.addWeightSymbol(s, weight);
+}
+
 void Cpp_interface::success()
 {
   if (print_success)

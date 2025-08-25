@@ -73,6 +73,7 @@ private:
   ASTSymbolSet _symbol_unique_table;
 
   ASTNodeSet _proj_symbol_list;
+  ASTNodeMap _weight_symbol_list;
 
   // Table to uniquefy bvconst
   ASTBVConstSet _bvconst_unique_table;
@@ -396,6 +397,13 @@ public:
   bool addProjSymbol(ASTNode& s)
   {
     _proj_symbol_list.insert(s);
+    return true;
+  }
+
+  bool addWeightSymbol(ASTNode& s, double weight)
+  {
+    // _weight_symbol_list.insert(s);
+    // _weight_symbol_list[s] = weight;
     return true;
   }
 

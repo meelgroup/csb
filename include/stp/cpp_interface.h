@@ -200,6 +200,7 @@ public:
   DLL_PUBLIC void deleteNode(ASTNode* n);
   DLL_PUBLIC void addSymbol(ASTNode& s);
   DLL_PUBLIC void addProjSymbol(ASTNode& s);
+  DLL_PUBLIC void addWeightSymbol(ASTNode& s, double weight);
 
   DLL_PUBLIC void success();
   DLL_PUBLIC void error(std::string msg);
