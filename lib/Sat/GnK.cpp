@@ -220,22 +220,23 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   delete arjun;
   std::stringstream ss;
   std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+  if (!cnf.multiplier_weight->is_zero()) *cnt *= *counter.count();
   ss.setf(std::ios::scientific, std::ios::floatfield);
   ss.precision(40);
   const CMSat::Field* ptr = cnt.get();
-  const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
-  ss << *od;
   assert(ptr != nullptr);
+  const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+  print_log(od->val);
+  ss << *od;
 
-  if (!cnf.multiplier_weight->is_zero())
-    *cnt = *counter.count();
+
 
   if (counter.get_is_approximate())
     std::cout << "c count its approximate\n";
 
   // use gmp to get the absolute count of solutions
 
-  std::cout << "s mc " << *cnt << std::endl;
+  std::cout << "s mc " << ss.str() << std::endl;
 
   exit(0);
   return true;
