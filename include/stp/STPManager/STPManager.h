@@ -73,7 +73,9 @@ private:
   ASTSymbolSet _symbol_unique_table;
 
   ASTNodeSet _proj_symbol_list;
-  ASTNodeMap _weight_symbol_list;
+  std::unordered_map<ASTNode, double, ASTNode::ASTNodeHasher,
+                     ASTNode::ASTNodeEqual>
+      _weight_symbol_list;
 
   // Table to uniquefy bvconst
   ASTBVConstSet _bvconst_unique_table;
@@ -402,8 +404,7 @@ public:
 
   bool addWeightSymbol(ASTNode& s, double weight)
   {
-    // _weight_symbol_list.insert(s);
-    // _weight_symbol_list[s] = weight;
+    _weight_symbol_list[s] = weight;
     return true;
   }
 

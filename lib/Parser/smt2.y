@@ -270,13 +270,12 @@
 %type <node> an_term  an_formula function_param
 
 %token <uintval> NUMERAL_TOK
-%token <floatval> FLOAT_TOK
 %token <str> BVCONST_DECIMAL_TOK
 %token <str> BVCONST_BINARY_TOK
 %token <str> BVCONST_HEXIDECIMAL_TOK
 
  /* We have this so we can parse :smt-lib-version 2.0 */
-%token  DECIMAL_TOK
+%token <floatval> DECIMAL_TOK
 
 %token <node> FORMID_TOK TERMID_TOK
 %token <str> STRING_TOK BITVECTOR_FUNCTIONID_TOK BOOLEAN_FUNCTIONID_TOK
@@ -441,8 +440,8 @@ cmdi:
     {
       stp::GlobalParserInterface->success();
     }
-
-    DECLARE_WEIGHT_TOK weight_decl
+|
+     DECLARE_WEIGHT_TOK weight_decl
     {
       stp::GlobalParserInterface->success();
     }
@@ -719,7 +718,7 @@ an_mixed
 ;
 
 weight_decl:
-an_mixed FLOAT_TOK
+an_mixed DECIMAL_TOK
 {
   ASTVec& v = *$1;
   double weight = $2;
