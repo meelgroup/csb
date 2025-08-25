@@ -29,6 +29,9 @@ THE SOFTWARE.
 #include <algorithm>
 #include <set>
 #include <unordered_set>
+#include <gmpxx.h>
+#include <iomanip>
+#include <sstream>
 
 using std::vector;
 
@@ -147,6 +150,15 @@ void print_log(const mpz_class& cnt, std::string extra = "") {
     mpfr_clear(log10_val);
 }
 
+std::string print_mpq_as_scientific(const mpq_class& number) {
+    mpf_class mpf_value(number);
+    std::ostringstream oss;
+    oss.setf(std::ios::scientific, std::ios::floatfield);
+    oss.precision(8);
+    oss << mpf_value;
+    return oss.str();
+}
+
 bool GnK::solve(bool& timeout_expired) // Search without assumptions.
 {
 
@@ -190,6 +202,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   //           << std::endl;
 
   conf.verb = 0;
+  bool weighted = true;
   if (seed == 0)
     conf.appmc_timeout = 1;
 
@@ -209,27 +222,13 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   }
   if (cnf.weighted)
   {
-    for (uint32_t i = 0; i < lit_weights.size(); ++i)
+    for (const auto& [var, w] : cnf.weights)
     {
-      double w = lit_weights[i];
-      if (w >= 0.0)
-      {
-        // Construct/assign weight objects directly (set_value() not available in current API)
-        std::unique_ptr<CMSat::Field> pos;
-        std::unique_ptr<CMSat::Field> neg;
-        // pos = mpq_class::from_double(w);
-        // neg = mpq_class::from_double(1.0 - w);
-        mpq_class pw(w);
-        mpq_class nw(1.0 - w);
-
-        // pos = std::make_unique<CMSat::Field>(pw);
-        // neg = std::make_unique<CMSat::Field>(nw);
-
-        counter.set_lit_weight(GanakInt::Lit(i + 1, true), pos);
-        counter.set_lit_weight(GanakInt::Lit(i + 1, false), neg);
-      }
+      counter.set_lit_weight(GanakInt::Lit(var + 1, true), w.pos);
+      counter.set_lit_weight(GanakInt::Lit(var + 1, false), w.neg);
     }
   }
+
 
   // Add clauses
   for (const auto& cl : cnf.clauses)
@@ -247,10 +246,24 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   ss.precision(40);
   const CMSat::Field* ptr = cnt.get();
   assert(ptr != nullptr);
-  const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
-  print_log(od->val);
-  ss << *od;
+  if (cnf.weighted)
+  {
+    const ArjunNS::FMpq* od = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+        mpfr_t r;
+        mpfr_init2(r, 256);
+        mpfr_set_q(r, od->val.get_mpq_t(), MPFR_RNDN);
+        print_log(r);
+        mpfr_clear(r);
 
+        std::cout << "c o exact quadruple float "  << print_mpq_as_scientific(od->val) << std::endl;
+        std::cout << "c s exact arb frac " << *cnt << std::endl;
+  }
+  else
+  {
+    const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+    print_log(od->val);
+    ss << od->val;
+  }
 
 
   if (counter.get_is_approximate())
@@ -280,17 +293,17 @@ uint32_t GnK::newProjVar(uint32_t x)
 uint32_t GnK::newVar()
 {
   cnf.new_var();
-  lit_weights.push_back(-1.0);
   return cnf.nVars() - 1;
 }
 
 void GnK::setVarWeight(uint32_t var, double weight)
 {
-  if (var >= lit_weights.size())
-    lit_weights.resize(var + 1, -1.0);
-  lit_weights[var] = weight;
   cnf.weighted = true;
+  auto& w = cnf.weights[var];
+  w.pos = std::make_unique<ArjunNS::FMpq>(mpq_class(weight));
+  w.neg = std::make_unique<ArjunNS::FMpq>(mpq_class(1.0 - weight));
 }
+
 
 void GnK::setVerbosity(int v)
 {
