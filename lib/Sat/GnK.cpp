@@ -107,6 +107,46 @@ bool GnK::okay() const // FALSE means solver is in a conflicting state
   return true; //TODO AS: implement well
 }
 
+void print_log(const mpfr_t& cnt, std::string extra = "") {
+    mpfr_t log10_val;
+    mpfr_init2(log10_val, 256);
+    mpfr_set(log10_val, cnt, MPFR_RNDN);
+    if (mpfr_sgn(log10_val) < 0) {
+      std::cout << "c s neglog10-estimate" << extra << " ";
+      mpfr_neg(log10_val, log10_val, MPFR_RNDN);
+    } else {
+      std::cout << "c s log10-estimate" << extra << " ";
+    }
+    mpfr_log10(log10_val, log10_val, MPFR_RNDN);
+
+    char* tmp = nullptr;
+    mpfr_asprintf(&tmp, "%.8Re", log10_val);
+    std::cout << tmp << std::endl;
+    mpfr_free_str(tmp);
+    mpfr_clear(log10_val);
+}
+
+
+void print_log(const mpz_class& cnt, std::string extra = "") {
+    mpz_class abs_cnt = cnt;
+    if (abs_cnt < 0) {
+      std::cout << "c s neglog10-estimate" << extra << " ";
+      abs_cnt *= -1;
+    } else {
+      std::cout << "c s log10-estimate" << extra << " ";
+    }
+    mpfr_t log10_val;
+    mpfr_init2(log10_val, 256);
+    mpfr_set_z(log10_val, abs_cnt.get_mpz_t(), MPFR_RNDN);
+    mpfr_log10(log10_val, log10_val, MPFR_RNDN);
+
+    char* tmp = nullptr;
+    mpfr_asprintf(&tmp, "%.8Re", log10_val);
+    std::cout << tmp << std::endl;
+    mpfr_free_str(tmp);
+    mpfr_clear(log10_val);
+}
+
 bool GnK::solve(bool& timeout_expired) // Search without assumptions.
 {
 
@@ -122,25 +162,34 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   std::cout << "c [stp->gnk] Arjun solving instance with " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
             << sampling_vars_orig.size() << " projection vars" << std::endl;
-  arjun->standalone_minimize_indep(cnf, false);
-  assert(!etof_conf.all_indep);
-  arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
+  if (sampling_vars_orig.size() > 0)
+    etof_conf.all_indep = false;
+  else
+    etof_conf.all_indep = false;
+  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+  // assert(!etof_conf.all_indep);
+  if (cnf.get_sampl_vars().size() >= 10) {
+    arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
+  } else cnf.renumber_sampling_vars_for_ganak();
 
   vector<uint32_t> sampling_vars;
   for (uint32_t i = 0; i < cnf.nVars(); i++)
     sampling_vars.push_back(i);
 
   std::cout << "c [stp->gnk] GnK solving instance with " << cnf.nVars()
-            << " variables, " << sampling_vars.size() << " projection vars, "
-            << cnf.opt_sampl_vars.size() << " optional projection vars"
+            << " variables, " << cnf.clauses.size() << " clauses "
             << std::endl;
+
+  std::cout << "c [stp->gnk] sampling var size [from arjun] "
+          << cnf.get_sampl_vars().size() << ", opt proj var size "
+          << cnf.opt_sampl_vars.size() << std::endl;
   // arjun->set_seed(seed);
   // arjun->set_verbosity(0);
   // arjun->set_simp(1);
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
-  conf.verb = 0;
+  conf.verb = 2;
   if (seed == 0)
     conf.appmc_timeout = 1;
 
@@ -166,11 +215,18 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   for (const auto& cl : cnf.red_clauses)
     counter.add_red_cl(cms_to_ganak_cl(cl));
 
-  std::cout << "c [appmc->arjun] sampling var size [from arjun] "
-            << sampling_vars.size() << "\n";
+
 
   delete arjun;
+  std::stringstream ss;
   std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+  ss.setf(std::ios::scientific, std::ios::floatfield);
+  ss.precision(40);
+  const CMSat::Field* ptr = cnt.get();
+  const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+  ss << *od;
+  assert(ptr != nullptr);
+
   if (!cnf.multiplier_weight->is_zero())
     *cnt = *counter.count();
 
@@ -179,7 +235,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
 
   // use gmp to get the absolute count of solutions
 
-  std::cout << "s mc " << std::fixed << *cnt << std::endl;
+  std::cout << "s mc " << *cnt << std::endl;
 
   exit(0);
   return true;

@@ -172,19 +172,21 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         Aig_Obj_t* pObj;
         pObj = (Aig_Obj_t*)Vec_PtrEntry(mgr.aigMgr->vPis, b[i].symbol_index);
         v[i] = cnfData->pVarNums[pObj->Id];
-        if ((uf.counting_mode || uf.sampling_mode) && verbosity > 1)
+        if (uf.counting_mode || uf.sampling_mode || true)
         {
           // TODO AS keep qcheck for projection variables here
           if (bm->isProjSymbol(n))
           {
             cnfData->lProjVars[v[i]] = 1;
-            std::cout << "Projection variable: " << n.GetName() << " "
+            if (verbosity>1)
+              std::cout << "Projection variable: " << n.GetName() << " "
                       << v[i] + 1 << endl;
           }
           else
           {
-            std::cout << "Non-projection variable: " << n.GetName() << " "
-                      << v[i] + 1 << endl;
+            if (verbosity>1)
+              std::cout << "Non-projection variable: " << n.GetName() << " "
+                        << v[i] + 1 << endl;
           }
         }
       }
