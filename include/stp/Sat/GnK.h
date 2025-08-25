@@ -69,6 +69,7 @@ class GnK : public SATSolver
   std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
 
   ArjunNS::SimplifiedCNF cnf;
+  std::vector<double> lit_weights;
 
 public:
   GnK(uint64_t unisamp_seed);
@@ -88,6 +89,8 @@ public:
   virtual uint8_t modelValue(uint32_t x) const;
 
   virtual uint32_t newVar();
+
+  virtual void setVarWeight(uint32_t var, double weight) override;
 
   virtual uint32_t newProjVar(uint32_t x);
 

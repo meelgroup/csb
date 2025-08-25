@@ -155,6 +155,19 @@ void ToSATAIG::add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData)
     }
   }
 
+  for (const auto& ws : bm->getWeightSymbols())
+  {
+    auto it = nodeToSATVar.find(ws.first);
+    if (it == nodeToSATVar.end())
+      continue;
+    const std::vector<unsigned>& vars = it->second;
+    if (vars.size() != 1)
+      continue;
+    unsigned var = vars[0];
+    if (var != ~((unsigned)0))
+      satSolver.setVarWeight(var, ws.second);
+  }
+
   SATSolver::vec_literals satSolverClause;
   for (int i = 0; i < cnfData->nClauses; i++)
   {

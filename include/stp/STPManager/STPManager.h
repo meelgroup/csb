@@ -408,6 +408,22 @@ public:
     return true;
   }
 
+  bool getWeightSymbol(ASTNode& s, double& weight) const
+  {
+    auto it = _weight_symbol_list.find(s);
+    if (it == _weight_symbol_list.end())
+      return false;
+    weight = it->second;
+    return true;
+  }
+
+  const std::unordered_map<ASTNode, double, ASTNode::ASTNodeHasher,
+                           ASTNode::ASTNodeEqual>&
+  getWeightSymbols() const
+  {
+    return _weight_symbol_list;
+  }
+
   bool isProjSymbol(ASTNode& s)
   {
     if (_proj_symbol_list.size() == 0)

@@ -207,7 +207,18 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
       tmp.insert(s + 1);
     counter.set_optional_indep_support(tmp);
   }
-  assert(!cnf.weighted);
+  if (cnf.weighted)
+  {
+    for (uint32_t i = 0; i < lit_weights.size(); ++i)
+    {
+      double w = lit_weights[i];
+      if (w >= 0.0)
+      {
+        counter.set_lit_weight(GanakInt::Lit(i + 1, true), w);
+        counter.set_lit_weight(GanakInt::Lit(i + 1, false), 1.0 - w);
+      }
+    }
+  }
 
   // Add clauses
   for (const auto& cl : cnf.clauses)
@@ -258,7 +269,16 @@ uint32_t GnK::newProjVar(uint32_t x)
 uint32_t GnK::newVar()
 {
   cnf.new_var();
+  lit_weights.push_back(-1.0);
   return cnf.nVars() - 1;
+}
+
+void GnK::setVarWeight(uint32_t var, double weight)
+{
+  if (var >= lit_weights.size())
+    lit_weights.resize(var + 1, -1.0);
+  lit_weights[var] = weight;
+  cnf.weighted = true;
 }
 
 void GnK::setVerbosity(int v)
