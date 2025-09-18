@@ -76,6 +76,9 @@ private:
   std::unordered_map<ASTNode, double, ASTNode::ASTNodeHasher,
                      ASTNode::ASTNodeEqual>
       _weight_symbol_list;
+  std::unordered_map<ASTNode, double, ASTNode::ASTNodeHasher,
+                     ASTNode::ASTNodeEqual>
+      _neg_weight_symbol_list;
 
   // Table to uniquefy bvconst
   ASTBVConstSet _bvconst_unique_table;
@@ -402,16 +405,21 @@ public:
     return true;
   }
 
-  bool addWeightSymbol(ASTNode& s, double weight)
+  bool addWeightSymbol(ASTNode& s, double weight, bool negative = false)
   {
-    _weight_symbol_list[s] = weight;
+    if (negative)
+      _neg_weight_symbol_list[s] = weight;
+    else
+      _weight_symbol_list[s] = weight;
     return true;
   }
 
-  bool getWeightSymbol(ASTNode& s, double& weight) const
+  bool getWeightSymbol(ASTNode& s, double& weight,
+                       bool negative = false) const
   {
-    auto it = _weight_symbol_list.find(s);
-    if (it == _weight_symbol_list.end())
+    const auto& m = negative ? _neg_weight_symbol_list : _weight_symbol_list;
+    auto it = m.find(s);
+    if (it == m.end())
       return false;
     weight = it->second;
     return true;
@@ -422,6 +430,13 @@ public:
   getWeightSymbols() const
   {
     return _weight_symbol_list;
+  }
+
+  const std::unordered_map<ASTNode, double, ASTNode::ASTNodeHasher,
+                           ASTNode::ASTNodeEqual>&
+  getNegWeightSymbols() const
+  {
+    return _neg_weight_symbol_list;
   }
 
   bool isProjSymbol(ASTNode& s)

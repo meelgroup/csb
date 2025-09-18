@@ -48,7 +48,8 @@ $ sudo cmake --install .
 $ command -v ldconfig && sudo ldconfig
 ```
 
-Alternatively, these commands are pre-configused in `scripts/deps/setup-minisat.sh` and `scripts/deps/setup-cms.sh` (respectively).
+Alternatively, these commands are pre-configured in `scripts/deps/setup-csb.sh`.  
+After running the script, run `source ~/.bashrc` so CMake can locate the installed dependencies.
 
 #### Building against non-installed libraries
 

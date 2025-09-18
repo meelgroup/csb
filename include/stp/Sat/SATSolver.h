@@ -100,6 +100,7 @@ public:
   virtual void enableRefinement(const bool /*enable*/) {}
 
   virtual void setVarWeight(uint32_t /*var*/, double /*weight*/) {}
+  virtual void setNegWeight(uint32_t /*var*/, double /*weight*/) {}
 
   virtual int nClauses()
   {

@@ -46,23 +46,17 @@ void ApxMC::enableRefinement(const bool enable)
 }
 
 ApxMC::ApxMC(uint64_t unisamp_seed)
+    : appmc(fg), cnf(fg)
 {
-
   arjun = new ArjunNS::Arjun;
-
   seed = unisamp_seed;
-
   arjun->set_verb(0);
-  // s->log_to_file("stp.cnf");
-  //s->set_num_threads(num_threads);
-  //s->set_default_polarity(false);
-  //s->set_allow_otf_gauss();
   temp_cl = (void*)new vector<CMSat::Lit>;
 }
 
 ApxMC::~ApxMC()
 {
-  delete a;
+  delete arjun;
   vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
   delete real_temp_cl;
 }
@@ -89,12 +83,13 @@ bool ApxMC::addClause(const vec_literals& ps) // Add a clause to the solver.
     cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
   cnf.set_weighted(false);
-  return cnf.add_clause(cl);
+  cnf.add_clause(cl);
+  return true;
 }
 
 bool ApxMC::okay() const // FALSE means solver is in a conflicting state
 {
-  //return a->okay();
+  //return appmc.okay();
   return true; //TODO AS: implement well
 }
 
@@ -108,17 +103,14 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
    */
 
   // CMSat::lbool ret = s->solve(); // TODO AS
-  std::cout << "c [stp->appmc] ApxMC solving instance with " << arjun->nVars()
-            << " variables, " << sampling_vars_orig.size() << " projection vars"
-            << std::endl;
+  cnf.set_sampl_vars(sampling_vars_orig);
+  std::cout << "c [stp->appmc] ApxMC solving instance with " << cnf.nVars()
+            << " variables, " << sampling_vars_orig.size()
+            << " projection vars" << std::endl;
 
-  vector<uint32_t> sampling_vars;
-  for (uint32_t i = 0; i < arjun->nVars(); i++)
-    sampling_vars.push_back(i);
-
-  arjun->set_seed(seed);
-  arjun->set_verbosity(0);
-  arjun->set_simp(1);
+  appmc.set_seed(seed);
+  appmc.set_verbosity(0);
+  arjun->set_verb(0);
   // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
   //           << std::endl;
 
@@ -130,28 +122,23 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   sc.iter1 = 2;
   sc.iter2 = 0;
 
-  arjun->set_sampl_vars(sampling_vars_orig);
-  sampling_vars = arjun->run_backwards();
-  auto empty_sampl_vars = arjun->get_empty_sampl_vars();
-  const auto ret = arjun->get_fully_simplified_renumbered_cnf(sc);
-  sampling_vars = ret.sampl_vars;
-  a->new_vars(ret.nvars);
-  for (const auto& cl : ret.cnf)
-  {
-    a->add_clause(cl);
-  }
+  auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
 
-  a->set_multiplier_weight(ret.multiplier_weight);
+  std::vector<uint32_t> sampling_vars = ret.sampl_vars;
+  appmc.new_vars(ret.nvars);
+  for (const auto& cl : ret.clauses)
+    appmc.add_clause(cl);
+  for (const auto& cl : ret.red_clauses)
+    appmc.add_clause(cl);
+
+  appmc.set_multiplier_weight(ret.multiplier_weight);
 
   std::cout << "c [appmc->arjun] sampling var size [from arjun] "
             << sampling_vars.size() << "\n";
 
-  delete arjun;
+  appmc.set_sampl_vars(sampling_vars);
 
-  a->set_sampl_vars(sampling_vars);
-
-  auto sol_count = a->count();
-  sol_count.hashCount += empty_sampl_vars.size();
+  auto sol_count = appmc.count();
 
   // use gmp to get the absolute count of solutions
   mpz_class result;
@@ -159,9 +146,11 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
   mpz_mul_2exp(result.get_mpz_t(), cellSolCount_gmp.get_mpz_t(),
                sol_count.hashCount);
 
-  result *= a->get_multiplier_weight();
+  const CMSat::Field* ptr = appmc.get_multiplier_weight().get();
+  const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+  mpq_class final = mult->val * result;
 
-  std::cout << "s mc " << result << std::endl;
+  std::cout << "s mc " << final << std::endl;
 
   exit(0);
   return true;
@@ -182,19 +171,19 @@ uint32_t ApxMC::newProjVar(uint32_t x)
 
 uint32_t ApxMC::newVar()
 {
-  arjun->new_var();
-  return arjun->nVars() - 1;
+  cnf.new_var();
+  return cnf.nVars() - 1;
 }
 
 void ApxMC::setVerbosity(int v)
 {
-  a->set_verbosity(0);
-  arjun->set_verbosity(0);
+  appmc.set_verbosity(v);
+  arjun->set_verb(v);
 }
 
 unsigned long ApxMC::nVars() const
 {
-  return arjun->nVars();
+  return cnf.nVars();
 }
 
 void ApxMC::printStats() const
@@ -228,7 +217,7 @@ uint32_t ApxMC::getFixedCountWithAssumptions(
   {
     real_temp_cl.clear();
     real_temp_cl.push_back(CMSat::Lit(var(assumps[i]), sign(assumps[i])));
-    a->add_clause(real_temp_cl);
+    appmc.add_clause(real_temp_cl);
   }
 
 

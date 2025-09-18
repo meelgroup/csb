@@ -724,7 +724,13 @@ an_mixed DECIMAL_TOK
   double weight = $2;
 
   for (uint32_t i = 0; i < v.size(); i++) {
-    stp::GlobalParserInterface->addWeightSymbol(v[i], weight);
+    ASTNode n = v[i];
+    bool neg = false;
+    if (n.GetKind() == NOT && n.Degree() == 1) {
+      neg = true;
+      n = n[0];
+    }
+    stp::GlobalParserInterface->addWeightSymbol(n, weight, neg);
   }
   delete $1;
 }

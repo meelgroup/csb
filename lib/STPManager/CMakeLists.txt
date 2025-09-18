@@ -25,6 +25,18 @@ add_library(stpmgr OBJECT
 
 add_dependencies(stpmgr ASTKind_header)
 
+if (USE_GANAK)
+    include_directories(
+        ${CRYPTOMINISAT5_INCLUDE_DIRS}
+        ${ARJUN_INCLUDE_DIRS}
+        ${APPROXMC_INCLUDE_DIRS}
+        ${GANAK_INCLUDE_DIRS}
+        ${GMP_INCLUDE_DIR}
+        ${MPFR_INCLUDE_DIR}
+        ${BREAKID_INCLUDE_DIRS}
+    )
+endif()
+
 if (NOT MSVC)
     set_source_files_properties(STPManager.cpp
         PROPERTIES COMPILE_FLAGS "-Wno-shift-count-overflow")

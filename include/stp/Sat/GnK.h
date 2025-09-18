@@ -30,13 +30,15 @@ THE SOFTWARE.
 // clang-format off
 // TODO AS : cmakelist cant find libraries, why????
 
-#include "/home/arijit/solvers/ganak/build/include/ganak/mpreal.h"
+// NOTE: Ganak no longer ships the legacy <ganak/mpreal.h> header.
+// The implementation does not rely on it, so we simply drop the include
+// to keep the build working with newer versions of Ganak.
 #include "stp/Sat/SATSolver.h"
-#include "/home/arijit/solvers/ganak/build/include/ganak/ganak.hpp"
-#include "/home/arijit/solvers/ganak/build/include/ganak/counter_config.hpp"
-#include "/home/arijit/solvers/ganak/build/include/ganak/lit.hpp"
-#include </home/arijit/solvers/approxmc/build/include/approxmc/approxmc.h>
-#include </home/arijit/solvers/arjun/build/include/arjun/arjun.h>
+#include "ganak/ganak.hpp"
+#include "ganak/counter_config.hpp"
+#include "ganak/lit.hpp"
+#include "approxmc/approxmc.h"
+#include "arjun/arjun.h"
 
 #include <unordered_set>
 // clang-format on
@@ -70,6 +72,7 @@ class GnK : public SATSolver
 
   ArjunNS::SimplifiedCNF cnf;
   std::vector<double> lit_weights;
+  std::vector<double> neg_lit_weights;
 
 public:
   GnK(uint64_t unisamp_seed);
@@ -91,6 +94,7 @@ public:
   virtual uint32_t newVar();
 
   virtual void setVarWeight(uint32_t var, double weight) override;
+  virtual void setNegWeight(uint32_t var, double weight) override;
 
   virtual uint32_t newProjVar(uint32_t x);
 

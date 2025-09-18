@@ -23,15 +23,14 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/Sat/GnK.h"
-#include "/home/arijit/solvers/ganak/build/include/ganak/ganak.hpp"
-#include "arjun/arjun.h"
+#include <ganak/ganak.hpp>
+#include <arjun/arjun.h>
 
 #include <algorithm>
 #include <set>
-#include <unordered_set>
-#include <gmpxx.h>
-#include <iomanip>
 #include <sstream>
+#include <unordered_set>
+#include <iomanip>
 
 using std::vector;
 
@@ -153,9 +152,7 @@ void print_log(const mpz_class& cnt, std::string extra = "") {
 std::string print_mpq_as_scientific(const mpq_class& number) {
     mpf_class mpf_value(number);
     std::ostringstream oss;
-    oss.setf(std::ios::scientific, std::ios::floatfield);
-    oss.precision(8);
-    oss << mpf_value;
+    oss << std::scientific << std::setprecision(8) << mpf_value;
     return oss.str();
 }
 
@@ -202,7 +199,6 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   //           << std::endl;
 
   conf.verb = 0;
-  bool weighted = true;
   if (seed == 0)
     conf.appmc_timeout = 1;
 
@@ -222,13 +218,30 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   }
   if (cnf.weighted)
   {
-    for (const auto& [var, w] : cnf.weights)
+    const uint32_t max_sz =
+        std::max(lit_weights.size(), neg_lit_weights.size());
+    for (uint32_t i = 0; i < max_sz; ++i)
     {
-      counter.set_lit_weight(GanakInt::Lit(var + 1, true), w.pos);
-      counter.set_lit_weight(GanakInt::Lit(var + 1, false), w.neg);
+      double pw = i < lit_weights.size() ? lit_weights[i] : -1.0;
+      double nw = i < neg_lit_weights.size() ? neg_lit_weights[i] : -1.0;
+      if (pw >= 0.0 || nw >= 0.0)
+      {
+
+        // Construct/assign weight objects directly (set_value() not available in
+        // current API)
+        std::unique_ptr<CMSat::Field> pos;
+        std::unique_ptr<CMSat::Field> neg;
+        mpq_class pwq(pw);
+        mpq_class nwq(nw);
+
+        pos = std::make_unique<ArjunNS::FMpq>(pw);
+        neg = std::make_unique<ArjunNS::FMpq>(nw);
+
+        counter.set_lit_weight(GanakInt::Lit(i + 1, true), pos);
+        counter.set_lit_weight(GanakInt::Lit(i + 1, false), neg);
+      }
     }
   }
-
 
   // Add clauses
   for (const auto& cl : cnf.clauses)
@@ -246,24 +259,17 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   ss.precision(40);
   const CMSat::Field* ptr = cnt.get();
   assert(ptr != nullptr);
-  if (cnf.weighted)
-  {
-    const ArjunNS::FMpq* od = dynamic_cast<const ArjunNS::FMpq*>(ptr);
-        mpfr_t r;
-        mpfr_init2(r, 256);
-        mpfr_set_q(r, od->val.get_mpq_t(), MPFR_RNDN);
-        print_log(r);
-        mpfr_clear(r);
-
-        std::cout << "c o exact quadruple float "  << print_mpq_as_scientific(od->val) << std::endl;
-        std::cout << "c s exact arb frac " << *cnt << std::endl;
-  }
-  else
-  {
-    const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
-    print_log(od->val);
-    ss << od->val;
-  }
+  // const ArjunNS::FMpz* od = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+  // print_log(od->val);
+  const ArjunNS::FMpq* od = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+  mpfr_t r;
+  mpfr_init2(r, 256);
+  mpfr_set_q(r, od->val.get_mpq_t(), MPFR_RNDN);
+  print_log(r);
+  mpfr_clear(r);
+  ss << *od;
+  std::cout << "c o exact quadruple float "  << print_mpq_as_scientific(od->val) << std::endl;
+  std::cout << "c s exact arb frac " << *cnt << std::endl;
 
 
   if (counter.get_is_approximate())
@@ -293,17 +299,32 @@ uint32_t GnK::newProjVar(uint32_t x)
 uint32_t GnK::newVar()
 {
   cnf.new_var();
+  lit_weights.push_back(-1.0);
+  neg_lit_weights.push_back(-1.0);
   return cnf.nVars() - 1;
 }
 
 void GnK::setVarWeight(uint32_t var, double weight)
 {
+  if (var >= lit_weights.size())
+  {
+    lit_weights.resize(var + 1, -1.0);
+    neg_lit_weights.resize(var + 1, -1.0);
+  }
+  lit_weights[var] = weight;
   cnf.weighted = true;
-  auto& w = cnf.weights[var];
-  w.pos = std::make_unique<ArjunNS::FMpq>(mpq_class(weight));
-  w.neg = std::make_unique<ArjunNS::FMpq>(mpq_class(1.0 - weight));
 }
 
+void GnK::setNegWeight(uint32_t var, double weight)
+{
+  if (var >= neg_lit_weights.size())
+  {
+    neg_lit_weights.resize(var + 1, -1.0);
+    lit_weights.resize(var + 1, -1.0);
+  }
+  neg_lit_weights[var] = weight;
+  cnf.weighted = true;
+}
 
 void GnK::setVerbosity(int v)
 {

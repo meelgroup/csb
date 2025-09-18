@@ -18,18 +18,12 @@ CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top o
 For a quick install:
 
 ```
-sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra
+sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget
 sudo apt install zlib1g-dev libboost-program-options-dev libboost-serialization-dev libgmp-dev libmpfr-dev
 git clone https://github.com/meelgroup/csb
 cd csb
-git submodule init && git submodule update
-./scripts/deps/setup-gtest.sh
-./scripts/deps/setup-outputcheck.sh
-./scripts/deps/setup-cms.sh
-./scripts/deps/setup-minisat.sh
-./scripts/deps/setup-unisamp.sh
-mkdir build
-cd build
+./scripts/deps/setup-csb.sh
+mkdir build && cd build
 cmake ..
 cmake --build .
 sudo cmake --install .

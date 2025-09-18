@@ -59,32 +59,27 @@ void UniSamp::enableRefinement(const bool enable)
 
 UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
                  uint64_t _samples_generated)
+    : cnf(fg)
 {
-
-  appmc = new ApproxMC::AppMC;
-
+  appmc = new ApproxMC::AppMC(fg);
   unigen = new UniG(appmc);
   arjun = new ArjunNS::Arjun;
   seed = unisamp_seed;
   samples_needed = _samples_needed;
   samples_generated = _samples_generated;
-  // unisamp_ran = false;
   unigen->set_callback(mycallback, &unigen_models);
   appmc->set_verbosity(0);
   arjun->set_verb(0);
   unigen->set_verbosity(0);
   appmc->set_seed(seed);
-
-  // s->log_to_file("stp.cnf");
-  //s->set_num_threads(num_threads);
-  //s->set_default_polarity(false);
-  //s->set_allow_otf_gauss();
   temp_cl = (void*)new vector<CMSat::Lit>;
 }
 
 UniSamp::~UniSamp()
 {
   delete unigen;
+  delete appmc;
+  delete arjun;
   vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
   delete real_temp_cl;
 }
@@ -107,8 +102,8 @@ bool UniSamp::addClause(const vec_literals& ps) // Add a clause to the solver.
   {
     real_temp_cl.push_back(CMSat::Lit(var(ps[i]), sign(ps[i])));
   }
-  /* cout << "c Adding clause to arjun " << real_temp_cl << " 0" << endl; */
-  return arjun->add_clause(real_temp_cl);
+  cnf.add_clause(real_temp_cl);
+  return true;
 }
 
 bool UniSamp::okay() const // FALSE means solver is in a conflicting state
@@ -134,67 +129,45 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
     return true;
 
   std::cout << "c [stp->unigen] UniSamp solving instance with "
-            << arjun->nVars() << " variables." << std::endl;
+            << cnf.nVars() << " variables." << std::endl;
 
-  vector<uint32_t> sampling_vars, all_vars;
-  for (uint32_t i = 0; i < arjun->nVars(); i++)
-    all_vars.push_back(i);
+  cnf.set_sampl_vars(sampling_vars_orig);
 
-  arjun->set_sampl_vars(sampling_vars_orig);
+  ArjunNS::SimpConf sc;
+  sc.appmc = true;
+  sc.oracle_vivify = true;
+  sc.oracle_vivify_get_learnts = true;
+  sc.oracle_sparsify = false;
+  sc.iter1 = 2;
+  sc.iter2 = 0;
 
-  const uint32_t orig_num_vars = arjun->nVars();
-  appmc->new_vars(orig_num_vars);
+  auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
 
-  bool ret = true;
-  arjun->start_getting_constraints(false);
-  vector<Lit> clause;
-  while (ret)
-  {
-    bool is_xor, rhs;
-    ret = arjun->get_next_constraint(clause, is_xor, rhs);
-    assert(rhs);
-    assert(!is_xor);
-    if (!ret)
-      break;
+  appmc->new_vars(ret.nvars);
+  for (const auto& cl : ret.clauses)
+    appmc->add_clause(cl);
+  for (const auto& cl : ret.red_clauses)
+    appmc->add_clause(cl);
 
-    bool ok = true;
-    for (auto l : clause)
-    {
-      if (l.var() >= orig_num_vars)
-      {
-        ok = false;
-        break;
-      }
-    }
-    if (ok)
-    {
-      /* cout << "adding clause to appmc " << clause << endl; */
-      appmc->add_clause(clause);
-    }
-  }
-  arjun->end_getting_constraints();
-  sampling_vars = arjun->run_backwards();
-  auto empty_sampl_vars = arjun->get_empty_sampl_vars();
-  delete arjun;
+  appmc->set_sampl_vars(ret.sampl_vars);
 
-  appmc->set_sampl_vars(sampling_vars);
+  std::vector<uint32_t> all_vars(ret.nvars);
+  for (uint32_t i = 0; i < ret.nvars; i++)
+    all_vars[i] = i;
 
   std::cout << "c [unigen->arjun] sampling var size [from arjun] "
-            << sampling_vars.size() << " orig size "
+            << ret.sampl_vars.size() << " orig size "
             << sampling_vars_orig.size() << "\n";
 
   auto sol_count = appmc->count();
   cout << "c Sol count: " << sol_count.cellSolCount << "*2**"
-       << (sol_count.hashCount + empty_sampl_vars.size()) << endl;
+       << sol_count.hashCount << endl;
 
-  // std::cout << "c [stp->unigen] ApproxMC got count " << sol_count.cellSolCount
-  // << "*2**" << sol_count.hashCount << std::endl;
   unigen->set_verbosity(0);
   unigen->set_verb_sampler_cls(0);
   unigen->set_kappa(0.1);
   unigen->set_multisample(false);
   unigen->set_full_sampling_vars(all_vars);
-  // unigen->set_empty_sampling_vars(empty_sampl_vars);
 
   unigen->sample(&sol_count, samples_needed);
   unisamp_ran = true;
@@ -224,18 +197,20 @@ uint32_t UniSamp::newProjVar(uint32_t x)
 
 uint32_t UniSamp::newVar()
 {
-  arjun->new_var();
-  return arjun->nVars() - 1;
+  cnf.new_var();
+  return cnf.nVars() - 1;
 }
 
 void UniSamp::setVerbosity(int v)
 {
-  arjun->set_verbosity(0);
+  appmc->set_verbosity(v);
+  unigen->set_verbosity(v);
+  arjun->set_verb(v);
 }
 
 unsigned long UniSamp::nVars() const
 {
-  return arjun->nVars();
+  return cnf.nVars();
 }
 
 void UniSamp::printStats() const

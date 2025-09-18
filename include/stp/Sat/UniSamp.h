@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include <arjun/arjun.h>
 
 #include <unordered_set>
+#include <vector>
 
 using std::vector;
 
@@ -51,9 +52,11 @@ class UniSamp : public SATSolver
 
 {
   // vector<vector<int>> unigen_models;
+  std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
   ApproxMC::AppMC* appmc;
   UniGen::UniG* unigen;
   ArjunNS::Arjun* arjun;
+  ArjunNS::SimplifiedCNF cnf;
   uint64_t seed;
   uint64_t samples_generated = 0;
   uint64_t samples_needed = 0;

@@ -285,6 +285,18 @@ bv{DIGIT}+             { smt2lval.str = new std::string(smt2text+2); return BVCO
 "select"        { return SELECT_TOK; }
 "store"         { return STORE_TOK; }
 
+"-"({LETTER}|{OPCHAR})({ANYTHING})* {
+  int tok = lookup(smt2text+1);
+  if (tok == FORMID_TOK) {
+    stp::ASTNode* n = smt2lval.node;
+    stp::ASTNode notn =
+        stp::GlobalParserInterface->nf->CreateNode(stp::NOT, *n);
+    smt2lval.node = stp::GlobalParserInterface->newNode(notn);
+    stp::GlobalParserInterface->deleteNode(n);
+    return FORMID_TOK;
+  }
+  return tok;
+}
 ({LETTER}|{OPCHAR})({ANYTHING})*  {return lookup(smt2text);}
 \|([^\|]|\n)*\| {return lookup(smt2text);}
 

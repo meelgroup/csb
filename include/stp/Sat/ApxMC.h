@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include <arjun/arjun.h>
 
 #include <unordered_set>
+#include <vector>
 
 using CMSat::FieldGen;
 using std::vector;
@@ -57,6 +58,7 @@ class ApxMC : public SATSolver
 
   ApproxMC::AppMC appmc;
   ArjunNS::SimplifiedCNF cnf;
+  ArjunNS::Arjun* arjun;
 
   uint64_t seed;
   vector<uint32_t> sampling_vars_orig;
