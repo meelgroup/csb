@@ -59,7 +59,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
 # Try to guess the right place by asking the current python interpreter for its
 # Python library directory
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-                        "from distutils.sysconfig import get_python_lib; print(get_python_lib())"
+                        "import sysconfig; print(sysconfig.get_paths()['purelib'])"
                  RESULT_VARIABLE RETURN_CODE
                  OUTPUT_VARIABLE PYTHON_LIB_DIR_DETECTED
                  OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -69,14 +69,26 @@ if (${RETURN_CODE} GREATER 0)
     message(FATAL_ERROR "Failed to determine python site package directory")
 endif()
 
-# Provide an option so users can override what we detected earlier
-set(PYTHON_LIB_INSTALL_DIR "${PYTHON_LIB_DIR_DETECTED}" CACHE PATH "Installation directory for stp python package")
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+                        "import sysconfig; print(sysconfig.get_path('purelib', vars={'base': '', 'platbase': ''}))"
+                 RESULT_VARIABLE RETURN_CODE_RELATIVE
+                 OUTPUT_VARIABLE PYTHON_LIB_DIR_RELATIVE
+                 OUTPUT_STRIP_TRAILING_WHITESPACE
+               )
 
-if (EXISTS "${PYTHON_LIB_INSTALL_DIR}")
-    message(STATUS "Detected python site package directory ${PYTHON_LIB_INSTALL_DIR}")
-else()
-    message(FATAL_ERROR "Reported python site package directory '${PYTHON_LIB_INSTALL_DIR}' does not exist")
+set(PYTHON_LIB_INSTALL_DIR_DEFAULT "${PYTHON_LIB_DIR_DETECTED}")
+if (NOT PYTHON_LIB_DIR_RELATIVE STREQUAL "" AND RETURN_CODE_RELATIVE EQUAL 0)
+    set(PYTHON_LIB_INSTALL_DIR_DEFAULT "${CMAKE_INSTALL_PREFIX}${PYTHON_LIB_DIR_RELATIVE}")
 endif()
+
+# Provide an option so users can override what we detected earlier
+set(PYTHON_LIB_INSTALL_DIR "${PYTHON_LIB_INSTALL_DIR_DEFAULT}" CACHE PATH "Installation directory for stp python package")
+
+if (NOT IS_ABSOLUTE "${PYTHON_LIB_INSTALL_DIR}")
+    message(FATAL_ERROR "Reported python site package directory '${PYTHON_LIB_INSTALL_DIR}' is not an absolute path")
+endif()
+
+message(STATUS "Installing python site package into ${PYTHON_LIB_INSTALL_DIR}")
 
 # Install main files
 

@@ -24,24 +24,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Checkout repository
-      if: contains(matrix.os, 'macos')
-      uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
-    - name: Install Nix
-      if: contains(matrix.os, 'macos')
-      run: |
-        sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-
-    - name: Build with Nix
-      if: contains(matrix.os, 'macos')
-      run: |
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-        nix --extra-experimental-features "nix-command flakes" build .
-
     - name: Install dependencies for Linux
       if: contains(matrix.os, 'ubuntu')
       run: |
@@ -51,32 +33,49 @@ jobs:
           libboost-program-options-dev libboost-serialization-dev \
           libgmp-dev libmpfr-dev help2man
 
+    - name: Install dependencies for macOS
+      if: contains(matrix.os, 'macos')
+      run: |
+        brew update
+        brew install cmake boost gmp mpfr wget zig
+
     - name: Checkout Minisat
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
-        repository: stp/minisat
+        repository: meelgroup/minisat
+        ref: 8c9ea22aff06fdf284b8bb13f8524a96f7d446af
         path: minisat
-    - name: Build Minisat
-      if: ${{ !contains(matrix.os, 'macos') }}
+    - name: Build Minisat (Linux)
+      if: contains(matrix.os, 'ubuntu')
       run: |
         cd minisat
-        mkdir build
-        cd build
-        cmake -DBUILD_SHARED_LIBS=OFF ..
-        cmake --build . --parallel 8
-        sudo cmake --install .
-        cd ../..
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DSTATICCOMPILE=ON
+        cmake --build build --parallel --config ${{ matrix.build_type }}
+        sudo cmake --install build --config ${{ matrix.build_type }}
+        cd ..
+    - name: Build Minisat (macOS)
+      if: contains(matrix.os, 'macos')
+      run: |
+        cd minisat
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DSTATICCOMPILE=ON \
+          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
+        cmake --build build --parallel --config ${{ matrix.build_type }}
+        sudo cmake --install build --config ${{ matrix.build_type }}
+        cd ..
 
     - name: Checkout Cadical
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/cadical
         ref: add_dynamic_lib
         path: cadical
     - name: Build Cadical
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd cadical
         CXXFLAGS=-fPIC ./configure --competition
@@ -84,14 +83,12 @@ jobs:
         cd ..
 
     - name: Checkout Cadiback
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/cadiback
         ref: synthesis
         path: cadiback
     - name: Build Cadiback
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd cadiback
         CXX=c++ ./configure
@@ -99,14 +96,12 @@ jobs:
         cd ..
 
     - name: Checkout breakid
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/breakid
         ref: master
         path: breakid
     - name: Build Breakid
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd breakid
         mkdir build
@@ -116,7 +111,6 @@ jobs:
         cd ../..
 
     - name: Checkout CMS
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: msoos/cryptominisat
@@ -124,7 +118,6 @@ jobs:
         path: cryptominisat
         submodules: 'true'
     - name: Build CMS
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd cryptominisat
         mkdir build &&cd build
@@ -133,14 +126,12 @@ jobs:
         cd ../..
 
     - name: Checkout SBVA
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/SBVA
         ref: master
         path: sbva
     - name: Build SBVA
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd sbva
         mkdir build
@@ -151,11 +142,9 @@ jobs:
         cd ../..
 
     - name: Checkout cereal
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         wget https://github.com/USCiLab/cereal/archive/v1.3.2.tar.gz
     - name: Build cereal
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         tar xvf v1.3.2.tar.gz
         cd cereal-1.3.2
@@ -167,11 +156,9 @@ jobs:
         cd ..
 
     - name: Checkout armadillo
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         wget https://sourceforge.net/projects/arma/files/armadillo-14.0.2.tar.xz
     - name: Build armadillo
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         tar xvf armadillo-14.0.2.tar.xz
         cd armadillo-14.0.2/
@@ -181,11 +168,9 @@ jobs:
         cd ..
 
     - name: Checkout ensmallen
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         wget https://ensmallen.org/files/ensmallen-2.21.1.tar.gz
     - name: Build ensmallen
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         tar xvf ensmallen-2.21.1.tar.gz
         cd ensmallen-2.21.1
@@ -197,14 +182,12 @@ jobs:
         cd ../..
 
     - name: Checkout mlpack
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: mlpack/mlpack
         ref: 4.4.0
         path: mlpack
     - name: Build mlpack
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd mlpack
         mkdir build
@@ -215,14 +198,12 @@ jobs:
         cd ../..
 
     - name: Checkout arjun
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/arjun
         ref: master
         path: arjun
     - name: Build arjun
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd arjun
         mkdir build
@@ -236,7 +217,6 @@ jobs:
         cd ../..
 
     - name: Checkout approxmc
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/approxmc
@@ -244,7 +224,6 @@ jobs:
         path: approxmc
         submodules: 'true'
     - name: Build approxmc
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd approxmc
         mkdir build
@@ -258,7 +237,6 @@ jobs:
         cd ../..
 
     - name: Install flint
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         wget https://github.com/flintlib/flint/releases/download/v3.2.0-rc1/flint-3.2.0-rc1.tar.gz
         tar xzf flint-3.2.0-rc1.tar.gz
@@ -269,14 +247,12 @@ jobs:
         cd ..
 
     - name: Checkout ganak
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/ganak
         ref: master
         path: ganak
     - name: Build ganak
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd ganak
         mkdir build
@@ -286,13 +262,11 @@ jobs:
         cd ../..
 
     - name: Checkout cmsgen
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: arijitsh/cmsgen
         path: cmsgen
     - name: Build cmsgen
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd cmsgen
         mkdir build
@@ -302,13 +276,11 @@ jobs:
         cd ../..
 
     - name: Checkout unigen
-      if: ${{ !contains(matrix.os, 'macos') }}
       uses: actions/checkout@v4
       with:
         repository: meelgroup/unigen
         path: unigen
     - name: Build unigen
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd unigen
         mkdir build
@@ -318,12 +290,10 @@ jobs:
         cd ../..
 
     - uses: actions/checkout@v4
-      if: ${{ !contains(matrix.os, 'macos') }}
       with:
         path: project
         submodules: 'true'
     - name: Build project
-      if: ${{ !contains(matrix.os, 'macos') }}
       run: |
         cd project
         mkdir -p build && cd build
@@ -335,14 +305,15 @@ jobs:
         cmake --build . --config ${{matrix.build_type}} -v
 
     - name: Test
-      if: ${{ !contains(matrix.os, 'macos') }}
-      run: ctest -C ${{matrix.build_type}} --verbose
+      run: |
+        cd project/build
+        ctest -C ${{matrix.build_type}} --verbose
 
     - name: Upload Artifact - Linux
       if: ${{ contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && !contains(matrix.os, 'arm') }}
       uses: actions/upload-artifact@v4
       with:
-        name: ganak-linux-amd64
+        name: csb-linux-amd64
         path: |
           project/build/ganak
           project/build/lib/*
@@ -352,7 +323,7 @@ jobs:
       if: contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && contains(matrix.os, 'arm')
       uses: actions/upload-artifact@v4
       with:
-        name: ganak-linux-arm64
+        name: csb-linux-arm64
         path: |
           project/build/ganak
           project/build/lib/*
@@ -362,15 +333,21 @@ jobs:
       if: matrix.os == 'macos-13' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
-        name: ganak-mac-x86_64
-        path: result/bin/ganak
+        name: csb-mac-x86_64
+        path: |
+          project/build/ganak
+          project/build/lib/*
+          project/build/include/*
 
     - name: Upload Artifact - Mac Arm
       if: matrix.os == 'macos-14' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
-        name: ganak-mac-arm64
-        path: result/bin/ganak
+        name: csb-mac-arm64
+        path: |
+          project/build/ganak
+          project/build/lib/*
+          project/build/include/*
 
   release:
     needs: build

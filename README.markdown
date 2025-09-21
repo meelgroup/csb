@@ -7,11 +7,28 @@
 
 # CSB
 
-CSB (Count and Sample on Bitvectors) is an approximate model counting and almost-uniform sampling tool aimed at solving constraints of bitvectors.
+CSB (Count and Sample on Bitvectors) is an exact / approximate model counting and almost-uniform sampling tool aimed at solving constraints of bitvectors.
 
 To learn more about CSB, please have a look at our [SMT Workshop '24 paper](https://ceur-ws.org/Vol-3725/short2.pdf).
 
 CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top of that. For counting it uses [ApproxMC](https://github.com/meelgroup/approxmc) (with [Arjun](https://github.com/meelgroup/arjun)). For sampling, it uses [UniGen](https://github.com/meelgroup/unigen/).
+
+
+## Building
+
+Use of the [release binaries](https://github.com/meelgroup/csb/releases) is
+_strongly_ encouraged, as CSB requires a specific set of libraries to be
+installed. The second best thing to use is Nix.
+<!-- ```shell
+nix shell github:meelgroup/ganak#ganak
+``` -->
+
+Then you will have `ganak` binary available and ready to use.
+
+If this is somehow not what you want, you can also build it. See the [GitHub
+Action](https://github.com/meelgroup/ganak/actions/workflows/build.yml) for the
+specific set of steps.
+
 
 ## Build and install
 
@@ -29,8 +46,19 @@ cmake --build .
 sudo cmake --install .
 ```
 
+### Building with Nix
+ Simply [install nix](https://nixos.org/download/), enable the `nix-command` and `flakes` features, then build the `csb` package:
 
-## Input format
+```
+nix --extra-experimental-features 'nix-command flakes'
+build .#csb
+```
+
+The resulting binaries and libraries are exposed under the `result` symlink created by
+the build.
+
+
+## Usage
 
 The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
 
@@ -57,6 +85,31 @@ Run with an SMT-LIB2 file:
 ```
 ./csb -c myproblem.smt2
 ```
+
+## Input format
+
+The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+
+### Support for Projection Variables
+CSB supports projection variables for counting and sampling. Variables can be designated as projection variables using the `proj-var` keyword. Each `proj-var` command can include one or more variables and multiple `proj-var` commands are supported. Projection variables can be declared at any point in the file, provided they are specified after the variable declaration and before the `proj-var` command. Here is an example of extending the SMT-LIB2 format to include projection variables.
+```
+(set-logic QF_BV)
+
+(declare-const a (_ BitVec 6))
+(declare-const b (_ BitVec 6))
+(declare-const c (_ BitVec 6))
+(declare-const d (_ BitVec 6))
+
+(proj-var a b)
+(proj-var d)
+
+(assert (bvult a #b001010))
+(assert (bvult b #b011110))
+(assert (= (bvadd c d) #b001000))
+
+(check-sat)
+```
+
 
 ## Architecture
 

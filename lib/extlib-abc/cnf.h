@@ -79,6 +79,8 @@ struct Cnf_Dat_t_
     int **          pClauses;        // the CNF clauses
     int *           pVarNums;        // the number of CNF variable for each node ID (-1 if unused)
     int *           lProjVars;       // projection variables
+    double *        lit_weights;     // literal weights
+    double *        neg_lit_weights; // negated literal weights
 
 };
 

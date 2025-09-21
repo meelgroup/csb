@@ -196,6 +196,16 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
       }
     }
     fprintf(pFile, "0\n");
+    for (int i = 0; i < p->nVars; i++)
+    {
+      if (p->lProjVars[i] == 1)
+      {
+        fprintf(pFile, "c p weight %d %f 0\n", i + 1, p->lit_weights[i]);
+        fprintf(pFile, "c p weight %d %f 0\n", - (i + 1), p->neg_lit_weights[i]);
+        numprojvars++;
+      }
+    }
+    fprintf(pFile, "0\n");
   }
 
   for (i = 0; i < p->nClauses; i++)

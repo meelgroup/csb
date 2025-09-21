@@ -236,6 +236,10 @@ Cnf_Dat_t * Cnf_ManWriteCnf( Cnf_Man_t * p, Vec_Ptr_t * vMapped, int nOutputs )
     memset( pCnf->pVarNums, 0xff, sizeof(int) * Aig_ManObjNumMax(p->pManAig) );
     pCnf->lProjVars = ALLOC(  int, Aig_ManObjNumMax(p->pManAig) );
     memset( pCnf->lProjVars, 0xff, sizeof(int) * Aig_ManObjNumMax(p->pManAig) );
+    pCnf->lit_weights = ALLOC( double, Aig_ManObjNumMax(p->pManAig) );
+    memset( pCnf->lit_weights, 0, sizeof(double) * Aig_ManObjNumMax(p->pManAig) );
+    pCnf->neg_lit_weights = ALLOC( double, Aig_ManObjNumMax(p->pManAig) );
+    memset( pCnf->neg_lit_weights, 0, sizeof(double) * Aig_ManObjNumMax(p->pManAig) );
 
     // assign variables to the last (nOutputs) POs
     Number = 1;

@@ -172,15 +172,26 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
         Aig_Obj_t* pObj;
         pObj = (Aig_Obj_t*)Vec_PtrEntry(mgr.aigMgr->vPis, b[i].symbol_index);
         v[i] = cnfData->pVarNums[pObj->Id];
+
         if (uf.counting_mode || uf.sampling_mode || true)
         {
           // TODO AS keep qcheck for projection variables here
           if (bm->isProjSymbol(n))
           {
+            auto ws = bm->getWeightSymbols().find(n);
+            auto nws = bm->getNegWeightSymbols().find(n);
             cnfData->lProjVars[v[i]] = 1;
+            cnfData->lit_weights[v[i]] =
+                (ws != bm->getWeightSymbols().end()) ? ws->second : -1.0;
+            cnfData->neg_lit_weights[v[i]] =
+                (nws != bm->getNegWeightSymbols().end()) ? nws->second : -1.0;
+
             if (verbosity>1)
               std::cout << "Projection variable: " << n.GetName() << " "
                       << v[i] + 1 << endl;
+
+            std::cout << "c [stp->gnk] weight symbol found " << n.GetName() << " varname " << v[i] << " weight " << ws->second << "," << nws->second << std::endl;
+
           }
           else
           {

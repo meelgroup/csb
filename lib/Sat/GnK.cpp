@@ -234,8 +234,9 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
         mpq_class pwq(pw);
         mpq_class nwq(nw);
 
-        pos = std::make_unique<ArjunNS::FMpq>(pw);
-        neg = std::make_unique<ArjunNS::FMpq>(nw);
+        pos = std::make_unique<ArjunNS::FMpq>(pwq);
+        neg = std::make_unique<ArjunNS::FMpq>(nwq);
+
 
         counter.set_lit_weight(GanakInt::Lit(i + 1, true), pos);
         counter.set_lit_weight(GanakInt::Lit(i + 1, false), neg);

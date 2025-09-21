@@ -80,6 +80,8 @@ extern "C" {
     int** pClauses;  // the CNF clauses
     int* pVarNums; // the number of CNF variable for each node ID (-1 if unused)
     int* lProjVars; // the projection variables
+    double* lit_weights; // the weights of the literals
+    double* neg_lit_weights; // the weights of the negated literals
   };
 
 #pragma GCC diagnostic push
