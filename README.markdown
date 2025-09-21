@@ -16,6 +16,7 @@ CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top o
 
 ## Building
 
+### Use Release Binaries
 Use of the [release binaries](https://github.com/meelgroup/csb/releases) is
 _strongly_ encouraged, as CSB requires a specific set of libraries to be
 installed. The second best thing to use is Nix.
@@ -23,16 +24,27 @@ installed. The second best thing to use is Nix.
 nix shell github:meelgroup/ganak#ganak
 ``` -->
 
+### Building with Nix
+ Simply [install nix](https://nixos.org/download/), enable the `nix-command` and `flakes` features, then build the `csb` package:
+
+```
+nix --extra-experimental-features 'nix-command flakes'
+build .#csb
+```
+
+The resulting binaries and libraries are exposed under the `result` symlink created by
+the build.
 Then you will have `ganak` binary available and ready to use.
 
-If this is somehow not what you want, you can also build it. See the [GitHub
-Action](https://github.com/meelgroup/ganak/actions/workflows/build.yml) for the
-specific set of steps.
+
+<!--
+See the [GitHub
+Action](https://github.com/meelgroup/csb/actions/workflows/build.yml) for the
+specific set of steps. -->
 
 
-## Build and install
-
-For a quick install:
+### Full Build from Source
+If this is somehow not what you want, you can also build it:
 
 ```
 sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget
@@ -46,21 +58,27 @@ cmake --build .
 sudo cmake --install .
 ```
 
-### Building with Nix
- Simply [install nix](https://nixos.org/download/), enable the `nix-command` and `flakes` features, then build the `csb` package:
-
-```
-nix --extra-experimental-features 'nix-command flakes'
-build .#csb
-```
-
-The resulting binaries and libraries are exposed under the `result` symlink created by
-the build.
 
 
 ## Usage
 
 The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+
+
+### Usage as Exact Counter:
+
+Run with an SMT-LIB2 file:
+```
+./csb myproblem.smt2
+```
+
+
+### Usage as Approximate Counter:
+
+Run with an SMT-LIB2 file:
+```
+./csb -c myproblem.smt2
+```
 
 ### Usage as Uniform-like Sampler:
 The samples should be uniform in practice. Run with an SMT-LIB2 file:
@@ -79,19 +97,13 @@ The samples are generated with theoretical guarantees on uniformity. But this pr
 
 Change seed value to get different samples. Refer to [this post](https://www.msoos.org/2022/06/checking-uniform-like-samplers/) to know more about uniform, almost-uniform and uniform like samplers.
 
-### Usage as Approximate Counter:
-
-Run with an SMT-LIB2 file:
-```
-./csb -c myproblem.smt2
-```
 
 ## Input format
 
 The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
 
 ### Support for Projection Variables
-CSB supports projection variables for counting and sampling. Variables can be designated as projection variables using the `proj-var` keyword. Each `proj-var` command can include one or more variables and multiple `proj-var` commands are supported. Projection variables can be declared at any point in the file, provided they are specified after the variable declaration and before the `proj-var` command. Here is an example of extending the SMT-LIB2 format to include projection variables.
+CSB supports projection variables for counting and sampling. Variables can be designated as projection variables using the `declare-projvar` keyword. Each `declare-projvar` command can include one or more variables and multiple `declare-projvar` commands are supported. Projection variables can be declared at any point in the file, provided they are specified after the variable declaration and before the `declare-projvar` command. Here is an example of extending the SMT-LIB2 format to include projection variables.
 ```
 (set-logic QF_BV)
 
@@ -100,8 +112,8 @@ CSB supports projection variables for counting and sampling. Variables can be de
 (declare-const c (_ BitVec 6))
 (declare-const d (_ BitVec 6))
 
-(proj-var a b)
-(proj-var d)
+(declare-projvar a b)
+(declare-projvar d)
 
 (assert (bvult a #b001010))
 (assert (bvult b #b011110))
@@ -110,10 +122,34 @@ CSB supports projection variables for counting and sampling. Variables can be de
 (check-sat)
 ```
 
+### Support for Weights
+
+CSB supports weights for variables in the counting process. Weights can be assigned to each variable (and its negation) using the `declare-weight` keyword. Weights can be assigned to Boolean variables only. Here is an example of extending the SMT-LIB2 format to include weights.
+```
+(set-logic QF_BV)
+
+(declare-const p Bool)
+(declare-const q Bool)
+(declare-const x (_ BitVec 4))
+(declare-const y (_ BitVec 4))
+
+(declare-weight p 0.8)
+(declare-weight -p 1.0)
+(declare-weight q 0.3)
+
+; If p then x+y = 10, if q then x+y = 5 (mod 16).
+(assert (=> p (= (bvadd x y) #x0A))) ; 0x0A = 10
+(assert (=> q (= (bvadd x y) #x05))) ; 0x05 = 5
+
+(check-sat)
+```
+
+### Support for Weights
+
 
 ## Architecture
 
-**CSB** converts bitvector constraints into SAT using [STP](https://github.com/stp/stp), integrating with [ApproxMC](https://github.com/meelgroup/approxmc) or [UniGen](https://github.com/meelgroup/unigen/) based on specific needs of counting or sampling. The benchmarks used for evaluating CSB in the SMT workshop paper are available [here](https://utoronto-my.sharepoint.com/:u:/g/personal/arijit_shaw_mail_utoronto_ca/EWcTcfGobH5Jl5SwjzRu6TQB169vWwTnjg-IXWiHJwmuDA?e=MFuxUM).
+**CSB** converts bitvector constraints into SAT using [STP](https://github.com/stp/stp), integrating with [Ganak](https://github.com/meelgroup/ganak), [ApproxMC](https://github.com/meelgroup/approxmc), [CMSGen](https://github.com/meelgroup/cmsgen), [UniGen](https://github.com/meelgroup/unigen/) based on specific needs of counting or sampling. The benchmarks used for evaluating CSB in the SMT workshop paper are available [here](https://utoronto-my.sharepoint.com/:u:/g/personal/arijit_shaw_mail_utoronto_ca/EWcTcfGobH5Jl5SwjzRu6TQB169vWwTnjg-IXWiHJwmuDA?e=MFuxUM).
 
 
 # Authors
