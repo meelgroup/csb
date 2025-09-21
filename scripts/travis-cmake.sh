@@ -165,10 +165,9 @@ esac
 make -j2 VERBOSE=1
 ctest -V
 
-echo $(ldd ./stp_simple)
-echo $(ldd ./stp)
+echo $(ldd ./csb)
 if [ "$STP_CONFIG" = "STATIC_CMS" ] ; then
-     ldd ./stp | grep "not a dynamic"
+     ldd ./csb | grep "not a dynamic"
 fi
 
 if [ "$STP_CONFIG" = "KLEE" ]; then

@@ -25,16 +25,14 @@ nix shell github:meelgroup/ganak#ganak
 ``` -->
 
 ### Building with Nix
- Simply [install nix](https://nixos.org/download/), enable the `nix-command` and `flakes` features, then build the `csb` package:
-
+ Simply [install nix](https://nixos.org/download/), then build  `csb`:
 ```
-nix --extra-experimental-features 'nix-command flakes'
-build .#csb
+nix build .#csb
 ```
 
 The resulting binaries and libraries are exposed under the `result` symlink created by
 the build.
-Then you will have `ganak` binary available and ready to use.
+Then you will have `csb` binary available and ready to use.
 
 
 <!--
@@ -44,7 +42,7 @@ specific set of steps. -->
 
 
 ### Full Build from Source
-If this is somehow not what you want, you can also build it:
+If you want to build `csb` from source manually, you will need to follow these steps:
 
 ```
 sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget
@@ -138,8 +136,8 @@ CSB supports weights for variables in the counting process. Weights can be assig
 (declare-weight q 0.3)
 
 ; If p then x+y = 10, if q then x+y = 5 (mod 16).
-(assert (=> p (= (bvadd x y) #x0A))) ; 0x0A = 10
-(assert (=> q (= (bvadd x y) #x05))) ; 0x05 = 5
+(assert (=> p (= (bvadd x y) #xA))) ; 0x0A = 10
+(assert (=> q (= (bvadd x y) #x5))) ; 0x05 = 5
 
 (check-sat)
 ```

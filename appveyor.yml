@@ -120,7 +120,7 @@ before_build:
   - mkdir build
   - cd build
   - cmake --version
-  - cmake -G %CMAKE_GENERATOR% -DSTATICCOMPILE=ON -DNOZLIB=ON -DENABLE_PYTHON_INTERFACE=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DONLY_SIMPLE=ON -DENABLE_TESTING=OFF ..
+  - cmake -G %CMAKE_GENERATOR% -DSTATICCOMPILE=ON -DNOZLIB=ON -DENABLE_PYTHON_INTERFACE=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DENABLE_TESTING=OFF ..
   - cmake --build . --config Release
   - cmake --build . --config Release --target install
   - cd ../..

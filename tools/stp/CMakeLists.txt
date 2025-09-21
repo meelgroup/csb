@@ -21,7 +21,7 @@
 # -----------------------------------------------------------------------------
 # Create binary
 # -----------------------------------------------------------------------------
-if(BUILD_EXECUTABLES AND NOT ONLY_SIMPLE)
+if(BUILD_EXECUTABLES)
     add_executable(stp-bin
         main.cpp
         main_common.cpp

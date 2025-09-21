@@ -451,15 +451,7 @@ include_directories(# For extlib-abc and extlib-constbv
                     ${PROJECT_SOURCE_DIR}/lib
                    )
 
-option(ONLY_SIMPLE "Only build very simplistic executable -- no Boost needed" OFF)
-if (NOT ONLY_SIMPLE)
-  find_package( Boost 1.46 COMPONENTS program_options)
-endif()
-
-if(NOT Boost_FOUND)
-    set(ONLY_SIMPLE ON)
-endif()
-add_feature_info(SimpleOptions ONLY_SIMPLE "Simplifies command-line interface, only a few command-line options will be available")
+find_package(Boost 1.46 COMPONENTS program_options REQUIRED)
 
 # -----------------------------------------------------------------------------
 # Find Riss
@@ -641,23 +633,21 @@ include_directories(${minisat_SOURCE_DIR})
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     find_program(HELP2MAN_FOUND help2man)
     if (HELP2MAN_FOUND)
-        if (NOT ONLY_SIMPLE)
-            ADD_CUSTOM_TARGET(man_stp
-                ALL
-                DEPENDS stp-bin
-            )
+        ADD_CUSTOM_TARGET(man_stp
+            ALL
+            DEPENDS stp-bin
+        )
 
-            ADD_CUSTOM_COMMAND(
-                TARGET man_stp
-                COMMAND help2man
-                ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp-bin> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
-            )
+        ADD_CUSTOM_COMMAND(
+            TARGET man_stp
+            COMMAND help2man
+            ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp-bin> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
+        )
 
-            INSTALL(
-                FILES ${CMAKE_CURRENT_BINARY_DIR}/stp.1
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
-            message(STATUS "Manpage will be created and installed")
-        endif()
+        INSTALL(
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/stp.1
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
+        message(STATUS "Manpage will be created and installed")
     else()
         MESSAGE(STATUS "Cannot find help2man, not creating manpage")
     endif()

@@ -18,11 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-if (NOT ONLY_SIMPLE)
-    set(STP_EXECUTABLE_PATH "$<TARGET_FILE:stp-bin>")
-else()
-    set(STP_EXECUTABLE_PATH "$<TARGET_FILE:stp_simple-bin>")
-endif()
+set(STP_EXECUTABLE_PATH "$<TARGET_FILE:stp-bin>")
 
 # Create llvm-lit configuration file
 configure_file(lit.site.cfg.in lit.site.cfg.g @ONLY)

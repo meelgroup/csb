@@ -14,9 +14,19 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, macos-14, ubuntu-24.04-arm, macos-13]
-        build_type: [Release]
-        staticcompile: ['ON']
+        include:
+          - os: ubuntu-latest
+            build_type: Release
+            staticcompile: 'ON'
+          - os: ubuntu-24.04-arm
+            build_type: Release
+            staticcompile: 'ON'
+          - os: macos-14
+            build_type: Release
+            staticcompile: 'OFF'
+          - os: macos-13
+            build_type: Release
+            staticcompile: 'OFF'
 
     steps:
     - uses: actions/setup-python@v5
@@ -52,7 +62,7 @@ jobs:
         cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DBUILD_SHARED_LIBS=OFF \
-          -DSTATICCOMPILE=ON \
+          -DSTATICCOMPILE=${{ matrix.staticcompile }} \
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
           -DZLIB_LIBRARY=-lz
         cmake --build build --parallel --config ${{ matrix.build_type }}
@@ -62,12 +72,20 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         cd minisat
-        cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DSTATICCOMPILE=ON \
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
+        if [ "${{ matrix.staticcompile }}" = 'ON' ]; then
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DSTATICCOMPILE=${{ matrix.staticcompile }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
+        else
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DSTATICCOMPILE=${{ matrix.staticcompile }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        fi
         cmake --build build --parallel --config ${{ matrix.build_type }}
         sudo cmake --install build --config ${{ matrix.build_type }}
         cd ..
@@ -357,13 +375,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[Release]')
     steps:
-    - name: Download Artifacts
+    - name: Download Ubuntu Artifacts
       uses: actions/download-artifact@v4
       with:
+        pattern: csb-linux-*
         path: artifacts
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
-        files: artifacts/**/*
+        files: artifacts/csb-linux-*/**/*

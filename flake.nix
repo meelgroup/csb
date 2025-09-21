@@ -156,6 +156,7 @@
           stdenv,
           cmake,
           pkg-config,
+          boost,
           gmp,
           mpfr,
           flint3,
@@ -174,6 +175,7 @@
           flex,
           python3,
           python3Packages,
+          perl,
         }:
         stdenv.mkDerivation {
           name = "csb";
@@ -185,9 +187,11 @@
               flex
               python3
               python3Packages.numpy
+              perl
             ]
             ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
           buildInputs = [
+            boost
             gmp
             mpfr
             flint3
