@@ -71,7 +71,7 @@ if [[ "$os" == "Darwin" ]]; then
   fi
 fi
 
-git clone https://github.com/meelgroup/minisat.git minisat
+git clone --branch csb --single-branch https://github.com/meelgroup/minisat.git minisat
 (
   cd minisat
   git checkout "$MINISAT_REF"
@@ -82,9 +82,12 @@ git clone https://github.com/meelgroup/minisat.git minisat
     -DBUILD_SHARED_LIBS=OFF
     -DSTATICCOMPILE=ON
     -DCMAKE_INSTALL_PREFIX:PATH="$install_dir"
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
   )
   if [[ "$os" == "Darwin" ]]; then
     cmake_args+=(-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake)
+  else
+    cmake_args+=(-DZLIB_LIBRARY=-lz)
   fi
   cmake "${cmake_args[@]}"
   cmake --build build --parallel "$NPROC"
