@@ -602,6 +602,30 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.propagate_equalities = false;
   }
 
+  const char* backend_name = nullptr;
+  switch (bm->UserFlags.solver_to_use)
+  {
+    case UserDefinedFlags::GANAK_SOLVER:
+      backend_name = "ganak";
+      break;
+    case UserDefinedFlags::APPROXMC_SOLVER:
+      backend_name = "approxmc";
+      break;
+    case UserDefinedFlags::UNIGEN_SOLVER:
+      backend_name = "unigen";
+      break;
+    case UserDefinedFlags::CMSGEN_SOLVER:
+      backend_name = "cmsgen";
+      break;
+    default:
+      break;
+  }
+
+  if (backend_name != nullptr)
+  {
+    cout << "c [stp] using " << backend_name << " backend" << endl;
+  }
+
   if (selected_type == 0)
   {
     // No parser is explicity requested.
