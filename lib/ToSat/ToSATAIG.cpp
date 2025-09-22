@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include "stp/Simplifier/Simplifier.h"
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 
+#include <cstdio>
 #include <iostream>
 #include <sstream>
 
@@ -104,8 +105,13 @@ void ToSATAIG::handle_cnf_options(Cnf_Dat_t* cnfData, bool needAbsRef)
       fileName = fallback.str();
     }
 
-    Cnf_DataWriteIntoFile(cnfData, const_cast<char*>(fileName.c_str()), 0);
-    std::cout << fileName << std::endl;
+    const bool is_weighted = (!bm->getWeightSymbols().empty() ||
+                              !bm->getNegWeightSymbols().empty());
+    Cnf_DataWriteIntoFile(cnfData, const_cast<char*>(fileName.c_str()), 0,
+                          is_weighted ? 1 : 0);
+    std::cout << "c [stp] bitblasted CNF stored in " << fileName << std::endl;
+    std::cout.flush();
+    exit(0);
   }
 
   if (bm->UserFlags.exit_after_CNF)

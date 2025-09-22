@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include "stp/Parser/parser.h"
 #include "stp/cpp_interface.h"
 #include "stp/ToSat/ToSATAIG.h"
+#include <filesystem>
 #include <memory>
 
 
@@ -280,20 +281,10 @@ int Main::main(int argc, char** argv)
   {
     if (!infile.empty())
     {
-      std::string cnf_file = infile;
-      const std::string smt2_suffix = ".smt2";
-      const std::string smt2_suffix_upper = ".SMT2";
-      if (cnf_file.size() >= smt2_suffix.size())
-      {
-        const auto suffix_pos = cnf_file.size() - smt2_suffix.size();
-        if (cnf_file.compare(suffix_pos, smt2_suffix.size(), smt2_suffix) == 0 ||
-            cnf_file.compare(suffix_pos, smt2_suffix.size(), smt2_suffix_upper) == 0)
-        {
-          cnf_file.erase(suffix_pos);
-        }
-      }
-      cnf_file += ".cnf";
-      bm->UserFlags.cnf_output_file = cnf_file;
+      namespace fs = std::filesystem;
+      fs::path cnf_path(infile);
+      cnf_path.replace_extension(".cnf");
+      bm->UserFlags.cnf_output_file = cnf_path.filename().string();
     }
     else
     {

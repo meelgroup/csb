@@ -158,25 +158,20 @@ void Cnf_DataFree( Cnf_Dat_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
+static void Cnf_DataWriteInternal(Cnf_Dat_t* p, FILE* pFile, int fReadable,
+                                  int isWeighted)
 {
-  FILE* pFile;
   int *pLit, *pStop, i;
-  int projection = 0, numprojvars = 0;
+  int projection = 0;
 
-  pFile = fopen(pFileName, "w");
-  if (pFile == NULL)
-  {
-    fprintf(stderr, "Cnf_WriteIntoFile(): Output file cannot be opened.\n");
-    return;
-  }
   fprintf(pFile,
           "c Result of efficient AIG-to-CNF conversion using package CNF\n");
   fprintf(pFile, "p cnf %d %d\n", p->nVars, p->nClauses);
+  fprintf(pFile, "c t %s\n", isWeighted ? "pwmc" : "pmc");
 
-  for (int i = 0; i < p->nVars; i++)
+  for (int j = 0; j < p->nVars; j++)
   {
-    if (p->lProjVars[i] == 1)
+    if (p->lProjVars[j] == 1)
     {
       projection = 1;
       break;
@@ -185,25 +180,28 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
   if (projection == 1)
   {
     fprintf(pFile, "c p show ");
-    for (int i = 0; i < p->nVars; i++)
+    for (int j = 0; j < p->nVars; j++)
     {
-      if (p->lProjVars[i] == 1)
+      if (p->lProjVars[j] == 1)
       {
-        fprintf(pFile, "%d ", i + 1);
-        numprojvars++;
+        fprintf(pFile, "%d ", j + 1);
       }
     }
     fprintf(pFile, "0\n");
-    for (int i = 0; i < p->nVars; i++)
+    if (isWeighted)
     {
-      if (p->lProjVars[i] == 1)
+      for (int j = 0; j < p->nVars; j++)
       {
-        fprintf(pFile, "c p weight %d %f 0\n", i + 1, p->lit_weights[i]);
-        fprintf(pFile, "c p weight %d %f 0\n", - (i + 1), p->neg_lit_weights[i]);
-        numprojvars++;
+        if (p->lProjVars[j] != 1)
+          continue;
+
+        if (p->lit_weights[j] >= 0.0)
+          fprintf(pFile, "c p weight %d %f 0\n", j + 1, p->lit_weights[j]);
+        if (p->neg_lit_weights[j] >= 0.0)
+          fprintf(pFile, "c p weight %d %f 0\n", -(j + 1),
+                  p->neg_lit_weights[j]);
       }
     }
-    fprintf(pFile, "0\n");
   }
 
   for (i = 0; i < p->nClauses; i++)
@@ -215,11 +213,29 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
     fprintf(pFile, "0\n");
   }
   fprintf(pFile, "\n");
-  fclose(pFile);
-  if (projection)
+}
+
+void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable,
+                           int isWeighted)
+{
+  FILE* pFile = fopen(pFileName, "w");
+  if (pFile == NULL)
   {
-    (void)numprojvars;
+    fprintf(stderr, "Cnf_WriteIntoFile(): Output file cannot be opened.\n");
+    return;
   }
+
+  Cnf_DataWriteInternal(p, pFile, fReadable, isWeighted);
+  fclose(pFile);
+}
+
+void Cnf_DataWriteIntoStream(Cnf_Dat_t* p, FILE* pFile, int fReadable,
+                             int isWeighted)
+{
+  if (pFile == NULL)
+    return;
+
+  Cnf_DataWriteInternal(p, pFile, fReadable, isWeighted);
 }
 
 /**Function*************************************************************
