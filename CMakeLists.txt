@@ -494,6 +494,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Find UniGen
 # -----------------------------------------------------------------------------
+set(USE_UNIGEN OFF)
 option(NOUNIGEN "Don't try to use UniSamp" OFF)
 
 if (NOT NOUNIGEN)
@@ -560,6 +561,7 @@ endif()
 
 
 
+set(USE_GANAK OFF)
 option(NOGANAK "Don't try to use Ganak" OFF)
 
 if(NOT NOGANAK)

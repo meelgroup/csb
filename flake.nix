@@ -61,9 +61,42 @@
       forAllSystems = lib.genAttrs systems;
       nixpkgsFor = forAllSystems (system: nixpkgs.legacyPackages.${system});
 
-      unigenSrc = unigen;
+      getSource = input: input.outPath or input;
+      getRev = input:
+        if input ? rev then input.rev
+        else if input ? sourceInfo && input.sourceInfo ? rev then input.sourceInfo.rev
+        else "unknown";
+      nixpkgsRev = getRev nixpkgs;
+
+      cadicalInput =
+        if arjun ? inputs && arjun.inputs ? cadical then arjun.inputs.cadical
+        else if cryptominisat ? inputs && cryptominisat.inputs ? cadical then cryptominisat.inputs.cadical
+        else builtins.throw "cadical input unavailable";
+      cadibackInput =
+        if arjun ? inputs && arjun.inputs ? cadiback then arjun.inputs.cadiback
+        else if cryptominisat ? inputs && cryptominisat.inputs ? cadiback then cryptominisat.inputs.cadiback
+        else builtins.throw "cadiback input unavailable";
+
+      arjunSrc = getSource arjun;
+      approxmcSrc = getSource approxmc;
+      breakidSrc = getSource breakid;
+      cadicalSrc = getSource cadicalInput;
+      cadibackSrc = getSource cadibackInput;
       cmsgenSrc = cmsgen;
+      cryptominisatSrc = getSource cryptominisat;
+      ganakSrc = getSource ganak;
       minisatSrc = minisat;
+      sbvaSrc = getSource sbva;
+      unigenSrc = unigen;
+
+      cadicalVersion = getRev cadicalInput;
+      cadibackVersion = getRev cadibackInput;
+      cryptominisatVersion = getRev cryptominisat;
+      arjunVersion = getRev arjun;
+      approxmcVersion = getRev approxmc;
+      sbvaVersion = getRev sbva;
+      breakidVersion = getRev breakid;
+      ganakVersion = getRev ganak;
 
       unigen-package =
         {
@@ -151,6 +184,267 @@
           enableParallelBuilding = true;
         };
 
+      cadical-package =
+        { stdenv }:
+        stdenv.mkDerivation {
+          pname = "cadical";
+          version = cadicalVersion;
+          src = cadicalSrc;
+          configurePhase = ''
+            ./configure --competition
+          '';
+          installPhase = ''
+            mkdir -p $out/lib
+            rm -f build/makefile
+            cp -r configure src/ build/ $out
+            cp build/libcadical.a $out/lib
+            mkdir -p $out/include
+            cp src/*.hpp $out/include
+          '';
+        };
+
+      cadiback-package =
+        {
+          stdenv,
+          git,
+          cadical,
+        }:
+        stdenv.mkDerivation {
+          pname = "cadiback";
+          version = cadibackVersion;
+          src = cadibackSrc;
+          nativeBuildInputs = [ git ];
+          buildInputs = [ cadical ];
+          patchPhase = ''
+            substituteInPlace makefile.in \
+              --replace-fail "/usr/" "$out/" \
+              --replace-fail "../cadical" "${cadical}"
+            substituteInPlace generate \
+              --replace-fail ${lib.escapeShellArg ''[ -d .git ] || die "could not find '.git' directory"''} "" \
+              --replace-fail ${lib.escapeShellArg "`git show|head -1|awk '{print $2}'`"} ${lib.escapeShellArg nixpkgsRev}
+          '';
+          configurePhase = ''
+            export CADICAL=${cadical}
+            ./configure
+          '';
+          preInstall = ''
+            mkdir -p $out/lib
+            mkdir -p $out/include
+          '';
+        };
+
+      sbva-package =
+        {
+          stdenv,
+          cmake,
+          autoPatchelfHook,
+        }:
+        stdenv.mkDerivation {
+          pname = "sbva";
+          version = sbvaVersion;
+          src = sbvaSrc;
+          nativeBuildInputs =
+            [ cmake ]
+            ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+        };
+
+      breakid-package =
+        {
+          stdenv,
+          cmake,
+          autoPatchelfHook,
+        }:
+        stdenv.mkDerivation {
+          pname = "breakid";
+          version = breakidVersion;
+          src = breakidSrc;
+          nativeBuildInputs =
+            [ cmake ]
+            ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+        };
+
+      ensmallen-package =
+        {
+          stdenv,
+          cmake,
+          fetchzip,
+          armadillo,
+        }:
+        stdenv.mkDerivation {
+          pname = "ensmallen";
+          version = "2.21.1";
+          src = fetchzip {
+            url = "https://ensmallen.org/files/ensmallen-2.21.1.tar.gz";
+            hash = "sha256-6LZooaR0rmqWgEm0AxmWoVPuIahjOfwSFu5cssc7LA8=";
+          };
+          nativeBuildInputs = [ cmake ];
+          buildInputs = [ armadillo ];
+        };
+
+      mlpack-package =
+        {
+          stdenv,
+          fetchFromGitHub,
+          cmake,
+          armadillo,
+          ensmallen,
+          cereal,
+          pkg-config,
+        }:
+        stdenv.mkDerivation {
+          pname = "mlpack";
+          version = "4.4.0";
+          src = fetchFromGitHub {
+            owner = "mlpack";
+            repo = "mlpack";
+            rev = "4.4.0";
+            hash = "sha256-EPz8qPTUAldS+k5/qkZf8EKXKjnxElfJxlTEMLPhTQE=";
+          };
+          nativeBuildInputs = [
+            pkg-config
+            cmake
+            armadillo
+          ];
+          buildInputs = [
+            ensmallen
+            cereal
+          ];
+        };
+
+      cryptominisat-package =
+        {
+          stdenv,
+          cmake,
+          pkg-config,
+          cadiback,
+          cadical,
+          gmp,
+          zlib,
+        }:
+        stdenv.mkDerivation {
+          pname = "cryptominisat";
+          version = cryptominisatVersion;
+          src = cryptominisatSrc;
+          nativeBuildInputs = [
+            cmake
+            pkg-config
+          ];
+          buildInputs = [
+            cadiback
+            cadical
+            gmp
+            zlib
+          ];
+        };
+
+      approxmc-package =
+        {
+          stdenv,
+          cmake,
+          autoPatchelfHook,
+          gmp,
+          mpfr,
+          zlib,
+          cryptominisat,
+          arjun,
+          sbva,
+        }:
+        stdenv.mkDerivation {
+          pname = "approxmc";
+          version = approxmcVersion;
+          src = approxmcSrc;
+          nativeBuildInputs =
+            [ cmake ]
+            ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+          buildInputs = [
+            gmp
+            mpfr
+            zlib
+            cryptominisat
+            arjun
+            sbva
+          ];
+        };
+
+      arjun-package =
+        {
+          stdenv,
+          cmake,
+          sbva,
+          zlib,
+          gmp,
+          mpfr,
+          cadiback,
+          mlpack,
+          armadillo,
+          cereal,
+          ensmallen,
+          cadical,
+          cryptominisat5,
+        }:
+        stdenv.mkDerivation {
+          pname = "arjun";
+          version = arjunVersion;
+          src = arjunSrc;
+          nativeBuildInputs = [ cmake ];
+          buildInputs = [
+            zlib
+            sbva
+            gmp
+            mpfr
+            cadiback
+            mlpack
+            armadillo
+            cereal
+            ensmallen
+            cadical
+            cryptominisat5
+          ];
+        };
+
+      ganak-package =
+        {
+          stdenv,
+          cmake,
+          pkg-config,
+          gmp,
+          mpfr,
+          flint3,
+          zlib,
+          autoPatchelfHook,
+          cryptominisat,
+          arjun,
+          sbva,
+          breakid,
+          approxmc,
+          python3,
+          python3Packages,
+        }:
+        stdenv.mkDerivation {
+          pname = "ganak";
+          version = ganakVersion;
+          src = ganakSrc;
+          nativeBuildInputs =
+            [
+              cmake
+              pkg-config
+              python3
+              python3Packages.numpy
+            ]
+            ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+          buildInputs = [
+            gmp
+            mpfr
+            flint3
+            zlib
+            cryptominisat
+            arjun
+            sbva
+            breakid
+            approxmc
+          ];
+        };
+
       csb-package =
         {
           stdenv,
@@ -229,14 +523,45 @@
       packages = forAllSystems (
         system:
         let
-          unigen = nixpkgsFor.${system}.callPackage unigen-package {
-            cryptominisat = cryptominisat.packages.${system}.cryptominisat;
-            arjun = arjun.packages.${system}.arjun;
-            sbva = sbva.packages.${system}.sbva;
-            approxmc = approxmc.packages.${system}.approxmc;
+          pkgs = nixpkgsFor.${system};
+          cadicalPkg = pkgs.callPackage cadical-package { };
+          cadibackPkg = pkgs.callPackage cadiback-package { cadical = cadicalPkg; };
+          sbvaPkg = pkgs.callPackage sbva-package { };
+          breakidPkg = pkgs.callPackage breakid-package { };
+          ensmallenPkg = pkgs.callPackage ensmallen-package { };
+          mlpackPkg = pkgs.callPackage mlpack-package { ensmallen = ensmallenPkg; };
+          cryptominisatPkg = pkgs.callPackage cryptominisat-package {
+            cadical = cadicalPkg;
+            cadiback = cadibackPkg;
+          };
+          arjunPkg = pkgs.callPackage arjun-package {
+            mlpack = mlpackPkg;
+            ensmallen = ensmallenPkg;
+            cadical = cadicalPkg;
+            cadiback = cadibackPkg;
+            cryptominisat5 = cryptominisatPkg;
+            sbva = sbvaPkg;
+          };
+          approxmcPkg = pkgs.callPackage approxmc-package {
+            cryptominisat = cryptominisatPkg;
+            arjun = arjunPkg;
+            sbva = sbvaPkg;
+          };
+          unigen = pkgs.callPackage unigen-package {
+            cryptominisat = cryptominisatPkg;
+            arjun = arjunPkg;
+            sbva = sbvaPkg;
+            approxmc = approxmcPkg;
+          };
+          ganakBase = pkgs.callPackage ganak-package {
+            cryptominisat = cryptominisatPkg;
+            arjun = arjunPkg;
+            sbva = sbvaPkg;
+            breakid = breakidPkg;
+            approxmc = approxmcPkg;
           };
           ganakPkg =
-            (ganak.packages.${system}.ganak).overrideAttrs (old: {
+            ganakBase.overrideAttrs (old: {
               postInstall =
                 (old.postInstall or "")
                 + ''
@@ -260,15 +585,15 @@
                   EOF
                 '';
             });
-          cmsgenPkg = nixpkgsFor.${system}.callPackage cmsgen-package {};
-          minisatPkg = nixpkgsFor.${system}.callPackage minisat-package {};
-          csb = nixpkgsFor.${system}.callPackage csb-package {
-            cryptominisat = cryptominisat.packages.${system}.cryptominisat;
-            arjun = arjun.packages.${system}.arjun;
-            sbva = sbva.packages.${system}.sbva;
-            breakid = breakid.packages.${system}.breakid;
-            approxmc = approxmc.packages.${system}.approxmc;
-            flint3 = nixpkgsFor.${system}.flint;
+          cmsgenPkg = pkgs.callPackage cmsgen-package { };
+          minisatPkg = pkgs.callPackage minisat-package { };
+          csb = pkgs.callPackage csb-package {
+            cryptominisat = cryptominisatPkg;
+            arjun = arjunPkg;
+            sbva = sbvaPkg;
+            breakid = breakidPkg;
+            approxmc = approxmcPkg;
+            flint3 = pkgs.flint;
             cmsgen = cmsgenPkg;
             ganak = ganakPkg;
             minisat = minisatPkg;

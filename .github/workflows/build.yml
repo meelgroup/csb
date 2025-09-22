@@ -349,6 +349,10 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
         -DSTATICCOMPILE=${{ matrix.staticcompile }} \
         -DENABLE_TESTING=OFF \
+        -DFORCE_CMS=ON \
+        -DFORCE_UNIG=ON \
+        -DUSE_GANAK=ON \
+        -DUSE_UNIGEN=ON \
         -S ..
         cmake --build . --config ${{matrix.build_type}} -v
 

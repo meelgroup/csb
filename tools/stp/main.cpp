@@ -288,23 +288,29 @@ void ExtraMain::create_options()
                              "(default)"
 #endif
 #endif
-                  )("unisamp,u", "use unisamp as solver -- behave as a "
-                                 "almost-uniform sampler")(
-                  "cmsgen,s",
-                  "use cmsgen as solver -- behave as a uniform like sampler")(
-                  "approxmc,a",
-                  "use approxmc as solver -- behave as a approximate counter")(
-                  "ganak,e",
-                  "use ganak as solver -- behave as a exact counter")(
-                  "seed",
-                  po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
-                      ->default_value(bm->UserFlags.unisamp_seed),
-                  "Seed for counting and sampling")(
-                  "num-samples,n",
-                  po::value<uint64_t>(&bm->UserFlags.num_samples)
-                      ->default_value(bm->UserFlags.num_samples),
-                  "Number of samples to generate in sampling mode");
-  ;
+                  );
+#ifdef USE_UNIGEN
+  solver_options.add_options()
+      ("unisamp,u", "use unisamp as solver -- behave as a "
+                     "almost-uniform sampler")(
+      "cmsgen,s",
+      "use cmsgen as solver -- behave as a uniform like sampler")(
+      "approxmc,a",
+      "use approxmc as solver -- behave as a approximate counter");
+#endif
+#ifdef USE_GANAK
+  solver_options.add_options()("ganak,e",
+                               "use ganak as solver -- behave as a exact counter");
+#endif
+  solver_options.add_options()
+      ("seed",
+       po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
+           ->default_value(bm->UserFlags.unisamp_seed),
+       "Seed for counting and sampling")(
+      "num-samples,n",
+      po::value<uint64_t>(&bm->UserFlags.num_samples)
+          ->default_value(bm->UserFlags.num_samples),
+      "Number of samples to generate in sampling mode");
 
   po::options_description refinement_options("Refinement options");
   refinement_options.add_options()(
@@ -440,12 +446,16 @@ void ExtraMain::create_options()
       .add(hiddenOptions);
 
   new (&visible_options) po::options_description("Most important options");
-  visible_options.add_options()("help,h", "print this help")(
-      "unisamp,u", "almost-uniform sampler mode (unigen backend)")(
-      "cmsgen,s", "uniform like sampler (cmsgen backend)")(
-      "approxmc,a", "approximate counting mode (approxmc backend)")(
-      "ganak,e", "exact counting mode (ganak backend) [default]")(
-      "seed", po::value<uint64_t>()->default_value(bm->UserFlags.unisamp_seed),
+  visible_options.add_options()("help,h", "print this help")
+#ifdef USE_UNIGEN
+      ("unisamp,u", "almost-uniform sampler mode (unigen backend)")(
+      ("cmsgen,s", "uniform like sampler (cmsgen backend)")(
+      ("approxmc,a", "approximate counting mode (approxmc backend)")
+#endif
+#ifdef USE_GANAK
+      ("ganak,e", "exact counting mode (ganak backend) [default]")
+#endif
+      ("seed", po::value<uint64_t>()->default_value(bm->UserFlags.unisamp_seed),
       "Seed for counting and sampling")(
       "num-samples,n",
        po::value<uint64_t>()->default_value(bm->UserFlags.num_samples),
@@ -565,6 +575,15 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (bm->UserFlags.sampling_mode && bm->UserFlags.counting_mode)
   {
     cout << "ERROR: You have selected both sampling and counting mode" << endl;
+    std::exit(-1);
+  }
+#else
+  if (vm.count("unisamp") || vm.count("cmsgen") || vm.count("approxmc"))
+  {
+    cout << "ERROR: This build does not include UniGen/ApproxMC/CMSGen support."
+         << endl;
+    cout << "Reconfigure the project with UniGen enabled to use these options."
+         << endl;
     std::exit(-1);
   }
 #endif
