@@ -34,28 +34,12 @@ The resulting binaries and libraries are exposed under the `result` symlink crea
 the build.
 Then you will have `csb` binary available and ready to use.
 
+If you want to build manually on MacOS or Linux, see the [build.md](https://github.com/meelgroup/csb/blob/main/scripts/build.md) file for detailed instructions.
 
 <!--
 See the [GitHub
 Action](https://github.com/meelgroup/csb/actions/workflows/build.yml) for the
 specific set of steps. -->
-
-
-### Full Build from Source
-If you want to build `csb` from source manually, you will need to follow these steps:
-
-```
-sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget
-sudo apt install zlib1g-dev libboost-program-options-dev libboost-serialization-dev libgmp-dev libmpfr-dev
-git clone https://github.com/meelgroup/csb
-cd csb
-./scripts/deps/setup-csb.sh
-mkdir build && cd build
-cmake ..
-cmake --build .
-sudo cmake --install .
-```
-
 
 
 ## Usage
