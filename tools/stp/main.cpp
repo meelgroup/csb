@@ -448,8 +448,8 @@ void ExtraMain::create_options()
   new (&visible_options) po::options_description("Most important options");
   visible_options.add_options()("help,h", "print this help")
 #ifdef USE_UNIGEN
-      ("unisamp,u", "almost-uniform sampler mode (unigen backend)")(
-      ("cmsgen,s", "uniform like sampler (cmsgen backend)")(
+      ("unisamp,u", "almost-uniform sampler mode (unigen backend)")
+      ("cmsgen,s", "uniform like sampler (cmsgen backend)")
       ("approxmc,a", "approximate counting mode (approxmc backend)")
 #endif
 #ifdef USE_GANAK

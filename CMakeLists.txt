@@ -494,7 +494,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Find UniGen
 # -----------------------------------------------------------------------------
-set(USE_UNIGEN OFF)
+set(USE_UNIGEN ON)
 option(NOUNIGEN "Don't try to use UniSamp" OFF)
 
 if (NOT NOUNIGEN)
@@ -554,14 +554,14 @@ if (NOT NOUNIGEN)
 endif()
 add_feature_info(UniGen USE_UNIGEN "Enables Uniform Sampling, allows --unisamp option")
 
-option(FORCE_UNIG "Must build with UniGen" OFF)
+option(FORCE_UNIG "Must build with UniGen" ON)
 if (FORCE_UNIG AND NOT USE_UNIGEN)
     message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
 endif()
 
 
 
-set(USE_GANAK OFF)
+set(USE_GANAK ON)
 option(NOGANAK "Don't try to use Ganak" OFF)
 
 if(NOT NOGANAK)
