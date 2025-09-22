@@ -26,6 +26,9 @@ THE SOFTWARE.
 #include "stp/Simplifier/Simplifier.h"
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 
+#include <iostream>
+#include <sstream>
+
 namespace stp
 {
 
@@ -89,9 +92,20 @@ void ToSATAIG::handle_cnf_options(Cnf_Dat_t* cnfData, bool needAbsRef)
 {
   if (bm->UserFlags.output_CNF_flag)
   {
-    std::stringstream fileName;
-    fileName << "output_" << bm->CNFFileNameCounter++ << ".cnf";
-    Cnf_DataWriteIntoFile(cnfData, (char*)fileName.str().c_str(), 0);
+    std::string fileName;
+    if (!bm->UserFlags.cnf_output_file.empty())
+    {
+      fileName = bm->UserFlags.cnf_output_file;
+    }
+    else
+    {
+      std::stringstream fallback;
+      fallback << "output_" << bm->CNFFileNameCounter++ << ".cnf";
+      fileName = fallback.str();
+    }
+
+    Cnf_DataWriteIntoFile(cnfData, const_cast<char*>(fileName.c_str()), 0);
+    std::cout << fileName << std::endl;
   }
 
   if (bm->UserFlags.exit_after_CNF)

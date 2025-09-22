@@ -1094,7 +1094,7 @@ AbsRefine_CounterExample::CallSAT_ResultCheck(SATSolver& SatSolver,
 
     // if the counterexample is indeed a good one, then return
     // invalid
-    if (ASTTrue == orig_result)
+    if (ASTTrue == orig_result || bm->UserFlags.sampling_mode)
     {
       if (bm->UserFlags.check_counterexample_flag)
       {

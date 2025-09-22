@@ -7,7 +7,7 @@
 
 # CSB
 
-CSB (Count and Sample on Bitvectors) is an exact / approximate model counting and almost-uniform sampling tool aimed at solving constraints of bitvectors.
+CSB (Count and Sample on Bitvectors) is an exact / approximate model counting and almost-uniform sampling tool aimed at solving constraints of bitvectors. CSB supports *projection* and *weighted model counting*.
 
 To learn more about CSB, please have a look at our [SMT Workshop '24 paper](https://ceur-ws.org/Vol-3725/short2.pdf).
 
@@ -63,7 +63,7 @@ sudo cmake --install .
 The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
 
 
-### Usage as Exact Counter:
+### Usage as Exact Counter (Weighted/Unweighted):
 
 Run with an SMT-LIB2 file:
 ```
@@ -75,14 +75,14 @@ Run with an SMT-LIB2 file:
 
 Run with an SMT-LIB2 file:
 ```
-./csb -c myproblem.smt2
+./csb -a myproblem.smt2
 ```
 
 ### Usage as Uniform-like Sampler:
 The samples should be uniform in practice. Run with an SMT-LIB2 file:
 
 ```
-./csb -s --ns 10 --seed 6 myproblem.smt2
+./csb -s -n 10 myproblem.smt2
 ```
 
 
@@ -90,10 +90,16 @@ The samples should be uniform in practice. Run with an SMT-LIB2 file:
 
 The samples are generated with theoretical guarantees on uniformity. But this procedure might be slower than uniform-like sampler.
 ```
-./csb -u --ns 10 --seed 6 myproblem.smt2
+./csb -u -n 10 myproblem.smt2
 ```
 
 Change seed value to get different samples. Refer to [this post](https://www.msoos.org/2022/06/checking-uniform-like-samplers/) to know more about uniform, almost-uniform and uniform like samplers.
+
+### Get model preserving bitblasted CNF:
+```
+./csb -c myproblem.smt2
+```
+
 
 
 ## Input format
@@ -155,5 +161,5 @@ You can add weights to both literals of a variable. If only one literal is given
 * [Arijit Shaw](https://arijitsh.github.io)
 * [Kuldeep S. Meel](https://www.cs.toronto.edu/~meel/)
 
-Please refer to  STP/UniGen/ApproxMC for the respective authors.
+Please refer to  STP/Ganak/UniGen/ApproxMC/CMSGen for the respective authors.
 

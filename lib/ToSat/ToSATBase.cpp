@@ -79,7 +79,10 @@ void ToSATBase::PrintOutput(SOLVER_RETURN_TYPE ret)
     {
       if (bm->UserFlags.smtlib1_parser_flag ||
           bm->UserFlags.smtlib2_parser_flag)
-        cout << "sat\n";
+      {
+        if (!bm->UserFlags.counting_mode)
+          cout << "sat\n";
+      }
       else
         cout << "Invalid.\n";
     }

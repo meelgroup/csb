@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include "main_common.h"
 
 #include <boost/program_options.hpp>
+#include <new>
 namespace po = boost::program_options;
 
 using namespace stp;
@@ -82,12 +83,11 @@ void ExtraMain::try_parsing_options(
 
     if (vm.count("help"))
     {
-      cout << "USAGE: stp [options] <input-file>" << endl
-           << " where input is SMTLIB1/2 or CVC depending on options and file "
-              "extension"
-           << endl;
+      cout << "USAGE: csb [mode] <input-file>" << endl
+           << " where input is SMTLIB2 file" << endl;
 
-      cout << cmdline_options << endl;
+      cout << visible_options << '\n';
+      cout << "weights are supported only in ganak (default) mode." << endl;
       exit(0);
     }
 
@@ -154,7 +154,7 @@ void ExtraMain::create_options()
   simplification_options.add_options()("disable-simplifications",
                                        "disable all simplifications")(
       "switch-word,w", "switch off wordlevel solver")(
-      "disable-opt-inc,a", "disable rewriting simplifier")(
+      "disable-opt-inc", "disable rewriting simplifier")(
       "disable-cbitp", "disable constant bit propagation")(
       "disable-equality", "disable equality propagation")(
       "size-reducing-only", "size reducing simplifications only")
@@ -292,7 +292,7 @@ void ExtraMain::create_options()
                                  "almost-uniform sampler")(
                   "cmsgen,s",
                   "use cmsgen as solver -- behave as a uniform like sampler")(
-                  "approxmc,c",
+                  "approxmc,a",
                   "use approxmc as solver -- behave as a approximate counter")(
                   "ganak,e",
                   "use ganak as solver -- behave as a exact counter")(
@@ -300,7 +300,7 @@ void ExtraMain::create_options()
                   po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
                       ->default_value(bm->UserFlags.unisamp_seed),
                   "Seed for counting and sampling")(
-                  "num-samples,ns",
+                  "num-samples,n",
                   po::value<uint64_t>(&bm->UserFlags.num_samples)
                       ->default_value(bm->UserFlags.num_samples),
                   "Number of samples to generate in sampling mode");
@@ -346,7 +346,7 @@ void ExtraMain::create_options()
       po::bool_switch(&(bm->UserFlags.quick_statistics_flag)),
       "print quick statistics")(
       "print-nodes,v", po::bool_switch(&(bm->UserFlags.print_nodes_flag)),
-      "print nodes ")("print-output,n",
+      "print nodes ")("print-output",
                       po::bool_switch(&(bm->UserFlags.print_output_flag)),
                       "Print output");
 
@@ -357,10 +357,8 @@ void ExtraMain::create_options()
 
   po::options_description output_options("Output options");
   output_options.add_options()(
-      "output-CNF", po::bool_switch(&(bm->UserFlags.output_CNF_flag)),
-      "Save the CNF into output_[0..n].cnf. NOTE: variables cannot be mapped "
-      "back, and problems solved by the preprocessing simplifier alone will "
-      "not generate any CNF as the SAT solver is never invoked")(
+      "cnf,c", po::bool_switch(&(bm->UserFlags.output_CNF_flag)),
+      "get model preserving bitblasted CNF")(
       "output-bench", po::bool_switch(&(bm->UserFlags.output_bench_flag)),
       "save in ABC's bench format to output.bench");
 
@@ -441,16 +439,17 @@ void ExtraMain::create_options()
       .add(misc_options)
       .add(hiddenOptions);
 
-  // Register everything except hiddenOptions
-  visible_options.add(general_options)
-      .add(simplification_options)
-      .add(solver_options)
-      .add(refinement_options)
-      .add(bb_options)
-      .add(print_options)
-      .add(input_options)
-      .add(output_options)
-      .add(misc_options);
+  new (&visible_options) po::options_description("Most important options");
+  visible_options.add_options()("help,h", "print this help")(
+      "unisamp,u", "almost-uniform sampler mode (unigen backend)")(
+      "cmsgen,s", "uniform like sampler (cmsgen backend)")(
+      "approxmc,a", "approximate counting mode (approxmc backend)")(
+      "ganak,e", "exact counting mode (ganak backend) [default]")(
+      "seed", po::value<uint64_t>()->default_value(bm->UserFlags.unisamp_seed),
+      "Seed for counting and sampling")(
+      "num-samples,n",
+       po::value<uint64_t>()->default_value(bm->UserFlags.num_samples),
+       "Number of samples to generate in sampling mode");
 
   pos_options.add("file", 1);
 }
@@ -567,6 +566,13 @@ int ExtraMain::parse_options(int argc, char** argv)
   {
     cout << "ERROR: You have selected both sampling and counting mode" << endl;
     std::exit(-1);
+  }
+#endif
+#ifdef USE_GANAK
+  if (bm->UserFlags.solver_to_use == UserDefinedFlags::GANAK_SOLVER &&
+      !bm->UserFlags.sampling_mode && !bm->UserFlags.counting_mode)
+  {
+    bm->UserFlags.counting_mode = true;
   }
 #endif
 #ifdef USE_GANAK

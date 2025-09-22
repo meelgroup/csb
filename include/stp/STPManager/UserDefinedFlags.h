@@ -24,6 +24,8 @@ THE SOFTWARE.
 #ifndef UDEFFLAGS_H
 #define UDEFFLAGS_H
 
+#include <string>
+
 namespace stp
 {
 
@@ -109,6 +111,7 @@ public:
 
   // output flags
   bool output_CNF_flag = false;
+  std::string cnf_output_file;
   bool output_bench_flag = false;
   bool verbose_in_counting = false;
 
@@ -141,7 +144,7 @@ public:
 
   int64_t timeout_max_conflicts = -1;
   int num_solver_threads = 1;
-  uint64_t unisamp_seed = 12345;
+  uint64_t unisamp_seed = 42;
   uint64_t num_samples = 10;
   uint64_t samples_generated = 0;
   int64_t timeout_max_time = -1; // seconds

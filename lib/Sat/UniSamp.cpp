@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include "approxmc/approxmc.h"
 #include "unigen/unigen.h"
 #include <algorithm>
+#include <unordered_map>
 #include <unordered_set>
 using std::vector;
 
@@ -39,6 +40,9 @@ namespace stp
 {
 
 static vector<vector<int>> unigen_models;
+static size_t next_model_index = 0;
+static std::vector<uint32_t> cached_sampling_vars;
+static std::unordered_map<uint32_t, size_t> sat_var_to_sample_index;
 
 void mycallback(const std::vector<int>& solution, void* data)
 {
@@ -59,20 +63,34 @@ void UniSamp::enableRefinement(const bool enable)
 
 UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
                  uint64_t _samples_generated)
-    : cnf(fg)
+    : cnf(fg), seed(unisamp_seed), samples_generated(_samples_generated),
+      samples_needed(_samples_needed), unisamp_ran(false)
 {
+  if (_samples_generated == 0)
+  {
+    unigen_models.clear();
+    cached_sampling_vars.clear();
+    next_model_index = 0;
+  }
+  else
+  {
+    next_model_index = _samples_generated;
+  }
+
   appmc = new ApproxMC::AppMC(fg);
   unigen = new UniG(appmc);
   arjun = new ArjunNS::Arjun;
-  seed = unisamp_seed;
-  samples_needed = _samples_needed;
-  samples_generated = _samples_generated;
   unigen->set_callback(mycallback, &unigen_models);
   appmc->set_verbosity(0);
   arjun->set_verb(0);
   unigen->set_verbosity(0);
   appmc->set_seed(seed);
   temp_cl = (void*)new vector<CMSat::Lit>;
+
+  if (samples_needed == 0)
+    samples_needed = 1;
+
+  unisamp_ran = !unigen_models.empty();
 }
 
 UniSamp::~UniSamp()
@@ -121,72 +139,101 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
    * accidentally setting a large limit (or one in the past).
    */
 
-  // CMSat::lbool ret = s->solve(); // TODO AS
+  timeout_expired = false;
+
+  if (!unisamp_ran || next_model_index >= unigen_models.size())
+  {
+    unigen_models.clear();
+    sampling_vars_current.clear();
+    cached_sampling_vars.clear();
+    next_model_index = 0;
+
+    cnf.set_sampl_vars(sampling_vars_orig);
+
+    ArjunNS::SimpConf sc;
+    sc.appmc = true;
+    sc.oracle_vivify = true;
+    sc.oracle_vivify_get_learnts = true;
+    sc.oracle_sparsify = false;
+    sc.iter1 = 2;
+    sc.iter2 = 0;
+
+    auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
+
+    appmc->new_vars(ret.nvars);
+    for (const auto& cl : ret.clauses)
+      appmc->add_clause(cl);
+    for (const auto& cl : ret.red_clauses)
+      appmc->add_clause(cl);
+
+    appmc->set_sampl_vars(ret.sampl_vars);
+    sampling_vars_current = ret.sampl_vars;
+    cached_sampling_vars = sampling_vars_current;
+    sat_var_to_sample_index.clear();
+    for (size_t i = 0; i < sampling_vars_current.size() &&
+                       i < sampling_vars_orig.size();
+         ++i)
+    {
+      sat_var_to_sample_index[sampling_vars_orig[i]] = i;
+    }
+
+    std::vector<uint32_t> all_vars(ret.nvars);
+    for (uint32_t i = 0; i < ret.nvars; i++)
+      all_vars[i] = i;
+
+    auto sol_count = appmc->count();
+    cout << "c Sol count: " << sol_count.cellSolCount << "*2**"
+         << sol_count.hashCount << endl;
+
+    unigen->set_verbosity(0);
+    unigen->set_verb_sampler_cls(0);
+    unigen->set_kappa(0.1);
+    unigen->set_multisample(true);
+    unigen->set_full_sampling_vars(all_vars);
+
+    unigen_models.clear();
+    unigen->sample(&sol_count, samples_needed);
+    unisamp_ran = true;
+  }
+  else if (!cached_sampling_vars.empty())
+  {
+    sampling_vars_current = cached_sampling_vars;
+  }
+
+  if (unigen_models.empty())
+  {
+    return false;
+  }
+
+  const size_t current_index =
+      std::min(next_model_index, unigen_models.size() - 1);
   samples_generated++;
-  std::cout << "c [stp->unigen] Generating Sample number " << samples_generated
-            << std::endl;
-  if (samples_generated > 1)
-    return true;
-
-  std::cout << "c [stp->unigen] UniSamp solving instance with "
-            << cnf.nVars() << " variables." << std::endl;
-
-  cnf.set_sampl_vars(sampling_vars_orig);
-
-  ArjunNS::SimpConf sc;
-  sc.appmc = true;
-  sc.oracle_vivify = true;
-  sc.oracle_vivify_get_learnts = true;
-  sc.oracle_sparsify = false;
-  sc.iter1 = 2;
-  sc.iter2 = 0;
-
-  auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
-
-  appmc->new_vars(ret.nvars);
-  for (const auto& cl : ret.clauses)
-    appmc->add_clause(cl);
-  for (const auto& cl : ret.red_clauses)
-    appmc->add_clause(cl);
-
-  appmc->set_sampl_vars(ret.sampl_vars);
-
-  std::vector<uint32_t> all_vars(ret.nvars);
-  for (uint32_t i = 0; i < ret.nvars; i++)
-    all_vars[i] = i;
-
-  std::cout << "c [unigen->arjun] sampling var size [from arjun] "
-            << ret.sampl_vars.size() << " orig size "
-            << sampling_vars_orig.size() << "\n";
-
-  auto sol_count = appmc->count();
-  cout << "c Sol count: " << sol_count.cellSolCount << "*2**"
-       << sol_count.hashCount << endl;
-
-  unigen->set_verbosity(0);
-  unigen->set_verb_sampler_cls(0);
-  unigen->set_kappa(0.1);
-  unigen->set_multisample(false);
-  unigen->set_full_sampling_vars(all_vars);
-
-  unigen->sample(&sol_count, samples_needed);
-  unisamp_ran = true;
+  next_model_index = current_index + 1;
   return true;
 }
 
 uint8_t UniSamp::modelValue(uint32_t x) const
 {
-  //   if (unigen_models[0].size() < sampling_vars.size())
-  //     std::cout << "c [stp->unigen] ERROR! found model size is not large enough\n";
-  if (samples_generated >= unigen_models.size())
+  if (!unisamp_ran || unigen_models.empty() || samples_generated == 0)
   {
-    std::cout << "c [stp->unigen] ERROR! samples_generated: "
-              << samples_generated
-              << " but unigen_models.size(): " << unigen_models.size()
-              << std::endl;
-    exit(-1);
+    return (uint8_t)0;
   }
-  return (unigen_models.at(samples_generated).at(x) > 0);
+
+  const size_t sample_index = next_model_index == 0
+                                  ? std::min<size_t>(0, unigen_models.size() - 1)
+                                  : std::min<size_t>(next_model_index - 1,
+                                                     unigen_models.size() - 1);
+  const auto& sample = unigen_models.at(sample_index);
+
+  const auto it = sat_var_to_sample_index.find(x);
+  if (it == sat_var_to_sample_index.end())
+    return (uint8_t)0;
+
+  const size_t idx = it->second;
+  if (idx >= sample.size())
+    return (uint8_t)0;
+
+  return sample.at(idx) > 0 ? (uint8_t)1 : (uint8_t)-1;
 }
 
 uint32_t UniSamp::newProjVar(uint32_t x)

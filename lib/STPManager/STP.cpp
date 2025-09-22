@@ -357,13 +357,15 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   }
 
   if (bm->UserFlags.check_counterexample_flag ||
-      bm->UserFlags.print_counterexample_flag || (arrayops && !removed))
+      bm->UserFlags.print_counterexample_flag || bm->UserFlags.sampling_mode ||
+      (arrayops && !removed))
     bm->UserFlags.construct_counterexample_flag = true;
   else
     bm->UserFlags.construct_counterexample_flag = false;
 
 #ifndef NDEBUG
-  bm->UserFlags.construct_counterexample_flag = true;
+  if (!bm->UserFlags.counting_mode)
+    bm->UserFlags.construct_counterexample_flag = true;
 #endif
 
   if (bm->UserFlags.enable_flatten)

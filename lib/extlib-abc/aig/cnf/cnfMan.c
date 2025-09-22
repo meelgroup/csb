@@ -165,10 +165,9 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
   int projection = 0, numprojvars = 0;
 
   pFile = fopen(pFileName, "w");
-  printf("Writing CNF into file %s\n", pFileName);
   if (pFile == NULL)
   {
-    printf("Cnf_WriteIntoFile(): Output file cannot be opened.\n");
+    fprintf(stderr, "Cnf_WriteIntoFile(): Output file cannot be opened.\n");
     return;
   }
   fprintf(pFile,
@@ -180,7 +179,6 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
     if (p->lProjVars[i] == 1)
     {
       projection = 1;
-      printf("c Projection variable exists\n");
       break;
     }
   }
@@ -220,7 +218,7 @@ void Cnf_DataWriteIntoFile(Cnf_Dat_t* p, char* pFileName, int fReadable)
   fclose(pFile);
   if (projection)
   {
-    printf("c Number of projection variables in CNF = %d\n", numprojvars);
+    (void)numprojvars;
   }
 }
 

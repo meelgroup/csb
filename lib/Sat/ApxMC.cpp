@@ -147,8 +147,15 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
                sol_count.hashCount);
 
   const CMSat::Field* ptr = appmc.get_multiplier_weight().get();
-  const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
-  mpq_class final = mult->val * result;
+  mpq_class multiplier(1);
+  if (ptr != nullptr)
+  {
+    if (const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr))
+    {
+      multiplier = mult->val;
+    }
+  }
+  mpq_class final = multiplier * result;
 
   std::cout << "s mc " << final << std::endl;
 
