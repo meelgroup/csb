@@ -500,8 +500,27 @@ option(NOUNIGEN "Don't try to use UniSamp" OFF)
 if (NOT NOUNIGEN)
   # Try to locate UniGen in the repository's deps directory by default so
   # users don't need to specify -Dunigen_DIR on the command line.
-  set(unigen_DIR "${PROJECT_SOURCE_DIR}/deps/unigen/build" CACHE PATH
-      "Path to directory containing unigenConfig.cmake")
+  set(_unigen_config_hints
+      "${PROJECT_SOURCE_DIR}/deps/unigen/build"
+      "${PROJECT_SOURCE_DIR}/../unigen/build"
+  )
+
+  # If the caller hasn't provided a usable path to unigenConfig.cmake, try a
+  # few sensible defaults.  This covers both the local "deps" layout and the
+  # directory structure used in CI where UniGen is checked out next to the
+  # project repository.
+  if(NOT DEFINED unigen_DIR OR unigen_DIR STREQUAL "" OR
+     NOT EXISTS "${unigen_DIR}/unigenConfig.cmake")
+    foreach(_unigen_candidate IN LISTS _unigen_config_hints)
+      if(EXISTS "${_unigen_candidate}/unigenConfig.cmake")
+        set(unigen_DIR "${_unigen_candidate}" CACHE PATH
+            "Path to directory containing unigenConfig.cmake" FORCE)
+        break()
+      endif()
+    endforeach()
+  endif()
+  unset(_unigen_candidate)
+  unset(_unigen_config_hints)
 
   find_package(arjun CONFIG)
   if (arjun_FOUND)

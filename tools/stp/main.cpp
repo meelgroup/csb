@@ -371,39 +371,39 @@ void ExtraMain::create_options()
 
   po::options_description bb_options("Bit-blasting options");
   bb_options.add_options()
-    ("bb.div-v1", 
+    ("bb.div-v1",
       BOOL_ARG(bm->UserFlags.division_variant_1),
       "unsigned division encoding variant 1")
 
-    ("bb.div-v2", 
+    ("bb.div-v2",
       BOOL_ARG(bm->UserFlags.division_variant_2),
       "unsigned division encoding variant 2")
 
-    ("bb.div-v3", 
+    ("bb.div-v3",
       BOOL_ARG(bm->UserFlags.division_variant_3),
       "unsigned division encoding variant 3")
 
-    ("bb.add-v1", 
+    ("bb.add-v1",
       BOOL_ARG(bm->UserFlags.adder_variant),
       "addition encoding variant 1")
 
-    ("bb.add-v2", 
+    ("bb.add-v2",
       BOOL_ARG(bm->UserFlags.bvplus_variant),
       "addition encoding variant 2")
 
-    ("bb.vle-v1", 
+    ("bb.vle-v1",
       BOOL_ARG(bm->UserFlags.bbbvle_variant),
       "comparison encoding variant 1")
 
-    ("bb.mult-variant", 
+    ("bb.mult-variant",
      INT64_ARG(bm->UserFlags.multiplication_variant),
     "unsigned multiplication variant")
 
-    ("bb.mult-v2", 
+    ("bb.mult-v2",
       BOOL_ARG(bm->UserFlags.upper_multiplication_bound),
       "unsigned multiplication variant 2")
 
-    ("bb.conjoin-constant", 
+    ("bb.conjoin-constant",
       BOOL_ARG(bm->UserFlags.conjoin_to_top),
       "When constant-bit propagation detects a constant bit during AIG construction, assert the AIG node and replace it, in the AIG, by the constant bit"
       );

@@ -272,10 +272,10 @@
         }:
         stdenv.mkDerivation {
           pname = "ensmallen";
-          version = "2.21.1";
+          version = "2.22.2";
           src = fetchzip {
-            url = "https://ensmallen.org/files/ensmallen-2.21.1.tar.gz";
-            hash = "sha256-6LZooaR0rmqWgEm0AxmWoVPuIahjOfwSFu5cssc7LA8=";
+            url = "https://ensmallen.org/files/ensmallen-2.22.2.tar.gz";
+            hash = "sha256-awM1Si6AcbAi4bfr2nrcGngcqTYMp9m6g3UPpMC4/Ok=";
           };
           nativeBuildInputs = [ cmake ];
           buildInputs = [ armadillo ];
@@ -293,12 +293,12 @@
         }:
         stdenv.mkDerivation {
           pname = "mlpack";
-          version = "4.4.0";
+          version = "4.6.2";
           src = fetchFromGitHub {
             owner = "mlpack";
             repo = "mlpack";
-            rev = "4.4.0";
-            hash = "sha256-EPz8qPTUAldS+k5/qkZf8EKXKjnxElfJxlTEMLPhTQE=";
+            rev = "4.6.2";
+            hash = "sha256-HtxwUck9whHg/YLKJVJkNsh4zLIu6b0a+NeKICmB7uk=";
           };
           nativeBuildInputs = [
             pkg-config
@@ -603,6 +603,7 @@
         {
           inherit csb unigen;
           cmsgen = cmsgenPkg;
+          mlpack = mlpackPkg;
           default = csb;
         }
       );
