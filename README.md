@@ -110,7 +110,8 @@ CSB supports projection variables for counting and sampling. Variables can be de
 
 ### Support for Weights
 
-CSB supports weights for variables in the counting process. Weights can be assigned to each variable (and its negation) using the `declare-weight` keyword. Weights can be assigned to Boolean variables only. Here is an example of extending the SMT-LIB2 format to include weights.
+CSB supports weights for variables in the counting process. Weights can be assigned to each variable (and its negation) using the `declare-weight` keyword in floating point. Weights can be assigned to Boolean variables only. Here is an example of extending the SMT-LIB2 format to include weights. Weights can be used with or without projection variables.
+
 ```
 (set-logic QF_BV)
 
@@ -119,13 +120,14 @@ CSB supports weights for variables in the counting process. Weights can be assig
 (declare-const x (_ BitVec 4))
 (declare-const y (_ BitVec 4))
 
+(declare-projvar p q)
+
 (declare-weight p 0.8)
 (declare-weight -p 1.0)
 (declare-weight q 0.3)
 
-; If p then x+y = 10, if q then x+y = 5 (mod 16).
-(assert (=> p (= (bvadd x y) #xA))) ; 0x0A = 10
-(assert (=> q (= (bvadd x y) #x5))) ; 0x05 = 5
+(assert (=> p (= (bvadd x y) #xA)))
+(assert (=> q (= (bvadd x y) #x5)))
 
 (check-sat)
 ```
