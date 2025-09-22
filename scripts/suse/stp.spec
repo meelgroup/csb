@@ -108,7 +108,7 @@ Python bindings for stp library.
 
 %files
 %defattr(-,root,root)
-%doc AUTHORS README.markdown LICENSE
+%doc AUTHORS README.markdown scripts/legacy/LICENSE
 %{_bindir}/stp*
 %exclude %{_docdir}/%{name}/example/
 

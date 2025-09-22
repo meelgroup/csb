@@ -857,10 +857,10 @@ export(TARGETS stp
 # Create STPConfig file
 set(EXPORT_TYPE "Build-tree")
 set(CONF_INCLUDE_DIRS "${PROJECT_BINARY_DIR}/include")
-configure_file(STPConfig.cmake.in
+configure_file(scripts/legacy/STPConfig.cmake.in
   "${PROJECT_BINARY_DIR}/${STP_CONFIG_FILENAME}" @ONLY
 )
-configure_file(STPConfigVersion.cmake.in
+configure_file(scripts/legacy/STPConfigVersion.cmake.in
   "${PROJECT_BINARY_DIR}/${STP_CONFIG_VERSION_FILENAME}" @ONLY
 )
 
@@ -885,7 +885,7 @@ set(STP_INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH
 # Create STPConfig file
 set(EXPORT_TYPE "installed")
 set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
-configure_file(STPConfig.cmake.in
+configure_file(scripts/legacy/STPConfig.cmake.in
   "${PROJECT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/${STP_CONFIG_FILENAME}" @ONLY
 )
 
