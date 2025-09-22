@@ -27,7 +27,7 @@ nix shell github:meelgroup/ganak#ganak
 ### Building with Nix
  Simply [install nix](https://nixos.org/download/), then build  `csb`:
 ```
-nix build .#csb
+nix --extra-experimental-features 'nix-command flakes' shell github:meelgroup/csb#csb
 ```
 
 The resulting binaries and libraries are exposed under the `result` symlink created by
@@ -141,8 +141,8 @@ CSB supports weights for variables in the counting process. Weights can be assig
 
 (check-sat)
 ```
+You can add weights to both literals of a variable. If only one literal is given a weight `w`, the other literal is assigned a default weight of `(1.0-w)`. If no weights are provided for a projection variable, both literals are assigned a default weight of `0.5`.
 
-### Support for Weights
 
 
 ## Architecture
