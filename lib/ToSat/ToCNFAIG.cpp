@@ -180,17 +180,25 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
           {
             auto ws = bm->getWeightSymbols().find(n);
             auto nws = bm->getNegWeightSymbols().find(n);
-            cnfData->lProjVars[v[i]] = 1;
-            cnfData->lit_weights[v[i]] =
+            const double pos_weight =
                 (ws != bm->getWeightSymbols().end()) ? ws->second : -1.0;
-            cnfData->neg_lit_weights[v[i]] =
+            const double neg_weight =
                 (nws != bm->getNegWeightSymbols().end()) ? nws->second : -1.0;
+            cnfData->lProjVars[v[i]] = 1;
+            cnfData->lit_weights[v[i]] = pos_weight;
+            cnfData->neg_lit_weights[v[i]] = neg_weight;
 
             if (verbosity>1)
               std::cout << "Projection variable: " << n.GetName() << " "
                       << v[i] + 1 << endl;
 
-            std::cout << "c [stp->gnk] weight symbol found " << n.GetName() << " varname " << v[i] << " weight " << ws->second << "," << nws->second << std::endl;
+            if (ws != bm->getWeightSymbols().end() ||
+                nws != bm->getNegWeightSymbols().end())
+            {
+              std::cout << "c [stp->gnk] weight symbol found " << n.GetName()
+                        << " varname " << v[i] << " weight " << pos_weight
+                        << "," << neg_weight << std::endl;
+            }
 
           }
           else

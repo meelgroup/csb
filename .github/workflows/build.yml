@@ -63,6 +63,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DBUILD_SHARED_LIBS=OFF \
           -DSTATICCOMPILE=${{ matrix.staticcompile }} \
+          -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
           -DZLIB_LIBRARY=-lz
         cmake --build build --parallel --config ${{ matrix.build_type }}
@@ -77,13 +78,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DBUILD_SHARED_LIBS=OFF \
             -DSTATICCOMPILE=${{ matrix.staticcompile }} \
+            -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
         else
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DBUILD_SHARED_LIBS=OFF \
+            -DBUILD_SHARED_LIBS=ON \
             -DSTATICCOMPILE=${{ matrix.staticcompile }} \
+            -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         fi
         cmake --build build --parallel --config ${{ matrix.build_type }}

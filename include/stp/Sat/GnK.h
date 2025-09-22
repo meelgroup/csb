@@ -40,7 +40,9 @@ THE SOFTWARE.
 #include "approxmc/approxmc.h"
 #include "arjun/arjun.h"
 
+#include <memory>
 #include <unordered_set>
+#include <vector>
 // clang-format on
 
 using std::vector;
@@ -64,15 +66,12 @@ class GnK : public SATSolver
   ArjunNS::SimpConf simp_conf;
   int do_precise = 1;
   ArjunNS::Arjun::ElimToFileConf etof_conf;
-  ArjunNS::Arjun* arjun;
-  Ganak* ganak;
+  std::unique_ptr<ArjunNS::Arjun> arjun;
   uint64_t seed;
   vector<uint32_t> sampling_vars_orig;
   std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpq>();
 
   ArjunNS::SimplifiedCNF cnf;
-  std::vector<double> lit_weights;
-  std::vector<double> neg_lit_weights;
 
 public:
   GnK(uint64_t unisamp_seed);
@@ -118,7 +117,7 @@ public:
   void solveAndDump();
 
 private:
-  void* temp_cl;
+  std::vector<CMSat::Lit> temp_cl;
   int64_t max_confl = 0;
   int64_t max_time = 0; // seconds
 };
