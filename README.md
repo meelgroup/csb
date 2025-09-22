@@ -17,9 +17,9 @@ CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top o
 ## Building
 
 ### Use Release Binaries
-Use of the [release binaries](https://github.com/meelgroup/csb/releases) is
-_strongly_ encouraged, as CSB requires a specific set of libraries to be
-installed. The second best thing to use is Nix.
+If you are using Linux, use of the [release binaries](https://github.com/meelgroup/csb/releases) is _strongly_ encouraged, as CSB requires a specific set of libraries to be installed.
+
+If you want a local build of CSB, or use MacOS please follow the instructions below.
 <!-- ```shell
 nix shell github:meelgroup/ganak#ganak
 ``` -->
@@ -27,12 +27,10 @@ nix shell github:meelgroup/ganak#ganak
 ### Building with Nix
  Simply [install nix](https://nixos.org/download/), then build  `csb`:
 ```
-nix --extra-experimental-features 'nix-command flakes' shell github:meelgroup/csb#csb
+nix --extra-experimental-features 'nix-command flakes' build github:meelgroup/csb#csb
 ```
 
-The resulting binaries and libraries are exposed under the `result` symlink created by
-the build.
-Then you will have `csb` binary available and ready to use.
+Then you will have `csb` binary available at `result/bin/csb` and ready to use.
 
 If you want to build manually on MacOS or Linux, see the [build.md](https://github.com/meelgroup/csb/blob/main/scripts/build.md) file for detailed instructions.
 
@@ -44,7 +42,7 @@ specific set of steps. -->
 
 ## Usage
 
-The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+The input is expected in [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format. See the section on input format for details on projected or weighted model counting.
 
 
 ### Usage as Exact Counter (Weighted/Unweighted):
@@ -88,7 +86,7 @@ Change seed value to get different samples. Refer to [this post](https://www.mso
 
 ## Input format
 
-The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is the recommended file format, because it is parsed by all modern bitvector solvers. Only quantifier-free bitvectors and arrays are implemented from the SMT-LIB2 format.
+The [SMT-LIB2](https://smtlib.cs.uiowa.edu/language.shtml) format is extended to support projection variables and weights. The extensions are described below.
 
 ### Support for Projection Variables
 CSB supports projection variables for counting and sampling. Variables can be designated as projection variables using the `declare-projvar` keyword. Each `declare-projvar` command can include one or more variables and multiple `declare-projvar` commands are supported. Projection variables can be declared at any point in the file, provided they are specified after the variable declaration and before the `declare-projvar` command. Here is an example of extending the SMT-LIB2 format to include projection variables.
