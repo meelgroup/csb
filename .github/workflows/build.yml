@@ -47,28 +47,31 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         brew update
-        brew install cmake boost gmp mpfr wget zig
+        brew install bison cmake boost gmp mpfr wget zig
         MPFR_PREFIX=$(brew --prefix mpfr)
+        GMP_PREFIX=$(brew --prefix gmp)
+        BISON_PREFIX=$(brew --prefix bison)
         if [ -n "${CPPFLAGS:-}" ]; then
-          echo "CPPFLAGS=${CPPFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=${CPPFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         else
-          echo "CPPFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         fi
         if [ -n "${CXXFLAGS:-}" ]; then
-          echo "CXXFLAGS=${CXXFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=${CXXFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         else
-          echo "CXXFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CXXFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         fi
         if [ -n "${CFLAGS:-}" ]; then
-          echo "CFLAGS=${CFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CFLAGS=${CFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         else
-          echo "CFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
         fi
         if [ -n "${LDFLAGS:-}" ]; then
-          echo "LDFLAGS=${LDFLAGS} -L${MPFR_PREFIX}/lib -lmpfr" >> "$GITHUB_ENV"
+          echo "LDFLAGS=${LDFLAGS} -L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
         else
-          echo "LDFLAGS=-L${MPFR_PREFIX}/lib -lmpfr" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
         fi
+        echo "PATH=${BISON_PREFIX}/bin:${PATH}" >> "$GITHUB_ENV"
 
     - name: Checkout Minisat
       uses: actions/checkout@v4
