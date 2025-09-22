@@ -48,6 +48,27 @@ jobs:
       run: |
         brew update
         brew install cmake boost gmp mpfr wget zig
+        MPFR_PREFIX=$(brew --prefix mpfr)
+        if [ -n "${CPPFLAGS:-}" ]; then
+          echo "CPPFLAGS=${CPPFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        else
+          echo "CPPFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        fi
+        if [ -n "${CXXFLAGS:-}" ]; then
+          echo "CXXFLAGS=${CXXFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        else
+          echo "CXXFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        fi
+        if [ -n "${CFLAGS:-}" ]; then
+          echo "CFLAGS=${CFLAGS} -I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        else
+          echo "CFLAGS=-I${MPFR_PREFIX}/include" >> "$GITHUB_ENV"
+        fi
+        if [ -n "${LDFLAGS:-}" ]; then
+          echo "LDFLAGS=${LDFLAGS} -L${MPFR_PREFIX}/lib -lmpfr" >> "$GITHUB_ENV"
+        else
+          echo "LDFLAGS=-L${MPFR_PREFIX}/lib -lmpfr" >> "$GITHUB_ENV"
+        fi
 
     - name: Checkout Minisat
       uses: actions/checkout@v4
@@ -338,40 +359,28 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: csb-linux-amd64
-        path: |
-          project/build/ganak
-          project/build/lib/*
-          project/build/include/*
+        path: project/build/csb
 
     - name: Upload Artifact - Linux arm
       if: contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && contains(matrix.os, 'arm')
       uses: actions/upload-artifact@v4
       with:
         name: csb-linux-arm64
-        path: |
-          project/build/ganak
-          project/build/lib/*
-          project/build/include/*
+        path: project/build/csb
 
     - name: Upload Artifact - Mac Intel
       if: matrix.os == 'macos-13' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
         name: csb-mac-x86_64
-        path: |
-          project/build/ganak
-          project/build/lib/*
-          project/build/include/*
+        path: project/build/csb
 
     - name: Upload Artifact - Mac Arm
       if: matrix.os == 'macos-14' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
         name: csb-mac-arm64
-        path: |
-          project/build/ganak
-          project/build/lib/*
-          project/build/include/*
+        path: project/build/csb
 
   release:
     needs: build
@@ -388,4 +397,4 @@ jobs:
       with:
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
-        files: artifacts/csb-linux-*/**/*
+        files: artifacts/csb-linux-*/csb
