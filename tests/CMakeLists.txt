@@ -52,7 +52,7 @@ set(LIT_ARGS -s CACHE STRING "Arguments to pass to lit")
 # so ``find_package(GTest REQUIRED)`` fails.
 #
 # Instead it is recommended that projects build their own copy of GTest. Detecting
-# the location of GTest source code is probably error prone so using a copy in the 
+# the location of GTest source code is probably error prone so using a copy in the
 # repository seems like the easiest thing to do. This also has the added benefit that
 # everyone uses the same version of GTest.
 set(GTEST_PREFIX ${PROJECT_SOURCE_DIR}/deps/gtest)
@@ -108,8 +108,8 @@ endif()
 # -----------------------------------------------------------------------------
 
 option(TEST_QUERY_FILES
-       "Enable tests that use query files to drive STP" 
-       ON
+       "Enable tests that use query files to drive STP"
+       OFF
       )
 
 if(TEST_QUERY_FILES)
@@ -122,8 +122,8 @@ endif()
 
 # FIXME: Enable by default
 option(TEST_APIS
-       "Enable tests that test STP's public APIs" 
-       ON
+       "Enable tests that test STP's public APIs"
+       OFF
       )
 
 if(TEST_APIS)
