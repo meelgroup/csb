@@ -35,14 +35,42 @@ find_file(GANAK_STATIC_LIBRARIES
   HINTS "${GANAK_ROOT}/lib"
 )
 
-# 5) pick whichever we found
+# 5) cadiback dependency – required by ganak at runtime
+find_library(CADIBACK_LIBRARY
+  NAMES cadiback
+  HINTS "${GANAK_ROOT}/lib"
+)
+
+if(CADIBACK_LIBRARY)
+  # ganak uses the linux-style .so soname even on macOS. When the
+  # dependency is provided as a .dylib the runtime linker cannot find the
+  # requested libcadiback.so, so create a compatibility symlink next to
+  # the dylib. This mirrors what happens on Linux where the real file is
+  # already named libcadiback.so.
+  if(APPLE AND CADIBACK_LIBRARY MATCHES "\\.dylib$")
+    get_filename_component(_cadiback_dir "${CADIBACK_LIBRARY}" DIRECTORY)
+    set(_cadiback_soname "${_cadiback_dir}/libcadiback.so")
+    if(NOT EXISTS "${_cadiback_soname}")
+      execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E create_symlink
+                "${CADIBACK_LIBRARY}" "${_cadiback_soname}"
+      )
+    endif()
+  endif()
+endif()
+
+# 6) pick whichever we found
 if(GANAK_SHARED_LIBRARIES)
   set(GANAK_LIBRARIES ${GANAK_SHARED_LIBRARIES})
 elseif(GANAK_STATIC_LIBRARIES)
   set(GANAK_LIBRARIES ${GANAK_STATIC_LIBRARIES})
 endif()
 
-# 6) standard “not found” handling
+if(CADIBACK_LIBRARY)
+  list(APPEND GANAK_LIBRARIES ${CADIBACK_LIBRARY})
+endif()
+
+# 7) standard “not found” handling
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ganak
   REQUIRED_VARS GANAK_INCLUDE_DIRS GANAK_LIBRARIES
