@@ -42,6 +42,12 @@ find_library(CADIBACK_LIBRARY
 )
 
 if(CADIBACK_LIBRARY)
+  message(STATUS "    Ganak cadiback dependency: ${CADIBACK_LIBRARY}")
+else()
+  message(WARNING "    Could not locate cadiback shared library next to Ganak build")
+endif()
+
+if(CADIBACK_LIBRARY)
   # ganak uses the linux-style .so soname even on macOS. When the
   # dependency is provided as a .dylib the runtime linker cannot find the
   # requested libcadiback.so, so create a compatibility symlink next to
@@ -50,11 +56,22 @@ if(CADIBACK_LIBRARY)
   if(APPLE AND CADIBACK_LIBRARY MATCHES "\\.dylib$")
     get_filename_component(_cadiback_dir "${CADIBACK_LIBRARY}" DIRECTORY)
     set(_cadiback_soname "${_cadiback_dir}/libcadiback.so")
-    if(NOT EXISTS "${_cadiback_soname}")
+    if(EXISTS "${_cadiback_soname}")
+      message(STATUS "    macOS shim already present: ${_cadiback_soname}")
+    else()
       execute_process(
         COMMAND "${CMAKE_COMMAND}" -E create_symlink
                 "${CADIBACK_LIBRARY}" "${_cadiback_soname}"
+        RESULT_VARIABLE _cadiback_symlink_status
+        ERROR_VARIABLE _cadiback_symlink_stderr
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
       )
+      if(_cadiback_symlink_status EQUAL 0)
+        message(STATUS "    Created macOS shim symlink: ${_cadiback_soname}")
+      else()
+        message(WARNING "    Failed to create cadiback shim (${_cadiback_symlink_status}): ${_cadiback_symlink_stderr}")
+      endif()
     endif()
   endif()
 endif()
