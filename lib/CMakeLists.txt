@@ -147,6 +147,8 @@ if (USE_GANAK)
         ${BREAKKID_STATIC_LIBRARIES}
         ${GANAK_STATIC_LIBRARIES}
         ${APPROXMC_STATIC_LIBRARIES}
+        ${CADIBACK_LIBRARY}
+        ${CADICAL_LIBRARY}
         ${MPFR_LIBRARIES}
         ${GMPXX_LIBRARY}
         ${GMP_LIBRARY}
@@ -161,6 +163,8 @@ if (USE_GANAK)
         ${MPFR_LIBRARIES}
         ${BREAKKID_LIBRARIES}
         ${APPROXMC_LIBRARIES}
+        ${CADIBACK_LIBRARY}
+        ${CADICAL_LIBRARY}
         ${GANAK_LIBRARIES})
     endif()
 endif()

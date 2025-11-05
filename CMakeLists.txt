@@ -634,6 +634,32 @@ find_package(approxmc CONFIG REQUIRED)
   else()
       message(WARNING "Cannot find Ganak libraries.")
   endif()
+
+  set(_cadical_lib_hints "${PROJECT_SOURCE_DIR}/deps/install/lib")
+  if(DEFINED ENV{CADICAL})
+      list(APPEND _cadical_lib_hints "$ENV{CADICAL}/lib")
+  endif()
+  find_library(CADICAL_LIBRARY
+      NAMES cadical
+      HINTS ${_cadical_lib_hints}
+  )
+  if (NOT CADICAL_LIBRARY)
+      message(FATAL_ERROR "CaDiCaL library (libcadical) not found. Please install CaDiCaL or set CADICAL to its prefix.")
+  endif()
+  message(STATUS "CaDiCaL library: ${CADICAL_LIBRARY}")
+
+  set(_cadiback_lib_hints "${PROJECT_SOURCE_DIR}/deps/install/lib")
+  if(DEFINED ENV{CADIBACK})
+      list(APPEND _cadiback_lib_hints "$ENV{CADIBACK}/lib")
+  endif()
+  find_library(CADIBACK_LIBRARY
+      NAMES cadiback
+      HINTS ${_cadiback_lib_hints}
+  )
+  if (NOT CADIBACK_LIBRARY)
+      message(FATAL_ERROR "CaDiCaL's cadiback library (libcadiback) not found. Please install cadiback or set CADIBACK to its prefix.")
+  endif()
+  message(STATUS "Cadiback library: ${CADIBACK_LIBRARY}")
 else()
     message(STATUS "Ganak NOT found")
 endif()
