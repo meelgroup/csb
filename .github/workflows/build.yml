@@ -361,6 +361,19 @@ jobs:
         cd project/build
         ctest -C ${{matrix.build_type}} --verbose
 
+    - name: Smoke test
+      run: |
+        set -euo pipefail
+        cd project/build
+        test -x ./csb || { echo "csb binary not found in project/build"; ls -la; exit 1; }
+        ./csb ../tests/examples/unweighted.smt2 | tee csb.out >/dev/null
+        last_line="$(tail -n 1 csb.out | tr -d '\r')"
+        echo "Last line: '$last_line'"
+        if [ "$last_line" != "s mc 3" ]; then
+          echo "Expected 's mc 3'"; exit 1
+        fi
+        echo "Smoke test passed"
+
     - name: Upload Artifact - Linux
       if: ${{ contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && !contains(matrix.os, 'arm') }}
       uses: actions/upload-artifact@v4

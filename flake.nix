@@ -424,6 +424,9 @@
           pname = "ganak";
           version = ganakVersion;
           src = ganakSrc;
+          cmakeFlags = [
+            "-DPython3_EXECUTABLE=${python3}/bin/python3"
+          ];
           nativeBuildInputs =
             [
               cmake
@@ -473,6 +476,9 @@
         }:
         stdenv.mkDerivation {
           name = "csb";
+          cmakeFlags = [
+            "-DPython3_EXECUTABLE=${python3}/bin/python3"
+          ];
           nativeBuildInputs =
             [
               cmake
