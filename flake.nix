@@ -197,9 +197,25 @@
             mkdir -p $out/lib
             rm -f build/makefile
             cp -r configure src/ build/ $out
-            cp build/libcadical.a $out/lib
+            if [ -f build/libcadical.a ]; then
+              cp build/libcadical.a $out/lib
+            fi
+            for suffix in dylib so; do
+              if [ -f "build/libcadical.$suffix" ]; then
+                cp "build/libcadical.$suffix" $out/lib/
+              fi
+            done
             mkdir -p $out/include
             cp src/*.hpp $out/include
+          '';
+          postInstall = lib.optionalString stdenv.hostPlatform.isDarwin ''
+            if [ -f "$out/lib/libcadical.dylib" ]; then
+              install_name_tool -id "$out/lib/libcadical.dylib" "$out/lib/libcadical.dylib"
+              otool -L "$out/lib/libcadical.dylib"
+            elif [ -f "$out/lib/libcadical.so" ]; then
+              install_name_tool -id "$out/lib/libcadical.so" "$out/lib/libcadical.so"
+              otool -L "$out/lib/libcadical.so"
+            fi
           '';
         };
 
@@ -233,11 +249,28 @@
           '';
           postInstall =
             lib.optionalString stdenv.hostPlatform.isDarwin ''
-              if [ -f "$out/lib/libcadiback.dylib" ]; then
-                install_name_tool -id "$out/lib/libcadiback.dylib" "$out/lib/libcadiback.dylib"
-              elif [ -f "$out/lib/libcadiback.so" ]; then
-                install_name_tool -id "$out/lib/libcadiback.so" "$out/lib/libcadiback.so"
-              fi
+              fixup_install_name() {
+                local target="$1"
+                if [ -f "$target" ]; then
+                  install_name_tool -id "$target" "$target"
+                  if [ -f "${cadical}/lib/libcadical.dylib" ]; then
+                    install_name_tool -change libcadical.dylib "${cadical}/lib/libcadical.dylib" "$target" || true
+                    install_name_tool -change libcadical.so "${cadical}/lib/libcadical.dylib" "$target" || true
+                    install_name_tool -change @rpath/libcadical.dylib "${cadical}/lib/libcadical.dylib" "$target" || true
+                    install_name_tool -change @rpath/libcadical.so "${cadical}/lib/libcadical.dylib" "$target" || true
+                  elif [ -f "${cadical}/lib/libcadical.so" ]; then
+                    install_name_tool -change libcadical.dylib "${cadical}/lib/libcadical.so" "$target" || true
+                    install_name_tool -change libcadical.so "${cadical}/lib/libcadical.so" "$target" || true
+                    install_name_tool -change @rpath/libcadical.dylib "${cadical}/lib/libcadical.so" "$target" || true
+                    install_name_tool -change @rpath/libcadical.so "${cadical}/lib/libcadical.so" "$target" || true
+                  fi
+                  echo "[cadiback] install_name information for $target:"
+                  otool -L "$target"
+                fi
+              }
+
+              fixup_install_name "$out/lib/libcadiback.dylib"
+              fixup_install_name "$out/lib/libcadiback.so"
             '';
         };
 
