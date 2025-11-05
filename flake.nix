@@ -231,6 +231,14 @@
             mkdir -p $out/lib
             mkdir -p $out/include
           '';
+          postInstall =
+            lib.optionalString stdenv.hostPlatform.isDarwin ''
+              if [ -f "$out/lib/libcadiback.dylib" ]; then
+                install_name_tool -id "$out/lib/libcadiback.dylib" "$out/lib/libcadiback.dylib"
+              elif [ -f "$out/lib/libcadiback.so" ]; then
+                install_name_tool -id "$out/lib/libcadiback.so" "$out/lib/libcadiback.so"
+              fi
+            '';
         };
 
       sbva-package =
