@@ -14,9 +14,10 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
-          - ubuntu-24.04-arm     # public repos; remove if private
-          - macos-15             # Apple Silicon
-          - macos-15-intel       # Intel, if you still need it
+          - ubuntu-24.04-arm
+          - macos-14
+          - macos-15
+          - macos-15-intel
     steps:
       - uses: actions/checkout@v4
 
@@ -25,18 +26,34 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Always configure pulling from your cache
       - uses: cachix/cachix-action@v16
         with:
           name: arijitsh
           skipPush: true
 
-      # Push only on non-PR events (secrets aren’t available to forked PRs)
       - if: github.event_name != 'pull_request'
         uses: cachix/cachix-action@v16
         with:
           name: arijitsh
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-      - run: nix build -L .#csb
+      - name: Build csb
+        run: nix build -L .#csb --out-link result-csb
 
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x result-csb/bin/csb || { echo "csb binary not found"; ls -R result-csb; exit 1; }
+
+          result-csb/bin/csb tests/examples/unweighted.smt2 | tee csb.out > /dev/null
+
+          last_line="$(tail -n 1 csb.out | tr -d '\r')"
+          echo "Last line: '$last_line'"
+
+          if [ "$last_line" != "s mc 3" ]; then
+            echo "Expected last line 's mc 3' but got: '$last_line'"
+            exit 1
+          fi
+
+          echo "Output matched."
