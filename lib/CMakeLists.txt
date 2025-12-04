@@ -122,7 +122,7 @@ endif()
 # Clients of stp that don't use CMake will have to link the Boost libraries
 # in manually.
 # -----------------------------------------------------------------------------
-set(stp_link_libs ${MINISAT_LIBRARIES})
+set(stp_link_libs ${MINISAT_LIBRARIES} ${ZLIB_LIBRARIES})
 
 if (USE_CRYPTOMINISAT)
     if (STATICCOMPILE)
@@ -185,6 +185,10 @@ if (USE_UNIGEN)
         ${CMSGEN_LIBRARIES}
         ${UNIGEN_LIBRARIES})
     endif()
+endif()
+
+if (ENABLE_KCBOX)
+    set(stp_link_libs ${stp_link_libs} ${GMP_LIBRARIES} cadical)
 endif()
 
 if (USE_RISS)

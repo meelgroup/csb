@@ -29,378 +29,55 @@ jobs:
             staticcompile: 'OFF'
 
     steps:
-    - uses: actions/setup-python@v5
-      if: ${{ !contains(matrix.os, 'macos') }}
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies for Linux
-      if: contains(matrix.os, 'ubuntu')
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq git cmake bison flex libboost-all-dev python3 perl \
-          build-essential python3-distutils-extra wget zlib1g-dev \
-          libboost-program-options-dev libboost-serialization-dev \
-          libgmp-dev libmpfr-dev help2man
-
-    - name: Install dependencies for macOS
-      if: contains(matrix.os, 'macos')
-      run: |
-        brew update
-        brew install bison cmake boost gmp mpfr wget zig
-        MPFR_PREFIX=$(brew --prefix mpfr)
-        GMP_PREFIX=$(brew --prefix gmp)
-        BISON_PREFIX=$(brew --prefix bison)
-        if [ -n "${CPPFLAGS:-}" ]; then
-          echo "CPPFLAGS=${CPPFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CPPFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${CXXFLAGS:-}" ]; then
-          echo "CXXFLAGS=${CXXFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CXXFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${CFLAGS:-}" ]; then
-          echo "CFLAGS=${CFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${LDFLAGS:-}" ]; then
-          echo "LDFLAGS=${LDFLAGS} -L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
-        else
-          echo "LDFLAGS=-L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
-        fi
-        echo "PATH=${BISON_PREFIX}/bin:${PATH}" >> "$GITHUB_ENV"
-
-    - name: Checkout Minisat
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        repository: meelgroup/minisat
-        ref: 8c9ea22aff06fdf284b8bb13f8524a96f7d446af
-        path: minisat
-    - name: Build Minisat (Linux)
-      if: contains(matrix.os, 'ubuntu')
-      run: |
-        cd minisat
-        cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-          -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-          -DZLIB_LIBRARY=-lz
-        cmake --build build --parallel --config ${{ matrix.build_type }}
-        sudo cmake --install build --config ${{ matrix.build_type }}
-        cd ..
-    - name: Build Minisat (macOS)
-      if: contains(matrix.os, 'macos')
-      run: |
-        cd minisat
-        if [ "${{ matrix.staticcompile }}" = 'ON' ]; then
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-            -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
-        else
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DBUILD_SHARED_LIBS=ON \
-            -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-            -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-        fi
-        cmake --build build --parallel --config ${{ matrix.build_type }}
-        sudo cmake --install build --config ${{ matrix.build_type }}
-        cd ..
+        submodules: 'false'
 
-    - name: Checkout Cadical
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/cadical
-        ref: add_dynamic_lib
-        path: cadical
-    - name: Build Cadical
-      run: |
-        cd cadical
-        CXXFLAGS=-fPIC ./configure --competition
-        make -j8
-        cd ..
+    - name: Initialize submodules
+      run: git submodule update --init
 
-    - name: Checkout Cadiback
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/cadiback
-        ref: synthesis
-        path: cadiback
-    - name: Build Cadiback
-      run: |
-        cd cadiback
-        CXX=c++ ./configure
-        make -j8
-        cd ..
+    - name: Configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
-    - name: Checkout breakid
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/breakid
-        ref: master
-        path: breakid
-    - name: Build Breakid
-      run: |
-        cd breakid
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTING=OFF -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
+    - name: Build
+      run: cmake --build build -- -j20
 
-    - name: Checkout CMS
-      uses: actions/checkout@v4
-      with:
-        repository: msoos/cryptominisat
-        ref: master
-        path: cryptominisat
-        submodules: 'true'
-    - name: Build CMS
-      run: |
-        cd cryptominisat
-        mkdir build &&cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTING=OFF -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout SBVA
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/SBVA
-        ref: master
-        path: sbva
-    - name: Build SBVA
-      run: |
-        cd sbva
-        mkdir build
-        cd build
-        ln -s ../scripts/*.sh .
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTING=OFF -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout cereal
-      run: |
-        wget https://github.com/USCiLab/cereal/archive/v1.3.2.tar.gz
-    - name: Build cereal
-      run: |
-        tar xvf v1.3.2.tar.gz
-        cd cereal-1.3.2
-        mkdir build
-        cd build
-        cmake -DJUST_INSTALL_CEREAL=ON ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        sudo cmake --install . --config ${{matrix.build_type}} -v
-        cd ..
-
-    - name: Checkout armadillo
-      run: |
-        wget https://sourceforge.net/projects/arma/files/armadillo-14.0.2.tar.xz
-    - name: Build armadillo
-      run: |
-        tar xvf armadillo-14.0.2.tar.xz
-        cd armadillo-14.0.2/
-        ./configure
-        make -j6
-        sudo make install
-        cd ..
-
-    - name: Checkout ensmallen
-      run: |
-        wget https://ensmallen.org/files/ensmallen-2.21.1.tar.gz
-    - name: Build ensmallen
-      run: |
-        tar xvf ensmallen-2.21.1.tar.gz
-        cd ensmallen-2.21.1
-        mkdir build
-        cd build
-        cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        sudo cmake --install . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout mlpack
-      uses: actions/checkout@v4
-      with:
-        repository: mlpack/mlpack
-        ref: 4.4.0
-        path: mlpack
-    - name: Build mlpack
-      run: |
-        cd mlpack
-        mkdir build
-        cd build
-        cmake -DBUILD_SHARED_LIBS=ON -DBUILD_CLI_EXECUTABLES=OFF ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        sudo cmake --install . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout arjun
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/arjun
-        ref: master
-        path: arjun
-    - name: Build arjun
-      run: |
-        cd arjun
-        mkdir build
-        cd build
-        cmake \
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-        -DENABLE_TESTING=OFF \
-        -S ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout approxmc
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/approxmc
-        ref: master
-        path: approxmc
-        submodules: 'true'
-    - name: Build approxmc
-      run: |
-        cd approxmc
-        mkdir build
-        cd build
-        cmake \
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-        -DENABLE_TESTING=OFF \
-        -S ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Install flint
-      run: |
-        wget https://github.com/flintlib/flint/releases/download/v3.2.0-rc1/flint-3.2.0-rc1.tar.gz
-        tar xzf flint-3.2.0-rc1.tar.gz
-        cd flint-3.2.0-rc1
-        ./configure --enable-static --enable-shared
-        make -j8
-        sudo make install
-        cd ..
-
-    - name: Checkout ganak
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/ganak
-        ref: master
-        path: ganak
-    - name: Build ganak
-      run: |
-        cd ganak
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTING=OFF -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout cmsgen
-      uses: actions/checkout@v4
-      with:
-        repository: arijitsh/cmsgen
-        path: cmsgen
-    - name: Build cmsgen
-      run: |
-        cd cmsgen
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - name: Checkout unigen
-      uses: actions/checkout@v4
-      with:
-        repository: meelgroup/unigen
-        path: unigen
-    - name: Build unigen
-      run: |
-        cd unigen
-        mkdir build
-        cd build
-        cmake -DSTATICCOMPILE=${{ matrix.staticcompile }} ..
-        cmake --build . --config ${{matrix.build_type}} -v
-        cd ../..
-
-    - uses: actions/checkout@v4
-      with:
-        path: project
-        submodules: 'true'
-    - name: Build project
-      run: |
-        cd project
-        mkdir -p build && cd build
-        cmake \
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        -DSTATICCOMPILE=${{ matrix.staticcompile }} \
-        -DENABLE_TESTING=OFF \
-        -DFORCE_CMS=ON \
-        -DFORCE_UNIG=ON \
-        -DUSE_GANAK=ON \
-        -DUSE_UNIGEN=ON \
-        -S ..
-        cmake --build . --config ${{matrix.build_type}} -v
-
-    - name: Test
-      run: |
-        cd project/build
-        ctest -C ${{matrix.build_type}} --verbose
-
-    - name: Smoke test
+    - name: Verify weighted example output
       run: |
         set -euo pipefail
-        cd project/build
-        test -x ./csb || { echo "csb binary not found in project/build"; ls -la; exit 1; }
-        ./csb ../tests/examples/unweighted.smt2 | tee csb.out >/dev/null
-        last_line="$(tail -n 1 csb.out | tr -d '\r')"
-        echo "Last line: '$last_line'"
-        if [ "$last_line" != "s mc 3" ]; then
-          echo "Expected 's mc 3'"; exit 1
-        fi
-        echo "Smoke test passed"
+        ./build/csb -c tests/examples/weighted.smt2 | tee csb_weighted.log
+        grep -F "c [stp] using KCBox counting backend" csb_weighted.log
+        grep -F "c s log10-estimate 1.13861843e+00" csb_weighted.log
+        grep -F "c o exact quadruple float 1.37600000e+01" csb_weighted.log
 
     - name: Upload Artifact - Linux
       if: ${{ contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && !contains(matrix.os, 'arm') }}
       uses: actions/upload-artifact@v4
       with:
         name: csb-linux-amd64
-        path: project/build/csb
+        path: build/csb
 
     - name: Upload Artifact - Linux arm
       if: contains(matrix.os, 'ubuntu') && matrix.staticcompile == 'ON' && contains(matrix.os, 'arm')
       uses: actions/upload-artifact@v4
       with:
         name: csb-linux-arm64
-        path: project/build/csb
+        path: build/csb
 
     - name: Upload Artifact - Mac Intel
       if: matrix.os == 'macos-13' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
         name: csb-mac-x86_64
-        path: project/build/csb
+        path: build/csb
 
     - name: Upload Artifact - Mac Arm
       if: matrix.os == 'macos-14' && matrix.staticcompile == 'ON'
       uses: actions/upload-artifact@v4
       with:
         name: csb-mac-arm64
-        path: project/build/csb
+        path: build/csb
 
   release:
     needs: build

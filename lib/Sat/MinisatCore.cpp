@@ -103,6 +103,7 @@ uint8_t MinisatCore::modelValue(uint32_t x) const
 
 uint32_t MinisatCore::newProjVar(uint32_t x)
 {
+  (void)x;
   return 42;
 }
 

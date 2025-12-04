@@ -51,7 +51,7 @@ public:
 
   void toCNF(const BBNodeAIG& top, Cnf_Dat_t*& cnfData,
              ToSATBase::ASTNodeToSATVar& nodeToVars, bool needAbsRef,
-             BBNodeManagerAIG& _mgr);
+             BBNodeManagerAIG& _mgr, int& output_var);
 };
 }
 #endif /* TOCNFAIG_H_ */

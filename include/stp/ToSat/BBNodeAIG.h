@@ -84,11 +84,10 @@ public:
   // To get its CNF variable number we get the node at the same position.
   int symbol_index;
 
-  BBNodeAIG() { n = NULL; }
+  BBNodeAIG() : n(NULL), symbol_index(0) {}
 
-  BBNodeAIG(Aig_Obj_t* _n)
+  BBNodeAIG(Aig_Obj_t* _n) : n(_n), symbol_index(0)
   {
-    n = _n;
     assert(n != NULL);
     if (Aig_IsComplement(n))
     {

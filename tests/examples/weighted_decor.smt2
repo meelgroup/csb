@@ -13,6 +13,6 @@
 ; If p then x+y = 10, if q then x+y = 5 (mod 16).
 (assert (=> p (= (bvadd x y) #xA))) ; 0x0A = 10
 (assert (=> q (= (bvadd x y) #x5))) ; 0x05 = 5
-(assert (or p q))
+(assert (decor p q))
 
 (check-sat)

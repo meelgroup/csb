@@ -44,6 +44,7 @@ private:
   simplifier::constantBitP::ConstantBitPropagation* cb;
 
   ArrayTransformer* arrayTransformer;
+  int cnf_output_var;
 
   // don't assign or copy construct.
   ToSATAIG& operator=(const ToSATAIG& other);
@@ -69,6 +70,7 @@ private:
   {
     count = 0;
     first = true;
+    cnf_output_var = -1;
   }
 
   static THREAD_LOCAL int cnf_calls;

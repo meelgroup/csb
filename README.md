@@ -16,23 +16,11 @@ CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top o
 
 ## Building
 
-### Use Release Binaries
-If you are using Linux, use of the [release binaries](https://github.com/meelgroup/csb/releases) is _strongly_ encouraged, as CSB requires a specific set of libraries to be installed.
-
-If you want a local build of CSB, or use MacOS please follow the instructions below.
-<!-- ```shell
-nix shell github:meelgroup/ganak#ganak
-``` -->
-
-### Building with Nix
- Simply [install nix](https://nixos.org/download/), then build  `csb`:
 ```
-nix --extra-experimental-features 'nix-command flakes' build github:meelgroup/csb#csb
+git submodule update --init
+cmake -S . -B build
+cmake --build build -- -j20
 ```
-
-Then you will have `csb` binary available at `result/bin/csb` and ready to use.
-
-If you want to build manually on MacOS or Linux, see the [build.md](https://github.com/meelgroup/csb/blob/main/scripts/build.md) file for detailed instructions.
 
 <!--
 See the [GitHub

@@ -52,9 +52,38 @@ if (USE_GANAK)
     set(sat_lib_to_add ${sat_lib_to_add} GnK.cpp)
 endif()
 
+if (ENABLE_KCBOX)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/KCBox/src)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/KCBox/minisat)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/KCBox/cadical/src)
+    file(GLOB_RECURSE KCBOX_MINISAT_SOURCES ${PROJECT_SOURCE_DIR}/lib/KCBox/minisat/*.cc)
+    file(GLOB_RECURSE KCBOX_CADICAL_SOURCES ${PROJECT_SOURCE_DIR}/lib/KCBox/cadical/src/*.cpp)
+    list(FILTER KCBOX_CADICAL_SOURCES EXCLUDE REGEX ".*/cadical/src/(cadical|mobical)\\.cpp$")
+    file(GLOB_RECURSE KCBOX_SOURCES ${PROJECT_SOURCE_DIR}/lib/KCBox/src/*.cpp)
+    list(FILTER KCBOX_SOURCES EXCLUDE REGEX ".*/Main\\.cpp$")
+    file(GLOB KCBOX_CLHASH_C ${PROJECT_SOURCE_DIR}/lib/KCBox/src/clhash/*.c)
+    if (KCBOX_CLHASH_C)
+        set_source_files_properties(${KCBOX_CLHASH_C}
+            PROPERTIES COMPILE_FLAGS "-mpclmul -msse2 -maes -mssse3")
+    endif()
+    message(STATUS "Including KCBox sources") #: ${KCBOX_SOURCES}
+    set(sat_lib_to_add ${sat_lib_to_add} KCBox.cpp ${KCBOX_SOURCES} ${KCBOX_MINISAT_SOURCES} ${KCBOX_CADICAL_SOURCES} ${KCBOX_CLHASH_C})
+
+    # KCBox is a third-party dependency; suppress its noisy warnings to keep the
+    # build output clean while retaining the project's stricter flags elsewhere.
+    set_source_files_properties(
+        ${KCBOX_SOURCES} ${KCBOX_MINISAT_SOURCES} ${KCBOX_CADICAL_SOURCES} ${KCBOX_CLHASH_C}
+        PROPERTIES COMPILE_OPTIONS "-w"
+    )
+endif()
+
 if (USE_RISS)
     set(sat_lib_to_add ${sat_lib_to_add} RissCore.cpp)
 endif()
 
 add_library(sat OBJECT ${sat_lib_to_add})
+
+if (ENABLE_KCBOX)
+    add_dependencies(sat cadical_ep)
+endif()
 

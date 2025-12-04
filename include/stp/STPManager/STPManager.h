@@ -405,6 +405,8 @@ public:
     return true;
   }
 
+  const ASTNodeSet& getProjectedSymbols() const { return _proj_symbol_list; }
+
   bool addWeightSymbol(ASTNode& s, double weight, bool negative = false)
   {
     if (negative)

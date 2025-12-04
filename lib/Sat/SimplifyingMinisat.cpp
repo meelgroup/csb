@@ -101,6 +101,7 @@ uint32_t SimplifyingMinisat::newVar()
 
 uint32_t SimplifyingMinisat::newProjVar(uint32_t x)
 {
+  (void)x;
   return 42;
 }
 

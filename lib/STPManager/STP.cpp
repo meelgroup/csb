@@ -37,6 +37,10 @@ THE SOFTWARE.
 #include "stp/Sat/GnK.h"
 #endif
 
+#ifdef USE_KCBOX
+#include "stp/Sat/KCBox.h"
+#endif
+
 #ifdef USE_UNIGEN
 #include "stp/Sat/ApxMC.h"
 #include "stp/Sat/UniSamp.h"
@@ -83,7 +87,7 @@ SOLVER_RETURN_TYPE STP::solve_by_sat_solver(SATSolver* newS,
                                             ASTNode original_input)
 {
   SATSolver& NewSolver = *newS;
-  if (bm->UserFlags.stats_flag)
+  if (bm->UserFlags.stats_flag || bm->UserFlags.print_nodes_flag)
     NewSolver.setVerbosity(1);
 
   if (bm->UserFlags.timeout_max_conflicts >= 0)
@@ -102,7 +106,6 @@ SOLVER_RETURN_TYPE STP::solve_by_sat_solver(SATSolver* newS,
 SATSolver* STP::get_new_sat_solver()
 {
   SATSolver* newS = NULL;
-  uint32_t seed;
   switch (bm->UserFlags.solver_to_use)
   {
     case UserDefinedFlags::SIMPLIFYING_MINISAT_SOLVER:
@@ -114,6 +117,15 @@ SATSolver* STP::get_new_sat_solver()
 #else
       std::cerr << "CryptoMiniSat5 support was not enabled at configure time."
                 << std::endl;
+      exit(-1);
+#endif
+      break;
+    case UserDefinedFlags::KCBOX_SOLVER:
+#ifdef USE_KCBOX
+      newS = new KCBox(bm->UserFlags.unisamp_seed, bm->UserFlags.sampling_mode,
+                       bm->UserFlags.counting_mode);
+#else
+      std::cerr << "KCBox support was not enabled at configure time." << std::endl;
       exit(-1);
 #endif
       break;
@@ -147,8 +159,10 @@ SATSolver* STP::get_new_sat_solver()
       break;
     case UserDefinedFlags::CMSGEN_SOLVER:
 #ifdef USE_UNIGEN
-      seed = bm->UserFlags.unisamp_seed;
-      newS = new CMSGenC(&seed);
+      {
+        uint32_t seed = bm->UserFlags.unisamp_seed;
+        newS = new CMSGenC(&seed);
+      }
 #else
       std::cerr << "UniSamp support was not enabled at configure time."
                 << std::endl;

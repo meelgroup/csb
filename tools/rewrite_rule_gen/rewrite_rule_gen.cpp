@@ -643,7 +643,8 @@ int getDifficulty(const ASTNode& n_)
   Cnf_Dat_t* cnfData = NULL;
   ToCNFAIG toCNF(mgr->UserFlags);
   ToSATBase::ASTNodeToSATVar nodeToSATVar;
-  toCNF.toCNF(BBFormula, cnfData, nodeToSATVar, false, nm);
+  int output_var = -1;
+  toCNF.toCNF(BBFormula, cnfData, nodeToSATVar, false, nm, output_var);
 
   // Send the clauses to Minisat, do unit propagation.
   ///////////////

@@ -38,26 +38,60 @@ THREAD_LOCAL int ToSATAIG::cnf_calls = 0;
 bool ToSATAIG::CallSAT(SATSolver& satSolver, const ASTNode& input,
                        bool needAbsRef)
 {
+  const bool require_symbolic_input =
+      bm->UserFlags.counting_mode || bm->UserFlags.sampling_mode;
+
+  ASTNode effective_input = input;
+
+  if (input == ASTTrue && require_symbolic_input)
+  {
+    ASTNodeSet relevant_symbols;
+    const auto& proj_symbols = bm->getProjectedSymbols();
+    relevant_symbols.insert(proj_symbols.begin(), proj_symbols.end());
+
+    for (const auto& kv : bm->getWeightSymbols())
+      relevant_symbols.insert(kv.first);
+    for (const auto& kv : bm->getNegWeightSymbols())
+      relevant_symbols.insert(kv.first);
+
+    ASTVec symbol_guards;
+    symbol_guards.reserve(relevant_symbols.size());
+    for (const auto& sym : relevant_symbols)
+    {
+      if (sym.GetType() == BOOLEAN_TYPE)
+      {
+        symbol_guards.push_back(
+            bm->CreateNode(OR, sym, bm->CreateNode(NOT, sym)));
+      }
+      else
+      {
+        symbol_guards.push_back(bm->CreateNode(EQ, sym, sym));
+      }
+    }
+
+    if (!symbol_guards.empty())
+      effective_input = bm->CreateNode(AND, symbol_guards);
+  }
+
   if (cb != NULL && cb->isUnsatisfiable())
     return false;
 
   if (!first)
   {
-    assert(input == ASTTrue);
     return runSolver(satSolver);
   }
 
   // Shortcut if known. This avoids calling the setup of the CNF generator.
   // setup of the CNF generator is expensive. NB, these checks have to occur
   // after calling the sat solver (if it's not the first time.)
-  if (input == ASTFalse)
+  if (effective_input == bm->ASTFalse)
     return false;
 
-  if (input == ASTTrue)
+  if (effective_input == bm->ASTTrue && !require_symbolic_input)
     return true;
 
   first = false;
-  Cnf_Dat_t* cnfData = bitblast(input, needAbsRef);
+  Cnf_Dat_t* cnfData = bitblast(effective_input, needAbsRef);
   handle_cnf_options(cnfData, needAbsRef);
 
   assert(satSolver.nVars() == 0);
@@ -150,7 +184,8 @@ Cnf_Dat_t* ToSATAIG::bitblast(const ASTNode& input, bool needAbsRef)
 
   bm->GetRunTimes()->start(RunTimes::CNFConversion);
   Cnf_Dat_t* cnfData = NULL;
-  toCNF.toCNF(BBFormula, cnfData, nodeToSATVar, needAbsRef, mgr);
+  toCNF.toCNF(BBFormula, cnfData, nodeToSATVar, needAbsRef, mgr,
+              cnf_output_var);
   bm->GetRunTimes()->stop(RunTimes::CNFConversion);
 
   // Free the memory in the AIGs.
@@ -174,6 +209,8 @@ void ToSATAIG::add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData)
       satSolver.newProjVar(i);
     }
   }
+
+  (void)cnf_output_var;
 
   for (const auto& ws : bm->getWeightSymbols())
   {

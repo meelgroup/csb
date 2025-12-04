@@ -31,6 +31,7 @@ namespace stp
 
 void log(std::string s)
 {
+  (void)s;
 #if 0
   std::cerr << ">>" << s;
 #endif
@@ -527,7 +528,6 @@ void PropagateEqualities::buildCandidateList(const ASTNode& a)
 
     if (!added && bm->UserFlags.stats_flag)
     {
-      const auto old = todo;
       countToDo(c[0]);
       countToDo(c[1]);
       //if (todo != old)

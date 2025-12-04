@@ -293,7 +293,7 @@ void ExtraMain::create_options()
   solver_options.add_options()
       ("unisamp,u", "use unisamp as solver -- behave as a "
                      "almost-uniform sampler")(
-      "cmsgen,s",
+      "cmsgen",
       "use cmsgen as solver -- behave as a uniform like sampler")(
       "approxmc,a",
       "use approxmc as solver -- behave as a approximate counter");
@@ -301,6 +301,11 @@ void ExtraMain::create_options()
 #ifdef USE_GANAK
   solver_options.add_options()("ganak,e",
                                "use ganak as solver -- behave as a exact counter");
+#endif
+#ifdef USE_KCBOX
+  solver_options.add_options()("sample,s",
+                               "use KCBox as solver -- enables sampling")(
+      "count,c", "use KCBox as solver in counting mode (no sampling)");
 #endif
   solver_options.add_options()
       ("seed",
@@ -362,9 +367,9 @@ void ExtraMain::create_options()
                                                    "use the CVC format parser");
 
   po::options_description output_options("Output options");
-  output_options.add_options()(
-      "cnf,c", po::bool_switch(&(bm->UserFlags.output_CNF_flag)),
-      "get model preserving bitblasted CNF")(
+  output_options.add_options()("cnf",
+                               po::bool_switch(&(bm->UserFlags.output_CNF_flag)),
+                               "get model preserving bitblasted CNF")(
       "output-bench", po::bool_switch(&(bm->UserFlags.output_bench_flag)),
       "save in ABC's bench format to output.bench");
 
@@ -449,11 +454,15 @@ void ExtraMain::create_options()
   visible_options.add_options()("help,h", "print this help")
 #ifdef USE_UNIGEN
       ("unisamp,u", "almost-uniform sampler mode (unigen backend)")
-      ("cmsgen,s", "uniform like sampler (cmsgen backend)")
+      ("cmsgen", "uniform like sampler (cmsgen backend)")
       ("approxmc,a", "approximate counting mode (approxmc backend)")
 #endif
 #ifdef USE_GANAK
       ("ganak,e", "exact counting mode (ganak backend) [default]")
+#endif
+#ifdef USE_KCBOX
+      ("sample,s", "KCBox sampling mode")
+      ("count,c", "KCBox counting mode (no sampling)")
 #endif
       ("seed", po::value<uint64_t>()->default_value(bm->UserFlags.unisamp_seed),
       "Seed for counting and sampling")(
@@ -545,6 +554,20 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.counting_mode = true;
   }
 #endif
+#ifdef USE_KCBOX
+  if (vm.count("sample"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::KCBOX_SOLVER;
+    bm->UserFlags.sampling_mode = true;
+    bm->UserFlags.counting_mode = false;
+  }
+  if (vm.count("count"))
+  {
+    bm->UserFlags.solver_to_use = UserDefinedFlags::KCBOX_SOLVER;
+    bm->UserFlags.counting_mode = true;
+    bm->UserFlags.sampling_mode = false;
+  }
+#endif
 
 #ifndef USE_GANAK
   if (vm.count("ganak"))
@@ -594,8 +617,13 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.counting_mode = true;
   }
 #endif
-#ifdef USE_GANAK
-
+#ifdef USE_KCBOX
+  if (bm->UserFlags.solver_to_use == UserDefinedFlags::KCBOX_SOLVER &&
+      !bm->UserFlags.sampling_mode && !bm->UserFlags.counting_mode)
+  {
+    bm->UserFlags.counting_mode = true;
+  }
+#endif
   if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
   {
     // disable all simplifications while counting or sampling
@@ -604,7 +632,6 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.disableSimplifications();
     bm->UserFlags.propagate_equalities = false;
   }
-#endif
 
   if (vm.count("disable-simplifications"))
   {
@@ -635,6 +662,12 @@ int ExtraMain::parse_options(int argc, char** argv)
       break;
     case UserDefinedFlags::CMSGEN_SOLVER:
       backend_name = "cmsgen";
+      break;
+    case UserDefinedFlags::KCBOX_SOLVER:
+      if (bm->UserFlags.counting_mode)
+        backend_name = "KCBox counting";
+      else if (bm->UserFlags.sampling_mode)
+        backend_name = "KCBox sampling";
       break;
     default:
       break;

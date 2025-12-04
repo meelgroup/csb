@@ -656,11 +656,11 @@ void Aig_ManPrintVerbose( Aig_Man_t * p, int fHaig )
 
 ***********************************************************************/
 void Aig_ManDump( Aig_Man_t * p )
-{ 
+{
     static THREAD_LOCAL int Counter = 0;
-    char FileName[20];
+    char FileName[32];
     // dump the logic into a file
-    sprintf( FileName, "aigbug\\%03d.blif", ++Counter );
+    snprintf( FileName, sizeof(FileName), "aigbug%03d.blif", ++Counter );
     Aig_ManDumpBlif( p, FileName );
     printf( "Intermediate AIG with %d nodes was written into file \"%s\".\n", Aig_ManNodeNum(p), FileName );
 }

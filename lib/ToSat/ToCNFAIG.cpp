@@ -24,6 +24,8 @@ THE SOFTWARE.
 
 #include "stp/ToSat/ToCNFAIG.h"
 
+#include <string>
+
 namespace stp
 {
 
@@ -98,7 +100,7 @@ void ToCNFAIG::dag_aware_aig_rewrite(const bool needAbsRef,
 
 void ToCNFAIG::toCNF(const BBNodeAIG& top, Cnf_Dat_t*& cnfData,
                      ToSATBase::ASTNodeToSATVar& nodeToVars, bool needAbsRef,
-                     BBNodeManagerAIG& mgr)
+                     BBNodeManagerAIG& mgr, int& output_var)
 {
   assert(cnfData == NULL);
 
@@ -138,6 +140,16 @@ void ToCNFAIG::toCNF(const BBNodeAIG& top, Cnf_Dat_t*& cnfData,
   assert(cnfData != NULL);
 
   fill_node_to_var(cnfData, nodeToVars, mgr);
+
+  output_var = -1;
+  if (mgr.aigMgr != nullptr && Aig_ManPoNum(mgr.aigMgr) > 0)
+  {
+    Aig_Obj_t* po = Aig_ManPo(mgr.aigMgr, 0);
+    Aig_Obj_t* driver = Aig_ObjFanin0(po);
+    const int var = cnfData->pVarNums[driver->Id];
+    if (var >= 0)
+      output_var = (var << 1) | static_cast<int>(Aig_ObjFaninC0(po));
+  }
 }
 
 void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
@@ -147,6 +159,10 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
   BBNodeManagerAIG::SymbolToBBNode::const_iterator it;
   assert(nodeToVars.size() == 0);
   uint32_t proj_var_num = 0, non_proj_var_num = 0;
+  int verbosity =
+      (bm->UserFlags.verbose_in_counting || bm->UserFlags.print_nodes_flag)
+          ? 2
+          : 0;
 
   // todo. cf. with addvariables above...
   // Each symbol maps to a vector of CNF variables.
@@ -154,7 +170,6 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
   {
     ASTNode& n = const_cast<ASTNode&>(it->first);
     const vector<BBNodeAIG>& b = it->second;
-    int verbosity = 0;
     assert(nodeToVars.find(n) == nodeToVars.end());
     if (bm->isProjSymbol(n))
       proj_var_num++;
@@ -192,12 +207,22 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
               std::cout << "Projection variable: " << n.GetName() << " "
                       << v[i] + 1 << endl;
 
-            if (ws != bm->getWeightSymbols().end() ||
-                nws != bm->getNegWeightSymbols().end())
+            if ((ws != bm->getWeightSymbols().end() ||
+                 nws != bm->getNegWeightSymbols().end()) &&
+                verbosity > 0)
             {
-              std::cout << "c [stp->gnk] weight symbol found " << n.GetName()
-                        << " varname " << v[i] << " weight " << pos_weight
-                        << "," << neg_weight << std::endl;
+              std::string weight_prefix;
+              if (uf.solver_to_use == UserDefinedFlags::KCBOX_SOLVER)
+                weight_prefix = "[stp>KCBox]";
+              else if (uf.solver_to_use == UserDefinedFlags::GANAK_SOLVER)
+                weight_prefix = "[stp->gnk]";
+
+              if (!weight_prefix.empty())
+              {
+                std::cout << "c " << weight_prefix << " weight symbol found "
+                          << n.GetName() << " varname " << v[i] << " weight "
+                          << pos_weight << "," << neg_weight << std::endl;
+              }
             }
 
           }
@@ -213,13 +238,16 @@ void ToCNFAIG::fill_node_to_var(Cnf_Dat_t* cnfData,
 
     nodeToVars.insert(make_pair(n, v));
   }
-  if (!bm->isAnyProjSymbolDeclared())
+  if (verbosity > 0)
   {
-    std::cout << "c No variables declared as projection var, moving to "
-                 "non-projection mode"
-              << std::endl;
+    if (!bm->isAnyProjSymbolDeclared())
+    {
+      std::cout << "c No variables declared as projection var, moving to "
+                   "non-projection mode"
+                << std::endl;
+    }
+    std::cout << "c Projection SMT variables: " << proj_var_num
+              << " Other variables: " << non_proj_var_num << std::endl;
   }
-  std::cout << "c Projection SMT variables: " << proj_var_num
-            << " Other variables: " << non_proj_var_num << std::endl;
 }
 } // namespace stp

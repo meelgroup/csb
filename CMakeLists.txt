@@ -57,6 +57,33 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 list(APPEND CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps/install")
 message(STATUS "CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
 
+# Automatically ensure git submodules are present so a fresh clone can be
+# configured and built in a single step.
+if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    find_package(Git QUIET)
+    if (GIT_FOUND)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} submodule update --init
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMOD_RESULT
+            OUTPUT_VARIABLE GIT_SUBMOD_STDOUT
+            ERROR_VARIABLE GIT_SUBMOD_STDERR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_STRIP_TRAILING_WHITESPACE
+        )
+
+        if (NOT GIT_SUBMOD_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to update git submodules: ${GIT_SUBMOD_STDERR}")
+        elseif (GIT_SUBMOD_STDOUT)
+            message(STATUS "Git submodules updated: ${GIT_SUBMOD_STDOUT}")
+        else()
+            message(STATUS "Git submodules already up to date")
+        endif()
+    else()
+        message(WARNING "Git not found; skipping automatic submodule update.")
+    endif()
+endif()
+
 # generate JSON file of compile commands -- useful for code extension
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
@@ -146,8 +173,8 @@ add_feature_info(Sanitizers SANITIZE "Enables Clang sanitizers, will force using
 # STP will link against this client library
 # -----------------------------------------------------------------------------
 
-option(BUILD_SHARED_LIBS "Build the shared library" ON)
-option(STATICCOMPILE "Compile static library and executable" OFF)
+option(BUILD_SHARED_LIBS "Build the shared library" OFF)
+option(STATICCOMPILE "Compile static library and executable" ON)
 if (STATICCOMPILE)
     set(BUILD_SHARED_LIBS OFF)
     set(ENABLE_PYTHON_INTERFACE OFF)
@@ -468,7 +495,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Find CryptoMiniSat
 # -----------------------------------------------------------------------------
-option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
+option(NOCRYPTOMINISAT "Don't try to use cryptominisat" ON)
 
 if (NOT NOCRYPTOMINISAT)
   set(cryptominisat5_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
@@ -494,8 +521,8 @@ endif()
 # -----------------------------------------------------------------------------
 # Find UniGen
 # -----------------------------------------------------------------------------
-set(USE_UNIGEN ON)
-option(NOUNIGEN "Don't try to use UniSamp" OFF)
+set(USE_UNIGEN OFF)
+option(NOUNIGEN "Don't try to use UniSamp" ON)
 
 if (NOT NOUNIGEN)
   # Try to locate UniGen in the repository's deps directory by default so
@@ -573,15 +600,53 @@ if (NOT NOUNIGEN)
 endif()
 add_feature_info(UniGen USE_UNIGEN "Enables Uniform Sampling, allows --unisamp option")
 
-option(FORCE_UNIG "Must build with UniGen" ON)
+option(FORCE_UNIG "Must build with UniGen" OFF)
 if (FORCE_UNIG AND NOT USE_UNIGEN)
     message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
 endif()
 
 
 
-set(USE_GANAK ON)
-option(NOGANAK "Don't try to use Ganak" OFF)
+set(USE_GANAK OFF)
+option(NOGANAK "Don't try to use Ganak" ON)
+
+# KCBox provides both approximate counting and sampling without the heavy
+# external dependency chain. Enable it explicitly to avoid pulling in the
+# other optional counters and samplers unless the user opts in via the
+# command line.
+option(ENABLE_KCBOX "Build KCBox counter/sampler integration" ON)
+add_feature_info(KCBox ENABLE_KCBOX "Enables KCBox counter/sampler")
+if (ENABLE_KCBOX)
+    add_definitions(-DUSE_KCBOX)
+    add_definitions(-DNBUILD)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/KCBox/src)
+    include_directories(${PROJECT_SOURCE_DIR}/lib/KCBox/cadical/src)
+    find_package(GMP REQUIRED)
+    include_directories(${GMP_INCLUDE_DIR})
+
+    include(ExternalProject)
+    set(CADICAL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/lib/KCBox/cadical)
+    set(CADICAL_LIBRARY ${CADICAL_SOURCE_DIR}/build/libcadical.a)
+    set(CADICAL_URL "https://github.com/arminbiere/cadical/archive/81de5d2b5c68727b4d183ec5ceb56561f1b3b6e1.tar.gz")
+    ExternalProject_Add(cadical_ep
+        PREFIX ${CMAKE_BINARY_DIR}/external/cadical
+        URL ${CADICAL_URL}
+        URL_HASH SHA256=35e0f6f6470c164a2fc4a241238d1a75def8b885b2dc938a8c36e87c03127126
+        SOURCE_DIR ${CADICAL_SOURCE_DIR}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        BUILD_IN_SOURCE 1
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CXXFLAGS=-fPIC ./configure --competition
+        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} -j
+        INSTALL_COMMAND ""
+        LOG_CONFIGURE 1
+        LOG_BUILD 1
+    )
+
+    add_library(cadical STATIC IMPORTED GLOBAL)
+    set_target_properties(cadical PROPERTIES IMPORTED_LOCATION ${CADICAL_LIBRARY})
+    add_dependencies(cadical cadical_ep)
+endif()
 
 if(NOT NOGANAK)
     add_definitions(-DUSE_GANAK)
@@ -646,55 +711,41 @@ endif()
 # -----------------------------------------------------------------------------
 find_package(ZLIB)
 include_directories(${ZLIB_INCLUDE_DIR})
+set(LIBS ${LIBS} ${ZLIB_LIBRARIES})
 include_directories(${minisat_SOURCE_DIR})
 
 # ----------
 # manpage
 # ----------
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    find_program(HELP2MAN_FOUND help2man)
-    if (HELP2MAN_FOUND)
-        ADD_CUSTOM_TARGET(man_stp
-            ALL
-            DEPENDS stp-bin
-        )
+message(STATUS "Help2man manpage generation disabled")
 
-        ADD_CUSTOM_COMMAND(
-            TARGET man_stp
-            COMMAND help2man
-            ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp-bin> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
-        )
 
-        INSTALL(
-            FILES ${CMAKE_CURRENT_BINARY_DIR}/stp.1
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
-        message(STATUS "Manpage will be created and installed")
-    else()
-        MESSAGE(STATUS "Cannot find help2man, not creating manpage")
-    endif()
-else()
-    MESSAGE(STATUS "Not on Linux, not creating manpage")
+# -----------------------------------------------------------------------------
+# Find Minisat (fall back to the bundled KCBox copy when enabled)
+# -----------------------------------------------------------------------------
+
+if (ENABLE_KCBOX)
+    set(minisat_FOUND ON)
+    set(MINISAT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/KCBox CACHE PATH "Bundled minisat headers" FORCE)
+    set(MINISAT_LIBRARIES "" CACHE STRING "Bundled minisat library" FORCE)
 endif()
 
-
-# -----------------------------------------------------------------------------
-# Find Minisat
-# -----------------------------------------------------------------------------
-
-find_package(minisat)
-set(MINISAT_INCLUDE_DIR "" CACHE PATH "MiniSat include directory")
-set(MINISAT_LIBRARY "" CACHE PATH "MiniSat library directory")
-
-if (minisat_FOUND)
-    message(STATUS "OK, found Minisat library under ${MINISAT_LIBRARIES} and Minisat include dirs under ${MINISAT_INCLUDE_DIRS}")
-else()
-    message(STATUS "Not found using installed MiniSat, looking for built MiniSat")
-    find_package(minisat CONFIG)
+if (NOT minisat_FOUND)
+    find_package(minisat)
+    set(MINISAT_INCLUDE_DIR "" CACHE PATH "MiniSat include directory")
+    set(MINISAT_LIBRARY "" CACHE PATH "MiniSat library directory")
 
     if (minisat_FOUND)
         message(STATUS "OK, found Minisat library under ${MINISAT_LIBRARIES} and Minisat include dirs under ${MINISAT_INCLUDE_DIRS}")
     else()
-        message(FATAL_ERROR "You must install minisat from https://github.com/stp/minisat")
+        message(STATUS "Not found using installed MiniSat, looking for built MiniSat")
+        find_package(minisat CONFIG)
+
+        if (minisat_FOUND)
+            message(STATUS "OK, found Minisat library under ${MINISAT_LIBRARIES} and Minisat include dirs under ${MINISAT_INCLUDE_DIRS}")
+        else()
+            message(FATAL_ERROR "You must install minisat from https://github.com/stp/minisat")
+        endif()
     endif()
 endif()
 

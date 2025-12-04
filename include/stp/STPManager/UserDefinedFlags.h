@@ -166,6 +166,7 @@ public:
     MINISAT_SOLVER = 0,
     SIMPLIFYING_MINISAT_SOLVER,
     CRYPTOMINISAT5_SOLVER,
+    KCBOX_SOLVER,
     APPROXMC_SOLVER,
     GANAK_SOLVER,
     UNIGEN_SOLVER,
@@ -226,6 +227,9 @@ public:
 #endif
 #ifdef USE_GANAK
     solver_to_use = GANAK_SOLVER;
+#endif
+#ifdef USE_KCBOX
+    solver_to_use = KCBOX_SOLVER;
 #endif
   }
 };
