@@ -47,7 +47,7 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         brew update
-        brew install bison cmake boost gmp mpfr wget zig
+        brew install bison cmake boost gmp mpfr wget zig zlib
         MPFR_PREFIX=$(brew --prefix mpfr)
         GMP_PREFIX=$(brew --prefix gmp)
         BISON_PREFIX=$(brew --prefix bison)
