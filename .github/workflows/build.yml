@@ -29,49 +29,6 @@ jobs:
             staticcompile: 'OFF'
 
     steps:
-    - uses: actions/setup-python@v5
-      if: ${{ !contains(matrix.os, 'macos') }}
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies for Linux
-      if: contains(matrix.os, 'ubuntu')
-      run: |
-        sudo apt-get update
-        sudo apt-get install -yq git cmake bison flex libboost-all-dev python3 perl \
-          build-essential python3-distutils-extra wget zlib1g-dev \
-          libboost-program-options-dev libboost-serialization-dev \
-          libgmp-dev libmpfr-dev help2man
-
-    - name: Install dependencies for macOS
-      if: contains(matrix.os, 'macos')
-      run: |
-        brew update
-        brew install bison cmake boost gmp mpfr wget zig zlib
-        MPFR_PREFIX=$(brew --prefix mpfr)
-        GMP_PREFIX=$(brew --prefix gmp)
-        BISON_PREFIX=$(brew --prefix bison)
-        if [ -n "${CPPFLAGS:-}" ]; then
-          echo "CPPFLAGS=${CPPFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CPPFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${CXXFLAGS:-}" ]; then
-          echo "CXXFLAGS=${CXXFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CXXFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${CFLAGS:-}" ]; then
-          echo "CFLAGS=${CFLAGS} -I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        else
-          echo "CFLAGS=-I${MPFR_PREFIX}/include -I${GMP_PREFIX}/include" >> "$GITHUB_ENV"
-        fi
-        if [ -n "${LDFLAGS:-}" ]; then
-          echo "LDFLAGS=${LDFLAGS} -L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
-        else
-          echo "LDFLAGS=-L${MPFR_PREFIX}/lib -L${GMP_PREFIX}/lib -lmpfr -lgmp" >> "$GITHUB_ENV"
-        fi
-        echo "PATH=${BISON_PREFIX}/bin:${PATH}" >> "$GITHUB_ENV"
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
@@ -80,8 +37,20 @@ jobs:
     - name: Initialize submodules
       run: git submodule update --init
 
+    - name: Install zlib (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install zlib
+
     - name: Configure
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      run: |
+        EXTRA_CMAKE_ARGS=""
+        if [[ "${RUNNER_OS}" == "macOS" ]]; then
+          ZLIB_PREFIX="$(brew --prefix zlib)"
+          EXTRA_CMAKE_ARGS="-DZLIB_ROOT=${ZLIB_PREFIX} -DZLIB_LIBRARY=${ZLIB_PREFIX}/lib/libz.a -DZLIB_INCLUDE_DIR=${ZLIB_PREFIX}/include"
+        fi
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${EXTRA_CMAKE_ARGS}
 
     - name: Build
       run: cmake --build build -- -j20
