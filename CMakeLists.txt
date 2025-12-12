@@ -709,6 +709,18 @@ endif()
 # yes, we need to include the zlib header location or STP will not build
 # thanks to MiniSat include-ing it n the header
 # -----------------------------------------------------------------------------
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    execute_process(
+        COMMAND brew --prefix zlib
+        RESULT_VARIABLE BREW_ZLIB
+        OUTPUT_VARIABLE BREW_ZLIB_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (BREW_ZLIB EQUAL 0 AND EXISTS "${BREW_ZLIB_PREFIX}")
+        message(STATUS "Found Zlib keg installed by Homebrew at ${BREW_ZLIB_PREFIX}")
+        list(APPEND CMAKE_PREFIX_PATH "${BREW_ZLIB_PREFIX}")
+    endif()
+endif()
 find_package(ZLIB)
 include_directories(${ZLIB_INCLUDE_DIR})
 set(LIBS ${LIBS} ${ZLIB_LIBRARIES})
