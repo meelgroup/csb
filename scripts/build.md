@@ -2,8 +2,8 @@
 If you want to build `csb` from source manually, you will need to follow these steps:
 
 ```
-sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget
-sudo apt install zlib1g-dev libboost-program-options-dev libboost-serialization-dev libgmp-dev libmpfr-dev
+sudo apt update
+sudo apt install git cmake bison flex libboost-all-dev python3 perl build-essential python3-distutils-extra wget libarmadillo-dev libensmallen-dev libcereal-dev libmlpack-dev  zlib1g-dev libboost-program-options-dev libboost-serialization-dev libgmp-dev libmpfr-dev libflint-dev
 git clone https://github.com/meelgroup/csb
 cd csb
 ./scripts/deps/setup-csb.sh

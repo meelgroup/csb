@@ -77,6 +77,7 @@ git clone --branch csb --single-branch https://github.com/meelgroup/minisat.git 
   git checkout "$MINISAT_REF"
   cmake_args=(
     -S .
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -B build
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
     -DBUILD_SHARED_LIBS=OFF
@@ -95,7 +96,7 @@ git clone --branch csb --single-branch https://github.com/meelgroup/minisat.git 
 )
 
 # Solver dependencies
-git clone --branch add_dynamic_lib https://github.com/meelgroup/cadical cadical
+git clone --branch master https://github.com/meelgroup/cadical cadical
 (
   cd cadical
   git checkout "$CADICAL_REF"
@@ -103,7 +104,7 @@ git clone --branch add_dynamic_lib https://github.com/meelgroup/cadical cadical
   make -j"$NPROC"
 )
 
-git clone --branch synthesis https://github.com/meelgroup/cadiback cadiback
+git clone --branch main https://github.com/meelgroup/cadiback cadiback
 (
   cd cadiback
   git checkout "$CADIBACK_REF"
@@ -143,30 +144,6 @@ git clone https://github.com/meelgroup/breakid breakid
   cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DENABLE_TESTING=OFF -DSTATICCOMPILE="$STATICCOMPILE" -DCMAKE_INSTALL_PREFIX="$install_dir" ..
   cmake --build . --config "$BUILD_TYPE" -v
   make -j20
-)
-
-wget https://ensmallen.org/files/ensmallen-2.21.1.tar.gz
-tar xvf ensmallen-2.21.1.tar.gz
-(cd ensmallen-2.21.1 && mkdir -p build && cd build && cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && cmake --build . --config "$BUILD_TYPE" -v && cmake --install . --config "$BUILD_TYPE" -v)
-
-wget https://github.com/USCiLab/cereal/archive/v1.3.2.tar.gz
-tar xvf v1.3.2.tar.gz
-(cd cereal-1.3.2 && mkdir -p build && cd build && cmake -DJUST_INSTALL_CEREAL=ON .. && cmake --build . --config "$BUILD_TYPE" -v && cmake --install . --config "$BUILD_TYPE" -v)
-
-wget https://sourceforge.net/projects/arma/files/armadillo-14.0.2.tar.xz
-tar xvf armadillo-14.0.2.tar.xz
-(cd armadillo-14.0.2 && ./configure && make -j6 &&  make install)
-
-
-git clone https://github.com/mlpack/mlpack mlpack
-(
-  cd mlpack
-  git checkout "$MLPACK_REF"
-  mkdir -p build
-  cd build
-  cmake -DBUILD_SHARED_LIBS=ON -DBUILD_CLI_EXECUTABLES=OFF ..
-  cmake --build . --config "$BUILD_TYPE" -v
-  cmake --install . --config "$BUILD_TYPE" -v
 )
 
 git clone https://github.com/meelgroup/arjun arjun
