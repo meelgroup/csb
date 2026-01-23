@@ -407,7 +407,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[Release]')
     env:
-      RELEASE_VERSION: 2.0.0
+      RELEASE_VERSION: 2.0.1
     steps:
     - name: Download Ubuntu Artifacts
       uses: actions/download-artifact@v4
@@ -422,11 +422,8 @@ jobs:
       run: |
         set -euo pipefail
         AMD64_DIR="artifacts/csb-linux-amd64"
-        ARM64_DIR="artifacts/csb-linux-arm64"
         strip "${AMD64_DIR}/csb"
-        aarch64-linux-gnu-strip "${ARM64_DIR}/csb"
         (cd "${AMD64_DIR}" && rm -f ../csb-linux-amd64.zip && zip -j ../csb-linux-amd64.zip csb)
-        (cd "${ARM64_DIR}" && rm -f ../csb-linux-arm64.zip && zip -j ../csb-linux-arm64.zip csb)
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -434,4 +431,3 @@ jobs:
         name: Release CSB v${{ env.RELEASE_VERSION }}
         files: |
           artifacts/csb-linux-amd64.zip
-          artifacts/csb-linux-arm64.zip
