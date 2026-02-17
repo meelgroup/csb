@@ -25,7 +25,6 @@ THE SOFTWARE.
 #include "stp/Sat/ApxMC.h"
 #include "approxmc/approxmc.h"
 #include <algorithm>
-#include <gmpxx.h>
 #include <unordered_set>
 
 using std::vector;
@@ -95,7 +94,7 @@ bool ApxMC::okay() const // FALSE means solver is in a conflicting state
 
 void print_num_solutions(uint32_t cell_sol_cnt, uint32_t hash_count, const std::unique_ptr<Field>& mult_ptr) {
     const CMSat::Field* ptr = mult_ptr.get();
-    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+    const ArjunNS::FMpz* mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
     std::cout << "c [appmc] Number of solutions is: "
     << cell_sol_cnt << "*2**" << hash_count << "*" << mult->val << std::endl;
     if (cell_sol_cnt == 0 || mult->val == 0) std::cout << "s UNSATISFIABLE" << std::endl;
@@ -120,7 +119,13 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 
   // CMSat::lbool ret = s->solve(); // TODO AS
 
-
+    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+    const CMSat::Field* ptr = cnt.get();
+    const ArjunNS::FMpz* mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+    double mult_val = mult->val.get_d();
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+              << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
+              <<  std::endl;
   cnf.set_sampl_vars(sampling_vars_orig);
   if (cnf.get_sampl_vars().empty())
   {
@@ -152,11 +157,11 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
             << " variables, " << cnf.clauses.size() << " clauses "
             << std::endl;
     // const CMSat::Field* ptr = cnf.multiplier_weight.get();
-    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
-  const CMSat::Field* ptr = cnt.get();
+     cnt = cnf.multiplier_weight->dup();
+   ptr = cnt.get();
 
-    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
-  double mult_val = mult->val.get_d();
+     mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+   mult_val = mult->val.get_d();
 
     std::cout << "c [stp->apxmc] sampling vars [arjun] "
             << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val

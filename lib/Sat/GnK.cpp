@@ -149,6 +149,12 @@ std::string print_mpq_as_scientific(const mpq_class& number) {
 bool GnK::solve(bool& timeout_expired) // Search without assumptions.
 {
   timeout_expired = false;
+    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+    const CMSat::Field* ptr = cnt.get();
+    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+              << cnf.get_sampl_vars().size() << ", multipler weight " << mult->val
+              <<  std::endl;
 
   cnf.set_sampl_vars(sampling_vars_orig);
   if (cnf.get_sampl_vars().empty())
@@ -187,9 +193,10 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
             << cnf.get_sampl_vars().size() << ", opt proj var size "
             << cnf.opt_sampl_vars.size() << std::endl;
 
-    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
-    const CMSat::Field* ptr = cnt.get();
-    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+
+    cnt = cnf.multiplier_weight->dup();
+    ptr = cnt.get();
+    mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
     std::cout << "c [stp->apxmc] sampling vars [arjun] "
               << cnf.get_sampl_vars().size() << ", multipler weight " << mult->val
               <<  std::endl;
