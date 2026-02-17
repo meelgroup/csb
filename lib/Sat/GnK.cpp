@@ -187,6 +187,13 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
             << cnf.get_sampl_vars().size() << ", opt proj var size "
             << cnf.opt_sampl_vars.size() << std::endl;
 
+    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+    const CMSat::Field* ptr = cnt.get();
+    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+              << cnf.get_sampl_vars().size() << ", multipler weight " << mult->val
+              <<  std::endl;
+
   conf.verb = 0;
   if (seed == 0)
     conf.appmc_timeout = 1;
@@ -223,13 +230,13 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
     counter.add_red_cl(cms_to_ganak_cl(cl));
 
   auto counter_result = counter.count();
-  std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+  // std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
   if (!cnf.multiplier_weight->is_zero())
     *cnt *= *counter_result;
   else
     cnt->set_zero();
 
-  const CMSat::Field* ptr = cnt.get();
+  // const CMSat::Field* ptr = cnt.get();
   if (ptr == nullptr)
     throw std::runtime_error("[stp->gnk] Null count returned by Ganak");
 

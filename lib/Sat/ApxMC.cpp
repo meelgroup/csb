@@ -93,6 +93,22 @@ bool ApxMC::okay() const // FALSE means solver is in a conflicting state
   return true; //TODO AS: implement well
 }
 
+void print_num_solutions(uint32_t cell_sol_cnt, uint32_t hash_count, const std::unique_ptr<Field>& mult_ptr) {
+    const CMSat::Field* ptr = mult_ptr.get();
+    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+    std::cout << "c [appmc] Number of solutions is: "
+    << cell_sol_cnt << "*2**" << hash_count << "*" << mult->val << std::endl;
+    if (cell_sol_cnt == 0 || mult->val == 0) std::cout << "s UNSATISFIABLE" << std::endl;
+    else std::cout << "s SATISFIABLE" << std::endl;
+
+    mpz_class num_sols(2);
+    mpz_pow_ui(num_sols.get_mpz_t(), num_sols.get_mpz_t(), hash_count);
+    num_sols *= cell_sol_cnt;
+    auto final = mult->val * num_sols;
+
+    std::cout << "s mc " << final << std::endl;
+}
+
 bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 {
 
@@ -103,63 +119,68 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
    */
 
   // CMSat::lbool ret = s->solve(); // TODO AS
+
+
   cnf.set_sampl_vars(sampling_vars_orig);
-  std::cout << "c [stp->appmc] ApxMC solving instance with " << cnf.nVars()
-            << " variables, " << sampling_vars_orig.size()
-            << " projection vars" << std::endl;
-
-  appmc.set_seed(seed);
-  appmc.set_verbosity(0);
-  arjun->set_verb(0);
-  // std::cout << "c Arjun SHA revision " << arjun->get_version_info()
-  //           << std::endl;
-
-  ArjunNS::SimpConf sc;
-  sc.appmc = true;
-  sc.oracle_vivify = true;
-  sc.oracle_vivify_get_learnts = true;
-  sc.oracle_sparsify = false;
-  sc.iter1 = 2;
-  sc.iter2 = 0;
-
-  auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
-
-  std::vector<uint32_t> sampling_vars = ret.sampl_vars;
-  appmc.new_vars(ret.nvars);
-  for (const auto& cl : ret.clauses)
-    appmc.add_clause(cl);
-  for (const auto& cl : ret.red_clauses)
-    appmc.add_clause(cl);
-
-  appmc.set_multiplier_weight(ret.multiplier_weight);
-
-  std::cout << "c [appmc->arjun] sampling var size [from arjun] "
-            << sampling_vars.size() << "\n";
-
-  appmc.set_sampl_vars(sampling_vars);
-
-  auto sol_count = appmc.count();
-
-  // use gmp to get the absolute count of solutions
-  mpz_class result;
-  mpz_class cellSolCount_gmp(sol_count.cellSolCount);
-  mpz_mul_2exp(result.get_mpz_t(), cellSolCount_gmp.get_mpz_t(),
-               sol_count.hashCount);
-
-  const CMSat::Field* ptr = appmc.get_multiplier_weight().get();
-  mpq_class multiplier(1);
-  if (ptr != nullptr)
+  if (cnf.get_sampl_vars().empty())
   {
-    if (const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr))
-    {
-      multiplier = mult->val;
-    }
+    etof_conf.all_indep = true;
+    std::vector<uint32_t> all_vars;
+    all_vars.reserve(cnf.nVars());
+    for (uint32_t i = 0; i < cnf.nVars(); ++i)
+      all_vars.push_back(i);
+    cnf.set_sampl_vars(all_vars, true);
+    std::cout << "c [stp->apxmc] no sampling vars, setting all (" << cnf.nVars() << ") sampling vars \n";
   }
-  mpq_class final = multiplier * result;
+  else
+  {
+    std::cout << "c [stp->apxmc] sampling vars [input] " << cnf.get_sampl_vars().size() << std::endl;
+    etof_conf.all_indep = (cnf.get_sampl_vars().size() == cnf.nVars());
+    if (!cnf.get_opt_sampl_vars_set())
+      cnf.set_opt_sampl_vars(cnf.get_sampl_vars());
+  }
 
-  std::cout << "s mc " << final << std::endl;
+  if (arjun)
+    arjun->set_verb(0);
+  std::cout << "c [stp->apxmc] Arjun solving instance with " << cnf.nVars()
+            << " variables, " << cnf.clauses.size() << " clauses "
+            << sampling_vars_orig.size() << " projection vars" << std::endl;
 
-  exit(0);
+  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+
+  std::cout << "c [stp->apxmc] ApxMC solving instance with " << cnf.nVars()
+            << " variables, " << cnf.clauses.size() << " clauses "
+            << std::endl;
+    // const CMSat::Field* ptr = cnf.multiplier_weight.get();
+    std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+  const CMSat::Field* ptr = cnt.get();
+
+    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
+  double mult_val = mult->val.get_d();
+
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+            << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
+            <<  std::endl;
+
+
+  appmc.new_vars(cnf.nVars());
+
+
+  appmc.set_sampl_vars(cnf.sampl_vars);
+  for (const auto& cl : cnf.clauses)
+    appmc.add_clause(cl);
+  for (const auto& cl : cnf.red_clauses)
+    appmc.add_red_clause(cl);
+  appmc.set_multiplier_weight(cnf.multiplier_weight);
+
+      ApproxMC::SolCount sol_count;
+    sol_count = appmc.count();
+    // appmc.print_stats(start_time);
+    // std::cout << "c o [appmc+arjun] Total time: " << (cpu_time() - start_time) << std::endl;
+    std::cout << "c [stp->apxmc] Count: " << sol_count.cellSolCount << "*2**" << sol_count.hashCount << std::endl;
+
+    print_num_solutions(sol_count.cellSolCount, sol_count.hashCount, appmc.get_multiplier_weight());
+
   return true;
 }
 

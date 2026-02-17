@@ -58,6 +58,8 @@ class ApxMC : public SATSolver
 
   ApproxMC::AppMC appmc;
   ArjunNS::SimplifiedCNF cnf;
+  ArjunNS::Arjun::ElimToFileConf etof_conf;
+  ArjunNS::SimpConf simp_conf;
   ArjunNS::Arjun* arjun;
 
   uint64_t seed;
