@@ -41,6 +41,7 @@ namespace stp
 
 static vector<vector<int>> unigen_models;
 static size_t next_model_index = 0;
+static std::vector<uint32_t> free_vars;
 static std::vector<uint32_t> cached_sampling_vars;
 static std::unordered_map<uint32_t, size_t> sat_var_to_sample_index;
 
@@ -192,6 +193,8 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
             <<  std::endl;
 
 
+
+
   appmc.new_vars(cnf.nVars());
 
 
@@ -221,6 +224,15 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
     unigen_models.clear();
     unigen->sample(&sol_count, samples_needed);
     unisamp_ran = true;
+
+    for (size_t i = 0; i < sampling_vars_orig.size(); ++i)
+    {
+      if(std::find(cnf.sampl_vars.begin(), cnf.sampl_vars.end(), sampling_vars_orig[i]) == cnf.sampl_vars.end()){
+        free_vars.push_back(sampling_vars_orig[i]);
+      }
+    }
+    std::cout << "c free vars: " << free_vars.size() << std::endl;
+
   }
   else if (!cached_sampling_vars.empty())
   {
@@ -244,6 +256,10 @@ uint8_t UniSamp::modelValue(uint32_t x) const
   if (!unisamp_ran || unigen_models.empty() || samples_generated == 0)
   {
     return (uint8_t)0;
+  }
+  if (free_vars.size() > 0 && std::find(free_vars.begin(), free_vars.end(), x) != free_vars.end())
+  {
+    return (uint8_t)(rand() % 2);
   }
 
   const size_t sample_index = next_model_index == 0
