@@ -50,6 +50,13 @@ void mycallback(const std::vector<int>& solution, void* data)
   // vector<vector<int>>* unigen_models = (vector<vector<int>>*)data;
   /* for (auto s : solution) std::cout << (s>0 ? "1" : "0"); */
   /* std::cout << std::endl; */
+  // std::cout << "c [stp->apxmc] model callback: " << solution.size() << " :";
+  // for (size_t i = 0; i < solution.size(); ++i)
+  // {
+  //   std::cout  << solution[i];
+  // }
+  //   std::cout   << std::endl;
+
   unigen_models.push_back(solution);
 }
 
@@ -84,6 +91,10 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
   unigen->set_callback(mycallback, &unigen_models);
   appmc.set_verbosity(0);
   arjun->set_verb(0);
+  arjun->set_or_gate_based(0);
+  arjun->set_xor_gates_based(0);
+  arjun->set_ite_gate_based(0);
+  arjun->set_irreg_gate_based(0);
   unigen->set_verbosity(0);
   appmc.set_seed(seed);
   temp_cl = (void*)new vector<CMSat::Lit>;
@@ -176,7 +187,7 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
             << " variables, " << cnf.clauses.size() << " clauses "
             << sampling_vars_orig.size() << " projection vars" << std::endl;
 
-  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+  // arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
 
   std::cout << "c [stp->apxmc] ApxMC solving instance with " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
@@ -232,11 +243,18 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
       }
     }
     std::cout << "c free vars: " << free_vars.size() << std::endl;
-
+    std::cout << "c [stp->apxmc] samples generated: " << unigen_models.size() << std::endl;
+  for (size_t i = 0; i < sampling_vars_orig.size(); ++i)
+    {
+      uint32_t var = static_cast<uint32_t>(std::abs(unigen_models[0][i]));
+      // std::cout << "c [stp->apxmc] sample var " << sampling_vars_orig[i] << " corresponds to SAT var " << var << std::endl;
+      sat_var_to_sample_index[sampling_vars_orig[i]] = i;
+    }
   }
   else if (!cached_sampling_vars.empty())
   {
     sampling_vars_current = cached_sampling_vars;
+
   }
 
   if (unigen_models.empty())
@@ -248,6 +266,12 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
       std::min(next_model_index, unigen_models.size() - 1);
   samples_generated++;
   next_model_index = current_index + 1;
+  // std::cout << "c [stp->apxmc] returning sample " << current_index << " :";
+  // for (size_t i = 0; i < sampling_vars_orig.size(); ++i)
+  //   {
+  //     std::cout << unigen_models[next_model_index - 1][i] << " ";
+  //   }
+  //   std::cout << std::endl;
   return true;
 }
 
@@ -257,16 +281,16 @@ uint8_t UniSamp::modelValue(uint32_t x) const
   {
     return (uint8_t)0;
   }
-  if (free_vars.size() > 0 && std::find(free_vars.begin(), free_vars.end(), x) != free_vars.end())
-  {
-    return (uint8_t)(rand() % 2);
-  }
-
+  // if (free_vars.size() > 0 && std::find(free_vars.begin(), free_vars.end(), x) != free_vars.end())
+  // {
+  //   return (uint8_t)(rand() % 2);
+  // }
   const size_t sample_index = next_model_index == 0
                                   ? std::min<size_t>(0, unigen_models.size() - 1)
                                   : std::min<size_t>(next_model_index - 1,
                                                      unigen_models.size() - 1);
   const auto& sample = unigen_models.at(sample_index);
+  // std::cout << "c [stp->apxmc] modelValue for var " << x << " in sample index " << sample_index << std::endl;
 
   const auto it = sat_var_to_sample_index.find(x);
   if (it == sat_var_to_sample_index.end())

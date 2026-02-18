@@ -62,7 +62,7 @@ class UniSamp : public SATSolver
   ArjunNS::SimpConf simp_conf;
   uint64_t seed;
   uint64_t samples_generated = 0;
-  uint64_t samples_needed = 0;
+  uint64_t samples_needed = 100;
   bool unisamp_ran;
   vector<uint32_t> sampling_vars_orig;
   std::vector<uint32_t> sampling_vars_current;
