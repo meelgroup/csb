@@ -63,8 +63,9 @@ void UniSamp::enableRefinement(const bool enable)
 
 UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
                  uint64_t _samples_generated)
-    : cnf(fg), seed(unisamp_seed), samples_generated(_samples_generated),
-      samples_needed(_samples_needed), unisamp_ran(false)
+    : appmc(fg), cnf(fg), seed(unisamp_seed), samples_generated(_samples_generated),
+      samples_needed(_samples_needed), unisamp_ran(false), unigen(nullptr),
+      arjun(nullptr)
 {
   if (_samples_generated == 0)
   {
@@ -77,14 +78,13 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
     next_model_index = _samples_generated;
   }
 
-  appmc = new ApproxMC::AppMC(fg);
-  unigen = new UniG(appmc);
-  arjun = new ArjunNS::Arjun;
+  unigen = std::make_unique<UniGen::UniG>(&appmc);
+  arjun = std::make_unique<ArjunNS::Arjun>();
   unigen->set_callback(mycallback, &unigen_models);
-  appmc->set_verbosity(0);
+  appmc.set_verbosity(0);
   arjun->set_verb(0);
   unigen->set_verbosity(0);
-  appmc->set_seed(seed);
+  appmc.set_seed(seed);
   temp_cl = (void*)new vector<CMSat::Lit>;
 
   if (samples_needed == 0)
@@ -95,9 +95,8 @@ UniSamp::UniSamp(uint64_t unisamp_seed, uint64_t _samples_needed,
 
 UniSamp::~UniSamp()
 {
-  delete unigen;
-  delete appmc;
-  delete arjun;
+  // delete unigen;
+  // delete arjun;
   vector<CMSat::Lit>* real_temp_cl = (vector<CMSat::Lit>*)temp_cl;
   delete real_temp_cl;
 }
@@ -144,52 +143,80 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   if (!unisamp_ran || next_model_index >= unigen_models.size())
   {
     unigen_models.clear();
-    sampling_vars_current.clear();
-    cached_sampling_vars.clear();
-    next_model_index = 0;
+      std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
+    const CMSat::Field* ptr = cnt.get();
+    const ArjunNS::FMpz* mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+    double mult_val = mult->val.get_d();
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+              << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
+              <<  std::endl;
+  cnf.set_sampl_vars(sampling_vars_orig);
+  if (cnf.get_sampl_vars().empty())
+  {
+    etof_conf.all_indep = true;
+    std::vector<uint32_t> all_vars;
+    all_vars.reserve(cnf.nVars());
+    for (uint32_t i = 0; i < cnf.nVars(); ++i)
+      all_vars.push_back(i);
+    cnf.set_sampl_vars(all_vars, true);
+    std::cout << "c [stp->apxmc] no sampling vars, setting all (" << cnf.nVars() << ") sampling vars \n";
+  }
+  else
+  {
+    std::cout << "c [stp->apxmc] sampling vars [input] " << cnf.get_sampl_vars().size() << std::endl;
+    etof_conf.all_indep = (cnf.get_sampl_vars().size() == cnf.nVars());
+    if (!cnf.get_opt_sampl_vars_set())
+      cnf.set_opt_sampl_vars(cnf.get_sampl_vars());
+  }
 
-    cnf.set_sampl_vars(sampling_vars_orig);
+  if (arjun)
+    arjun->set_verb(0);
+  std::cout << "c [stp->apxmc] Arjun solving instance with " << cnf.nVars()
+            << " variables, " << cnf.clauses.size() << " clauses "
+            << sampling_vars_orig.size() << " projection vars" << std::endl;
 
-    ArjunNS::SimpConf sc;
-    sc.appmc = true;
-    sc.oracle_vivify = true;
-    sc.oracle_vivify_get_learnts = true;
-    sc.oracle_sparsify = false;
-    sc.iter1 = 2;
-    sc.iter2 = 0;
+  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
 
-    auto ret = arjun->standalone_get_simplified_cnf(cnf, sc);
+  std::cout << "c [stp->apxmc] ApxMC solving instance with " << cnf.nVars()
+            << " variables, " << cnf.clauses.size() << " clauses "
+            << std::endl;
+    // const CMSat::Field* ptr = cnf.multiplier_weight.get();
+     cnt = cnf.multiplier_weight->dup();
+   ptr = cnt.get();
 
-    appmc->new_vars(ret.nvars);
-    for (const auto& cl : ret.clauses)
-      appmc->add_clause(cl);
-    for (const auto& cl : ret.red_clauses)
-      appmc->add_clause(cl);
+     mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+   mult_val = mult->val.get_d();
 
-    appmc->set_sampl_vars(ret.sampl_vars);
-    sampling_vars_current = ret.sampl_vars;
-    cached_sampling_vars = sampling_vars_current;
-    sat_var_to_sample_index.clear();
-    for (size_t i = 0; i < sampling_vars_current.size() &&
-                       i < sampling_vars_orig.size();
-         ++i)
-    {
-      sat_var_to_sample_index[sampling_vars_orig[i]] = i;
-    }
+    std::cout << "c [stp->apxmc] sampling vars [arjun] "
+            << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
+            <<  std::endl;
 
-    std::vector<uint32_t> all_vars(ret.nvars);
-    for (uint32_t i = 0; i < ret.nvars; i++)
-      all_vars[i] = i;
 
-    auto sol_count = appmc->count();
-    cout << "c Sol count: " << sol_count.cellSolCount << "*2**"
-         << sol_count.hashCount << endl;
+  appmc.new_vars(cnf.nVars());
+
+
+  appmc.set_sampl_vars(cnf.sampl_vars);
+  for (const auto& cl : cnf.clauses)
+    appmc.add_clause(cl);
+  for (const auto& cl : cnf.red_clauses)
+    appmc.add_red_clause(cl);
+  appmc.set_multiplier_weight(cnf.multiplier_weight);
+
+      ApproxMC::SolCount sol_count;
+    sol_count = appmc.count();
+    // appmc.print_stats(start_time);
+    // std::cout << "c o [appmc+arjun] Total time: " << (cpu_time() - start_time) << std::endl;
+    std::cout << "c [stp->apxmc] Count: " << sol_count.cellSolCount
+              << "*2**" << sol_count.hashCount << std::endl
+              << " * " <<  mult_val << std::endl;
+
+
 
     unigen->set_verbosity(0);
     unigen->set_verb_sampler_cls(0);
     unigen->set_kappa(0.1);
     unigen->set_multisample(true);
-    unigen->set_full_sampling_vars(all_vars);
+    unigen->set_full_sampling_vars(sampling_vars_orig);
 
     unigen_models.clear();
     unigen->sample(&sol_count, samples_needed);
@@ -250,7 +277,7 @@ uint32_t UniSamp::newVar()
 
 void UniSamp::setVerbosity(int v)
 {
-  appmc->set_verbosity(v);
+  appmc.set_verbosity(v);
   unigen->set_verbosity(v);
   arjun->set_verb(v);
 }

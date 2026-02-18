@@ -30,6 +30,7 @@ THE SOFTWARE.
 
 #include "stp/Sat/SATSolver.h"
 #include "unigen/unigen.h"
+#include "approxmc/approxmc.h"
 #include <arjun/arjun.h>
 
 #include <unordered_set>
@@ -53,10 +54,12 @@ class UniSamp : public SATSolver
 {
   // vector<vector<int>> unigen_models;
   std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpz>();
-  ApproxMC::AppMC* appmc;
-  UniGen::UniG* unigen;
-  ArjunNS::Arjun* arjun;
+  ApproxMC::AppMC appmc;
+  std::unique_ptr<UniGen::UniG> unigen;
+  std::unique_ptr<ArjunNS::Arjun> arjun;
   ArjunNS::SimplifiedCNF cnf;
+  ArjunNS::Arjun::ElimToFileConf etof_conf;
+  ArjunNS::SimpConf simp_conf;
   uint64_t seed;
   uint64_t samples_generated = 0;
   uint64_t samples_needed = 0;
