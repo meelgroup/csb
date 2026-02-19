@@ -147,13 +147,13 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 
   if (arjun)
     arjun->set_verb(0);
-  std::cout << "c [stp->apxmc] Arjun solving instance with " << cnf.nVars()
+  std::cout << "c [stp->arjun] Instance has " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
-            << sampling_vars_orig.size() << " projection vars" << std::endl;
+            << sampling_vars_orig.size() << " projvars" << std::endl;
 
   arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
 
-  std::cout << "c [stp->apxmc] ApxMC solving instance with " << cnf.nVars()
+  std::cout << "c [stp->apxmc] Instance has " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
             << std::endl;
     // const CMSat::Field* ptr = cnf.multiplier_weight.get();

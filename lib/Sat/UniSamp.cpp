@@ -158,10 +158,8 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
       std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
     const CMSat::Field* ptr = cnt.get();
     const ArjunNS::FMpz* mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
-    double mult_val = mult->val.get_d();
-    std::cout << "c [stp->apxmc] sampling vars [arjun] "
-              << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
-              <<  std::endl;
+    double mult_val;
+
   cnf.set_sampl_vars(sampling_vars_orig);
   if (cnf.get_sampl_vars().empty())
   {
@@ -175,7 +173,6 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
   }
   else
   {
-    std::cout << "c [stp->apxmc] sampling vars [input] " << cnf.get_sampl_vars().size() << std::endl;
     etof_conf.all_indep = (cnf.get_sampl_vars().size() == cnf.nVars());
     if (!cnf.get_opt_sampl_vars_set())
       cnf.set_opt_sampl_vars(cnf.get_sampl_vars());
@@ -183,14 +180,25 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
 
   if (arjun)
     arjun->set_verb(0);
-  std::cout << "c [stp->apxmc] Arjun solving instance with " << cnf.nVars()
-            << " variables, " << cnf.clauses.size() << " clauses "
-            << sampling_vars_orig.size() << " projection vars" << std::endl;
+  std::cout << "c [stp->arjun] Instance has " << cnf.nVars()
+            << " vars, " << cnf.clauses.size() << " clauses "
+            << sampling_vars_orig.size() << " projvars" << std::endl;
 
-  // arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+  auto prearjun_cnf = cnf;
+  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+  cnt = cnf.multiplier_weight->dup();
+  ptr = cnt.get();
+  mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
+  mult_val = mult->val.get_d();
 
-  std::cout << "c [stp->apxmc] ApxMC solving instance with " << cnf.nVars()
-            << " variables, " << cnf.clauses.size() << " clauses "
+  if (mult_val != 1) {
+    std::cout << "c [stp->arjun] multiplier weight after arjun: " << mult_val << std::endl;
+    std::cout << "c using pre-arjun CNF for sampling" << std::endl;
+    cnf = prearjun_cnf;
+  }
+
+  std::cout << "c [stp->apxmc] Instance has " << cnf.nVars()
+            << " vars, " << cnf.clauses.size() << " clauses "
             << std::endl;
     // const CMSat::Field* ptr = cnf.multiplier_weight.get();
      cnt = cnf.multiplier_weight->dup();
@@ -221,7 +229,7 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
     // appmc.print_stats(start_time);
     // std::cout << "c o [appmc+arjun] Total time: " << (cpu_time() - start_time) << std::endl;
     std::cout << "c [stp->apxmc] Count: " << sol_count.cellSolCount
-              << "*2**" << sol_count.hashCount << std::endl
+              << "*2**" << sol_count.hashCount
               << " * " <<  mult_val << std::endl;
 
 
