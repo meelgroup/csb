@@ -491,13 +491,19 @@ if (FORCE_CMS AND NOT USE_CRYPTOMINISAT)
     message(FATAL_ERROR "CryptoMiniSat 5.x was not found but it was requested. Exiting.")
 endif()
 
+option(CSB "Enable CSB counting/sampling backends (Ganak/Arjun/ApproxMC/UniGen/CMSGen)" ON)
+
 # -----------------------------------------------------------------------------
 # Find UniGen
 # -----------------------------------------------------------------------------
-set(USE_UNIGEN ON)
-option(NOUNIGEN "Don't try to use UniSamp" OFF)
+set(USE_UNIGEN OFF)
+set(UNIGEN ${CSB})
+option(NOUNIGEN "Don't try to use UniSamp (deprecated; use -DCSB=OFF for full CSB disable)" OFF)
+if (NOUNIGEN)
+  set(UNIGEN OFF)
+endif()
 
-if (NOT NOUNIGEN)
+if (UNIGEN)
   # Try to locate UniGen in the repository's deps directory by default so
   # users don't need to specify -Dunigen_DIR on the command line.
   set(_unigen_config_hints
@@ -523,15 +529,17 @@ if (NOT NOUNIGEN)
   unset(_unigen_config_hints)
 
   find_package(arjun CONFIG)
-  if (arjun_FOUND)
-      message(STATUS "Found Arjun")
-      message(STATUS "Arjun dynamic lib : ${ARJUN_LIBRARIES}")
-      message(STATUS "Arjun include dirs: ${ARJUN_INCLUDE_DIRS}")
-      include_directories(SYSTEM ${ARJUN_INCLUDE_DIRS})
-  else()
-      message(FATAL_ERROR "Cannot find Arjun. Please install it! Exiting.")
-  endif()
-  find_package(approxmc CONFIG REQUIRED)
+  find_package(approxmc CONFIG)
+  find_package(sbva CONFIG)
+  find_package(cmsgen CONFIG)
+  find_package(unigen CONFIG)
+
+  if (arjun_FOUND AND approxmc_FOUND AND sbva_FOUND AND cmsgen_FOUND AND
+      unigen_FOUND AND HAVE_FLAG_STD_CPP11)
+    message(STATUS "Found Arjun")
+    message(STATUS "Arjun dynamic lib : ${ARJUN_LIBRARIES}")
+    message(STATUS "Arjun include dirs: ${ARJUN_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${ARJUN_INCLUDE_DIRS})
 
     message(STATUS "Found approxmc")
     message(STATUS "ApproxMC dynamic lib: ${APPROXMC_LIBRARIES}")
@@ -540,7 +548,6 @@ if (NOT NOUNIGEN)
     message(STATUS "ApproxMC include dirs: ${APPROXMC_INCLUDE_DIRS}")
     include_directories(SYSTEM ${APPROXMC_INCLUDE_DIRS})
 
-  find_package(sbva CONFIG REQUIRED)
     message(STATUS "Found sbva")
     message(STATUS "sbva dynamic lib: ${SBVA_LIBRARIES}")
     message(STATUS "sbva static lib:  ${SBVA_STATIC_LIBRARIES}")
@@ -548,8 +555,6 @@ if (NOT NOUNIGEN)
     message(STATUS "sbva include dirs: ${SBVA_INCLUDE_DIRS}")
     include_directories(SYSTEM ${SBVA_INCLUDE_DIRS})
 
-
-  find_package(cmsgen CONFIG REQUIRED)
     message(STATUS "Found cmsgen")
     message(STATUS "CMSGen dynamic lib: ${CMSGEN_LIBRARIES}")
     message(STATUS "CMSGen static lib:  ${CMSGEN_STATIC_LIBRARIES}")
@@ -557,33 +562,35 @@ if (NOT NOUNIGEN)
     message(STATUS "CMSGen include dirs: ${CMSGEN_INCLUDE_DIRS}")
     include_directories(SYSTEM ${CMSGEN_INCLUDE_DIRS})
 
-
-  find_package(unigen CONFIG)
-  if (unigen_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOUNIGEN))
     message(STATUS "UniGen dynamic lib: ${UNIGEN_LIBRARIES}")
     message(STATUS "UniGen static lib:  ${UNIGEN_STATIC_LIBRARIES}")
     message(STATUS "UniGen static lib deps: ${UNIGEN_STATIC_LIBRARIES_DEPS}")
     message(STATUS "UniGen include dirs: ${UNIGEN_INCLUDE_DIRS}")
+    include_directories(SYSTEM ${UNIGEN_INCLUDE_DIRS})
+
     add_definitions(-DUSE_UNIGEN)
     set(USE_UNIGEN ON)
-    include_directories(SYSTEM ${UNIGEN_INCLUDE_DIRS})
   else()
-    message(STATUS "UniGen NOT found")
+    message(STATUS "UniGen backends disabled: missing one or more dependencies (arjun, approxmc, sbva, cmsgen, unigen) or C++11 support")
   endif()
 endif()
 add_feature_info(UniGen USE_UNIGEN "Enables Uniform Sampling, allows --unisamp option")
 
-option(FORCE_UNIG "Must build with UniGen" ON)
+option(FORCE_UNIG "Must build with UniGen" ${CSB})
 if (FORCE_UNIG AND NOT USE_UNIGEN)
     message(FATAL_ERROR "UniSamp was not found but it was requested. Exiting.")
 endif()
 
 
 
-set(USE_GANAK ON)
-option(NOGANAK "Don't try to use Ganak" OFF)
+set(USE_GANAK OFF)
+set(GANAK ${CSB})
+option(NOGANAK "Don't try to use Ganak (deprecated; use -DCSB=OFF for full CSB disable)" OFF)
+if (NOGANAK)
+  set(GANAK OFF)
+endif()
 
-if(NOT NOGANAK)
+if(GANAK)
     add_definitions(-DUSE_GANAK)
     set(USE_GANAK ON)
   add_feature_info(Ganak USE_GANAK "Enables Ganak Model Counter solver, allows --exactcount option")

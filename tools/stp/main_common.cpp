@@ -292,6 +292,21 @@ int Main::main(int argc, char** argv)
     }
   }
 
+  if (bm->UserFlags.output_AIG_flag)
+  {
+    if (!infile.empty())
+    {
+      namespace fs = std::filesystem;
+      fs::path aig_path(infile);
+      aig_path.replace_extension(".aag");
+      bm->UserFlags.aig_output_file = aig_path.filename().string();
+    }
+    else
+    {
+      bm->UserFlags.aig_output_file.clear();
+    }
+  }
+
   // ensure that all output is (at most) line buffered
   setvbuf(stdout, NULL, _IOLBF, 0);
 

@@ -111,7 +111,9 @@ public:
 
   // output flags
   bool output_CNF_flag = false;
+  bool output_AIG_flag = false;
   std::string cnf_output_file;
+  std::string aig_output_file;
   bool output_bench_flag = false;
   bool verbose_in_counting = false;
 

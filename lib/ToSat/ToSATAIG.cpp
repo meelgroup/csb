@@ -27,11 +27,92 @@ THE SOFTWARE.
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace stp
 {
+
+namespace
+{
+
+int aigLiteral(Aig_Obj_t* obj,
+               const std::unordered_map<const Aig_Obj_t*, int>& var_ids)
+{
+  if (obj == nullptr)
+    return 0;
+
+  const bool complemented = Aig_IsComplement(obj);
+  Aig_Obj_t* regular = Aig_Regular(obj);
+
+  if (Aig_ObjIsConst1(regular))
+    return complemented ? 0 : 1;
+
+  const auto it = var_ids.find(regular);
+  assert(it != var_ids.end());
+  return 2 * it->second + (complemented ? 1 : 0);
+}
+
+void printAigAsAiger(Aig_Man_t* aig, std::ostream& out)
+{
+  std::unordered_map<const Aig_Obj_t*, int> var_ids;
+
+  int next_var = 1;
+  for (int i = 0; i < Aig_ManPiNum(aig); ++i)
+  {
+    Aig_Obj_t* obj = Aig_ManPi(aig, i);
+    var_ids[obj] = next_var++;
+  }
+
+  std::vector<Aig_Obj_t*> and_nodes;
+  for (int i = 0; i < Vec_PtrSize(aig->vObjs); ++i)
+  {
+    auto* obj = static_cast<Aig_Obj_t*>(Vec_PtrEntry(aig->vObjs, i));
+    if (obj == nullptr || !Aig_ObjIsNode(obj))
+      continue;
+
+    and_nodes.push_back(obj);
+    var_ids[obj] = next_var++;
+  }
+
+  const int I = Aig_ManPiNum(aig);
+  const int L = 0;
+  const int O = Aig_ManPoNum(aig);
+  const int A = static_cast<int>(and_nodes.size());
+  const int M = I + A;
+
+  out << "aag " << M << " " << I << " " << L << " " << O << " " << A << std::endl;
+
+  for (int pi = 0; pi < Aig_ManPiNum(aig); ++pi)
+  {
+    Aig_Obj_t* obj = Aig_ManPi(aig, pi);
+    out << 2 * var_ids[obj] << std::endl;
+  }
+
+  for (int po = 0; po < Aig_ManPoNum(aig); ++po)
+  {
+    Aig_Obj_t* obj = Aig_ManPo(aig, po);
+    int out_lit = aigLiteral(Aig_ObjChild0(obj), var_ids);
+    out << out_lit << std::endl;
+  }
+
+  for (Aig_Obj_t* and_node : and_nodes)
+  {
+    const int lhs = 2 * var_ids[and_node];
+    int rhs0 = aigLiteral(Aig_ObjChild0(and_node), var_ids);
+    int rhs1 = aigLiteral(Aig_ObjChild1(and_node), var_ids);
+    if (rhs0 < rhs1)
+      std::swap(rhs0, rhs1);
+
+    out << lhs << " " << rhs0 << " " << rhs1 << std::endl;
+  }
+}
+
+} // namespace
 
 THREAD_LOCAL int ToSATAIG::cnf_calls = 0;
 
@@ -152,6 +233,34 @@ Cnf_Dat_t* ToSATAIG::bitblast(const ASTNode& input, bool needAbsRef)
   Cnf_Dat_t* cnfData = NULL;
   toCNF.toCNF(BBFormula, cnfData, nodeToSATVar, needAbsRef, mgr);
   bm->GetRunTimes()->stop(RunTimes::CNFConversion);
+
+  if (bm->UserFlags.output_AIG_flag)
+  {
+    std::string fileName;
+    if (!bm->UserFlags.aig_output_file.empty())
+    {
+      fileName = bm->UserFlags.aig_output_file;
+    }
+    else
+    {
+      std::stringstream fallback;
+      fallback << "output_" << bm->CNFFileNameCounter++ << ".aag";
+      fileName = fallback.str();
+    }
+
+    std::ofstream aigOut(fileName);
+    if (!aigOut)
+    {
+      cerr << "Cannot open output file for AIG dump: " << fileName << endl;
+      std::exit(-1);
+    }
+
+    printAigAsAiger(mgr.aigMgr, aigOut);
+    aigOut.close();
+    std::cout << "c [stp] bitblasted AIG stored in " << fileName << std::endl;
+    std::cout.flush();
+    std::exit(0);
+  }
 
   // Free the memory in the AIGs.
   BBFormula = BBNodeAIG(); // null node

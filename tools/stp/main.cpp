@@ -365,6 +365,8 @@ void ExtraMain::create_options()
   output_options.add_options()(
       "cnf,c", po::bool_switch(&(bm->UserFlags.output_CNF_flag)),
       "get model preserving bitblasted CNF")(
+      "AIG,A", po::bool_switch(&(bm->UserFlags.output_AIG_flag)),
+      "print bitblasted AIG in ascii AIGER format and exit")(
       "output-bench", po::bool_switch(&(bm->UserFlags.output_bench_flag)),
       "save in ABC's bench format to output.bench");
 
