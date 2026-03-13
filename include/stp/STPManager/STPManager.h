@@ -196,6 +196,10 @@ public:
    ****************************************************************/
   UserDefinedFlags UserFlags;
 
+    // Maximum number of unconstrained scalar variable bits observed while
+  // simplifying the current query.
+  uint64_t unconstrained_variable_bits = 0;
+
   // This flag indicates as to whether the input has been determined
   // to be valid or not by this tool
   bool ValidFlag;
@@ -232,6 +236,7 @@ public:
 
   unsigned int NodeSize(const ASTNode& a);
 
+  uint64_t countUnconstrainedDeclaredScalarBits(const ASTNode& input) const;
   /****************************************************************
    * Create Symbol and BVConst functions                          *
    ****************************************************************/

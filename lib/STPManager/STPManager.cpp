@@ -538,6 +538,39 @@ unsigned int STPMgr::NodeSize(const ASTNode& a)
   return result;
 }
 
+uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(const ASTNode& input) const
+{
+  ASTNodeSet seen_symbols;
+  NodeIterator ni(input, ASTUndefined, *const_cast<STPMgr*>(this));
+  ASTNode current;
+  while ((current = ni.next()) != ni.end())
+  {
+    if (current.GetKind() == SYMBOL)
+      seen_symbols.insert(current);
+  }
+
+  uint64_t total = 0;
+  for (auto it = _symbol_unique_table.begin(), itend = _symbol_unique_table.end();
+       it != itend; ++it)
+  {
+    ASTNode symbol(*it);
+
+    if (Introduced_SymbolsSet.find(symbol) != Introduced_SymbolsSet.end())
+      continue;
+
+    if (symbol.GetIndexWidth() != 0)
+      continue;
+
+    if (seen_symbols.find(symbol) != seen_symbols.end())
+      continue;
+
+    total += (symbol.GetValueWidth() == 0) ? 1 : symbol.GetValueWidth();
+  }
+
+  return total;
+}
+
+
 bool STPMgr::VarSeenInTerm(const ASTNode& var, const ASTNode& term)
 {
   if (READ == term.GetKind() && WRITE == term[0].GetKind()

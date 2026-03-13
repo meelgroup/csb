@@ -314,6 +314,9 @@ SOLVER_RETURN_TYPE
 STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
 {
   bm->ASTNodeStats("input asserts and query: ", original_input);
+  bm->unconstrained_variable_bits =
+    bm->countUnconstrainedDeclaredScalarBits(original_input);
+  std::cout << "c Unconstrained bits: " << bm->unconstrained_variable_bits << std::endl;
 
   DifficultyScore difficulty;
   if (bm->UserFlags.stats_flag)
