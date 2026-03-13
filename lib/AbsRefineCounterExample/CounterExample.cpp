@@ -26,7 +26,36 @@ THE SOFTWARE.
 #include "stp/Printer/printers.h"
 #include "stp/ToSat/ToSATAIG.h"
 
+#include <random>
+
 const bool debug_counterexample = false;
+
+namespace
+{
+THREAD_LOCAL std::mt19937_64 unconstrained_rng(std::random_device{}());
+
+stp::ASTNode randomUnconstrainedValue(stp::STPMgr* bm, const stp::ASTNode& symbol)
+{
+  if (symbol.GetType() == stp::BOOLEAN_TYPE)
+  {
+    std::uniform_int_distribution<int> bit(0, 1);
+    return bit(unconstrained_rng) ? bm->ASTTrue : bm->ASTFalse;
+  }
+
+  if (symbol.GetType() != stp::BITVECTOR_TYPE)
+    return symbol;
+
+  const unsigned width = symbol.GetValueWidth();
+  std::uniform_int_distribution<int> bit(0, 1);
+  std::string bits;
+  bits.reserve(width);
+  for (unsigned i = 0; i < width; ++i)
+    bits.push_back(bit(unconstrained_rng) ? '1' : '0');
+
+  return bm->CreateBVConst(bits, 2, width);
+}
+}
+
 
 namespace stp
 {
@@ -210,7 +239,8 @@ ASTNode AbsRefine_CounterExample::TermToConstTermUsingModel(const ASTNode& term,
       }
 
       // Has been simplified out. Can take any value.
-      output = bm->CreateZeroConst(term.GetValueWidth());
+      output = randomUnconstrainedValue(bm, term);
+      CounterExampleMap[term] = output;
       break;
     }
     case READ:
@@ -482,7 +512,8 @@ ASTNode AbsRefine_CounterExample::ComputeFormulaUsingModel(const ASTNode& form)
       else
       {
         // Has been simplified out. Can take any value.
-        output = ASTFalse;
+        output = randomUnconstrainedValue(bm, form);
+        CounterExampleMap[form] = output;
       }
       break;
     case BOOLEXTRACT:
