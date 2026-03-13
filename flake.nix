@@ -198,6 +198,9 @@
             rm -f build/makefile
             cp -r configure src/ build/ $out
             cp build/libcadical.a $out/lib
+            for f in build/libcadical.so* build/libcadical.dylib*; do
+              [ -f "$f" ] && cp -P "$f" $out/lib/ || true
+            done
             mkdir -p $out/include
             cp src/*.hpp $out/include
           '';
@@ -230,6 +233,11 @@
           preInstall = ''
             mkdir -p $out/lib
             mkdir -p $out/include
+          '';
+          postInstall = lib.optionalString stdenv.hostPlatform.isDarwin ''
+            for lib in $out/lib/libcadiback.*; do
+              [ -f "$lib" ] && install_name_tool -id "$lib" "$lib" || true
+            done
           '';
         };
 
@@ -468,6 +476,8 @@
           ganak,
           minisat,
           unigen,
+          cadiback,
+          cadical,
           bison,
           flex,
           python3,
@@ -478,6 +488,7 @@
           name = "csb";
           cmakeFlags = [
             "-DPython3_EXECUTABLE=${python3}/bin/python3"
+            "-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE"
           ];
           nativeBuildInputs =
             [
@@ -505,8 +516,48 @@
             ganak
             minisat
             unigen
+            cadiback
+            cadical
           ];
           src = ./.;
+          postInstall = lib.optionalString stdenv.hostPlatform.isDarwin ''
+            for binary in $out/bin/* $out/lib/*.dylib $out/lib/*.so; do
+              [ -f "$binary" ] || continue
+              otool -L "$binary" 2>/dev/null | tail -n +2 | awk '{print $1}' | while read ref; do
+                # only fix bare names or broken paths
+                if [ ! -f "$ref" ]; then
+                  basename=$(basename "$ref")
+                  for dep in \
+                    ${cadiback} \
+                    ${cadical} \
+                    ${cryptominisat} \
+                    ${arjun} \
+                    ${ganak} \
+                    ${approxmc} \
+                    ${unigen} \
+                    ${cmsgen} \
+                    ${minisat} \
+                    ${sbva} \
+                    ${breakid}; do
+                    # check both .so and .dylib variants
+                    for ext in so dylib; do
+                      candidate="$dep/lib/''${basename%.*}.$ext"
+                      if [ -f "$candidate" ]; then
+                        install_name_tool -change "$ref" "$candidate" "$binary" 2>/dev/null || true
+                        break 2
+                      fi
+                    done
+                    # also check cadical's build/ dir specifically
+                    candidate="$dep/build/''${basename%.*}.so"
+                    if [ -f "$candidate" ]; then
+                      install_name_tool -change "$ref" "$candidate" "$binary" 2>/dev/null || true
+                      break
+                    fi
+                  done
+                fi
+              done
+            done
+          '';
         };
     in
     {
@@ -604,6 +655,8 @@
             ganak = ganakPkg;
             minisat = minisatPkg;
             unigen = unigen;
+            cadiback = cadibackPkg;
+            cadical = cadicalPkg;
           };
         in
         {
