@@ -15,15 +15,15 @@ jobs:
 
       matrix:
         include:
-          - os: ubuntu-latest
-            build_type: Release
-            staticcompile: 'ON'
+          # - os: ubuntu-latest
+          #   build_type: Release
+          #   staticcompile: 'ON'
           # - os: ubuntu-24.04-arm
           #   build_type: Release
           #   staticcompile: 'ON'
           - os: macos-14
             build_type: Release
-            staticcompile: 'OFF'
+            staticcompile: 'ON'
           # - os: macos-13
           #   build_type: Release
           #   staticcompile: 'OFF'
