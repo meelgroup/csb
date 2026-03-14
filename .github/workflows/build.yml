@@ -24,9 +24,7 @@ jobs:
           - os: macos-14
             build_type: Release
             staticcompile: 'OFF'
-          - os: macos-13
-            build_type: Release
-            staticcompile: 'OFF'
+
 
     steps:
     - uses: actions/setup-python@v5
