@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include <stdexcept>
 #include <unordered_set>
 #include <iomanip>
+#include <cmath>
 
 using std::vector;
 
@@ -208,6 +209,10 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   Ganak counter(conf, fg);
   counter.new_vars(cnf.nVars());
 
+  auto unconstrained_multiplier = std::pow(2, getUnconstrainedBits());
+
+  std::cout << "c [stp->gnk] unconstrained bits multiplier 2**" << getUnconstrainedBits() << "\n";
+
   std::set<uint32_t> tmp;
   for (auto const& s : cnf.sampl_vars)
     tmp.insert(s + 1);
@@ -243,6 +248,7 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   else
     cnt->set_zero();
 
+
   // const CMSat::Field* ptr = cnt.get();
   if (ptr == nullptr)
     throw std::runtime_error("[stp->gnk] Null count returned by Ganak");
@@ -267,7 +273,8 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
     std::cout << "c s exact arb frac " << *cnt << std::endl;
 
     mpq_class value = as_mpq->val;
-    const mpz_class num = value.get_num();
+    mpz_class num = value.get_num();
+    num *= unconstrained_multiplier;
     const mpz_class den = value.get_den();
     if (!cnf.weighted && den == 1)
       result_value = num.get_str();

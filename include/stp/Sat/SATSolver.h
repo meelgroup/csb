@@ -38,15 +38,19 @@ class SATSolver
 private:
   SATSolver(const SATSolver&);      // no copy
   void operator=(const SATSolver&); // no assign.
+  uint64_t unconstrained_bits;
 
 public:
-  SATSolver() {}
+  SATSolver() : unconstrained_bits(0) {}
 
   virtual ~SATSolver() {}
 
   class vec_literals : public Minisat::vec<Minisat::Lit>
   {
   };
+
+  void setUnconstrainedBits(uint64_t bits) { unconstrained_bits = bits; }
+  uint64_t getUnconstrainedBits() const { return unconstrained_bits; }
 
   virtual bool addClause(
       const SATSolver::vec_literals& ps) = 0; // Add a clause to the solver.

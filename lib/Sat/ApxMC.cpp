@@ -96,12 +96,12 @@ void print_num_solutions(uint32_t cell_sol_cnt, uint32_t hash_count, const std::
     const CMSat::Field* ptr = mult_ptr.get();
     const ArjunNS::FMpz* mult = dynamic_cast<const ArjunNS::FMpz*>(ptr);
     std::cout << "c [appmc] Number of solutions is: "
-    << cell_sol_cnt << "*2**" << hash_count << "*" << mult->val << std::endl;
+    << cell_sol_cnt << "*2**" << hash_count  << "*" << mult->val << std::endl;
     if (cell_sol_cnt == 0 || mult->val == 0) std::cout << "s UNSATISFIABLE" << std::endl;
     else std::cout << "s SATISFIABLE" << std::endl;
 
     mpz_class num_sols(2);
-    mpz_pow_ui(num_sols.get_mpz_t(), num_sols.get_mpz_t(), hash_count);
+    mpz_pow_ui(num_sols.get_mpz_t(), num_sols.get_mpz_t(), hash_count );
     num_sols *= cell_sol_cnt;
     auto final = mult->val * num_sols;
 
@@ -126,6 +126,7 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
     std::cout << "c [stp->apxmc] sampling vars [arjun] "
               << cnf.get_sampl_vars().size() << ", multipler weight " << mult_val
               <<  std::endl;
+  std::cout << "c [stp->gnk] unconstrained bits multiplier 2**" << getUnconstrainedBits() << "\n";
   cnf.set_sampl_vars(sampling_vars_orig);
   if (cnf.get_sampl_vars().empty())
   {
@@ -182,9 +183,9 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
     sol_count = appmc.count();
     // appmc.print_stats(start_time);
     // std::cout << "c o [appmc+arjun] Total time: " << (cpu_time() - start_time) << std::endl;
-    std::cout << "c [stp->apxmc] Count: " << sol_count.cellSolCount << "*2**" << sol_count.hashCount << std::endl;
+    std::cout << "c [stp->apxmc] Count: " << sol_count.cellSolCount << "*2**" << sol_count.hashCount + getUnconstrainedBits() << std::endl;
 
-    print_num_solutions(sol_count.cellSolCount, sol_count.hashCount, appmc.get_multiplier_weight());
+    print_num_solutions(sol_count.cellSolCount, sol_count.hashCount + getUnconstrainedBits(), appmc.get_multiplier_weight());
 
   return true;
 }

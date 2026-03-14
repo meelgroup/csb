@@ -177,7 +177,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: meelgroup/SBVA
-        ref: master
+        ref: 65993dbc0a802c0f1f7c83fac514339227f27b71
         path: sbva
     - name: Build SBVA
       run: |
