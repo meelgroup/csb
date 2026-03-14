@@ -40,7 +40,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -yq git cmake bison flex libboost-all-dev python3 perl \
           build-essential python3-distutils-extra wget zlib1g-dev \
-          libboost-program-options-dev libboost-serialization-dev \
+          libboost-program-options-dev libboost-serialization-dev libflint-dev \
           libarmadillo-dev libensmallen-dev libcereal-dev libmlpack-dev \
           libgmp-dev libmpfr-dev help2man
 
@@ -48,7 +48,7 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         brew update
-        brew install bison cmake boost gmp mpfr wget zig armadillo ensmallen cereal mlpack zlib
+        brew install bison cmake boost gmp mpfr wget zig armadillo ensmallen cereal mlpack zlib flint
         MPFR_PREFIX=$(brew --prefix mpfr)
         GMP_PREFIX=$(brew --prefix gmp)
         BISON_PREFIX=$(brew --prefix bison)
@@ -285,15 +285,15 @@ jobs:
         cmake --build . --config ${{matrix.build_type}} -v
         cd ../..
 
-    - name: Install flint
-      run: |
-        wget https://github.com/flintlib/flint/releases/download/v3.2.0-rc1/flint-3.2.0-rc1.tar.gz
-        tar xzf flint-3.2.0-rc1.tar.gz
-        cd flint-3.2.0-rc1
-        ./configure --enable-static --enable-shared
-        make -j8
-        sudo make install
-        cd ..
+    # - name: Install flint
+    #   run: |
+    #     wget https://github.com/flintlib/flint/releases/download/v3.2.0-rc1/flint-3.2.0-rc1.tar.gz
+    #     tar xzf flint-3.2.0-rc1.tar.gz
+    #     cd flint-3.2.0-rc1
+    #     ./configure --enable-static --enable-shared
+    #     make -j8
+    #     sudo make install
+    #     cd ..
 
     - name: Checkout ganak
       uses: actions/checkout@v4
