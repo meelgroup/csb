@@ -361,31 +361,48 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         binary="project/build/csb"
+
+        # First, find where cadiback actually put its library
+        echo "Locating cadiback lib:"
+        find "${GITHUB_WORKSPACE}/cadiback" -name "libcadiback*" 2>/dev/null
+
+        # Add rpaths for all build dirs so @rpath entries resolve
+        for dir in \
+          "${GITHUB_WORKSPACE}/cadiback" \
+          "${GITHUB_WORKSPACE}/cadiback/lib" \
+          "${GITHUB_WORKSPACE}/cadical/build" \
+          "${GITHUB_WORKSPACE}/cryptominisat/build" \
+          "${GITHUB_WORKSPACE}/arjun/build" \
+          "${GITHUB_WORKSPACE}/approxmc/build" \
+          "${GITHUB_WORKSPACE}/ganak/build" \
+          "${GITHUB_WORKSPACE}/unigen/build" \
+          "${GITHUB_WORKSPACE}/cmsgen/build" \
+          "${GITHUB_WORKSPACE}/breakid/build" \
+          "${GITHUB_WORKSPACE}/sbva/build" \
+          "${GITHUB_WORKSPACE}/minisat/build"; do
+          [ -d "$dir" ] && install_name_tool -add_rpath "$dir" "$binary" 2>/dev/null || true
+        done
+
+        # Rewrite bare/broken load commands to absolute paths
         otool -L "$binary" | tail -n +2 | awk '{print $1}' | while read ref; do
+          # skip already-valid absolute paths and @rpath entries
+          [[ "$ref" == /usr/* ]] && continue
+          [[ "$ref" == /opt/* ]] && continue
+          [[ "$ref" == @rpath/* ]] && continue
+
           basename=$(basename "$ref")
           stem="${basename%.so}"
           stem="${stem%.dylib}"
-          for dir in \
-            "${GITHUB_WORKSPACE}/cadiback/lib" \
-            "${GITHUB_WORKSPACE}/cadical/build" \
-            "${GITHUB_WORKSPACE}/cryptominisat/build" \
-            "${GITHUB_WORKSPACE}/arjun/build" \
-            "${GITHUB_WORKSPACE}/approxmc/build" \
-            "${GITHUB_WORKSPACE}/ganak/build" \
-            "${GITHUB_WORKSPACE}/unigen/build" \
-            "${GITHUB_WORKSPACE}/cmsgen/build" \
-            "${GITHUB_WORKSPACE}/breakid/build" \
-            "${GITHUB_WORKSPACE}/sbva/build"; do
-            for ext in dylib so; do
-              candidate="${dir}/${stem}.${ext}"
-              if [ -f "$candidate" ]; then
-                echo "Rewriting $ref -> $candidate"
-                install_name_tool -change "$ref" "$candidate" "$binary" || true
-                break 2
-              fi
-            done
-          done
+
+          found=$(find "${GITHUB_WORKSPACE}" -name "${stem}.*" \( -name "*.dylib" -o -name "*.so" \) 2>/dev/null | head -1)
+          if [ -n "$found" ]; then
+            echo "Rewriting $ref -> $found"
+            install_name_tool -change "$ref" "$found" "$binary" || true
+          else
+            echo "WARNING: could not find $ref"
+          fi
         done
+
         echo "Final load commands:"
         otool -L "$binary"
 
