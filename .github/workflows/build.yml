@@ -78,7 +78,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: meelgroup/minisat
-        ref: 8c9ea22aff06fdf284b8bb13f8524a96f7d446af
         path: minisat
     - name: Build Minisat (Linux)
       if: contains(matrix.os, 'ubuntu')
