@@ -256,21 +256,31 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   std::string result_value;
   if (const auto* as_mpz = dynamic_cast<const ArjunNS::FMpz*>(ptr))
   {
-    print_log(as_mpz->val);
+    if (unconstrained_multiplier == 1)
+    {
+      print_log(as_mpz->val * unconstrained_multiplier);
+    }
     result_value = as_mpz->val.get_str();
-    std::cout << "c s exact arb int " << *cnt << std::endl;
+    if (unconstrained_multiplier == 1)
+    {
+      std::cout << "c s exact arb int " << *cnt << std::endl;
+    }
   }
   else if (const auto* as_mpq = dynamic_cast<const ArjunNS::FMpq*>(ptr))
   {
     mpfr_t r;
     mpfr_init2(r, 256);
     mpfr_set_q(r, as_mpq->val.get_mpq_t(), MPFR_RNDN);
-    print_log(r);
-    mpfr_clear(r);
-
-    std::cout << "c o exact quadruple float "
+    if (unconstrained_multiplier == 1)
+    {
+      print_log(r);
+      std::cout << "c o exact quadruple float "
               << print_mpq_as_scientific(as_mpq->val) << std::endl;
     std::cout << "c s exact arb frac " << *cnt << std::endl;
+    }
+    mpfr_clear(r);
+
+
 
     mpq_class value = as_mpq->val;
     mpz_class num = value.get_num();
