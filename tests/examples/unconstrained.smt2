@@ -1,0 +1,6 @@
+(set-logic QF_BV)
+(declare-const Z (_ BitVec 32))
+(declare-const .csb Bool)
+(assert (and true true))
+(check-sat)
+(get-model)
