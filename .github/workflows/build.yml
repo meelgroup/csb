@@ -23,7 +23,7 @@ jobs:
           #   staticcompile: 'ON'
           - os: macos-14
             build_type: Release
-            staticcompile: 'OFF'
+            staticcompile: 'ON'
           # - os: macos-13
           #   build_type: Release
           #   staticcompile: 'OFF'
@@ -48,7 +48,7 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         brew update
-        brew install bison cmake boost gmp mpfr wget zig armadillo ensmallen cereal mlpack
+        brew install bison cmake boost gmp mpfr wget zig armadillo ensmallen cereal mlpack zlib
         MPFR_PREFIX=$(brew --prefix mpfr)
         GMP_PREFIX=$(brew --prefix gmp)
         BISON_PREFIX=$(brew --prefix bison)
@@ -104,6 +104,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF \
             -DSTATICCOMPILE=${{ matrix.staticcompile }} \
             -DSTATIC_BINARIES=${{ matrix.staticcompile }} \
+            -DZLIB_ROOT=$(brew --prefix zlib) \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/zig-macos-static.cmake
         else
