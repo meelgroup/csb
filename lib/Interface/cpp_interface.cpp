@@ -28,6 +28,9 @@ THE SOFTWARE.
 #include "stp/STPManager/STPManager.h"
 #include "stp/ToSat/ToSATAIG.h"
 #include <cassert>
+#include <cstdint>
+#include <gmp.h>
+#include <gmpxx.h>
 
 using std::cerr;
 using std::cout;
@@ -35,6 +38,42 @@ using std::endl;
 
 namespace stp
 {
+namespace
+{
+uint64_t getSymbolBitWidth(const ASTNode& symbol)
+{
+  if (symbol.GetKind() != SYMBOL)
+    return 0;
+
+  if (symbol.GetType() == BOOLEAN_TYPE)
+    return 1;
+
+  if (symbol.GetType() == BITVECTOR_TYPE)
+    return symbol.GetValueWidth();
+
+  return 0;
+}
+
+bool hasConstrainedVariable(const ASTVec& assertions)
+{
+  ASTNodeSet visited;
+  ASTNodeSet symbols;
+
+  for (const ASTNode& assertion : assertions)
+    buildListOfSymbols(assertion, visited, symbols);
+
+  return !symbols.empty();
+}
+
+uint64_t getDeclaredSymbolBits(const ASTVec& symbols)
+{
+  uint64_t bits = 0;
+  for (const ASTNode& symbol : symbols)
+    bits += getSymbolBitWidth(symbol);
+
+  return bits;
+}
+}
 
 void Cpp_interface::checkInvariant()
 {
@@ -532,6 +571,18 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
   }
 
   (GlobalSTP->tosat)->PrintOutput(last_run.result);
+
+  if (last_run.result == SOLVER_SATISFIABLE &&
+    !hasConstrainedVariable(assertionsSMT2))
+  {
+    const uint64_t declared_bits = getDeclaredSymbolBits(getCurrentSymbols());
+    cout << "c no constrained variables, model count 2^" << declared_bits << endl;
+    mpz_t model_count;
+    mpz_init(model_count);
+    mpz_ui_pow_ui(model_count, 2, declared_bits);
+    cout << "s mc " << mpz_get_str(nullptr, 10, model_count) << "\n";
+    mpz_clear(model_count);
+  }
 
   // User has specified -p option to print model.
    if (bm.UserFlags.print_counterexample_flag)

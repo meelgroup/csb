@@ -248,7 +248,6 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   else
     cnt->set_zero();
 
-
   // const CMSat::Field* ptr = cnt.get();
   if (ptr == nullptr)
     throw std::runtime_error("[stp->gnk] Null count returned by Ganak");
