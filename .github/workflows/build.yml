@@ -23,7 +23,7 @@ jobs:
           #   staticcompile: 'ON'
           - os: macos-14
             build_type: Release
-            staticcompile: 'ON'
+            staticcompile: 'OFF'
           # - os: macos-13
           #   build_type: Release
           #   staticcompile: 'OFF'
@@ -360,14 +360,14 @@ jobs:
     - name: Test
       run: |
         cd project/build
-        export DYLD_LIBRARY_PATH="../../cadical/build:../../cadiback/lib:${DYLD_LIBRARY_PATH:-}"
+        export DYLD_LIBRARY_PATH="${GITHUB_WORKSPACE}/cadical/build:${GITHUB_WORKSPACE}/cadiback/lib:${DYLD_LIBRARY_PATH:-}"
         ctest -C ${{matrix.build_type}} --verbose
 
     - name: Smoke test
       run: |
         set -euo pipefail
         cd project/build
-        export DYLD_LIBRARY_PATH="../../cadical/build:../../cadiback/lib:${DYLD_LIBRARY_PATH:-}"
+        export DYLD_LIBRARY_PATH="${GITHUB_WORKSPACE}/cadical/build:${GITHUB_WORKSPACE}/cadiback/lib:${DYLD_LIBRARY_PATH:-}"
         test -x ./csb || { echo "csb binary not found in project/build"; ls -la; exit 1; }
         ./csb ../tests/examples/unweighted.smt2 | tee csb.out >/dev/null
         last_line="$(tail -n 1 csb.out | tr -d '\r')"
