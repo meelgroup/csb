@@ -429,7 +429,17 @@ void ExtraMain::create_options()
 
                   ("check-sanity,d",
                    po::bool_switch(&(bm->UserFlags.check_counterexample_flag)),
-                   "construct counterexample and check it");
+                   "construct counterexample and check it")
+
+                      ("enable-simp",
+                       po::value<string>(),
+                       "Re-enable a comma-separated list of simplifications "
+                       "after counting/sampling mode disables them. "
+                       "Names: optimize, unconstrained, cbitp, intervals, "
+                       "pure-literals, always-true, wordlevel, equality, "
+                       "flatten, split-extracts, rewriting, merge-same, "
+                       "ite-context, bitblast-simp. "
+                       "Use 'all' to re-enable everything that disableSimplifications() turns off.");
 
 #undef BOOL_ARG
 #undef INT64_ARG
@@ -619,6 +629,68 @@ int ExtraMain::parse_options(int argc, char** argv)
   if (vm.count("disable-equality"))
   {
     bm->UserFlags.propagate_equalities = false;
+  }
+
+  if (vm.count("enable-simp"))
+  {
+    // Re-enable a named subset of simplifications. Intended for fuzz-driven
+    // testing of which simplifications are safe to leave on in counting/sampling
+    // mode without changing the model count. Runs AFTER disableSimplifications()
+    // so it overrides the counting-mode bulk disable.
+    const std::string raw = vm["enable-simp"].as<std::string>();
+    std::vector<std::string> names;
+    {
+      std::string cur;
+      for (char c : raw)
+      {
+        if (c == ',' || c == ' ')
+        {
+          if (!cur.empty()) { names.push_back(cur); cur.clear(); }
+        }
+        else
+          cur.push_back(c);
+      }
+      if (!cur.empty()) names.push_back(cur);
+    }
+    for (const std::string& n : names)
+    {
+      if (n == "optimize")              bm->UserFlags.optimize_flag = true;
+      else if (n == "unconstrained")    bm->UserFlags.enable_unconstrained = true;
+      else if (n == "cbitp")            bm->UserFlags.bitConstantProp_flag = true;
+      else if (n == "intervals")        bm->UserFlags.enable_use_intervals = true;
+      else if (n == "pure-literals")    bm->UserFlags.enable_pure_literals = true;
+      else if (n == "always-true")      bm->UserFlags.enable_always_true = true;
+      else if (n == "wordlevel")        bm->UserFlags.wordlevel_solve_flag = true;
+      else if (n == "equality")         bm->UserFlags.propagate_equalities = true;
+      else if (n == "flatten")          bm->UserFlags.enable_flatten = true;
+      else if (n == "split-extracts")   bm->UserFlags.enable_split_extracts = true;
+      else if (n == "rewriting")        bm->UserFlags.enable_sharing_aware_rewriting = true;
+      else if (n == "merge-same")       bm->UserFlags.enable_merge_same = true;
+      else if (n == "ite-context")      bm->UserFlags.enable_ite_context = true;
+      else if (n == "bitblast-simp")    bm->UserFlags.bitblast_simplification = -1;
+      else if (n == "all")
+      {
+        bm->UserFlags.optimize_flag = true;
+        bm->UserFlags.enable_unconstrained = true;
+        bm->UserFlags.bitConstantProp_flag = true;
+        bm->UserFlags.enable_use_intervals = true;
+        bm->UserFlags.enable_pure_literals = true;
+        bm->UserFlags.enable_always_true = true;
+        bm->UserFlags.wordlevel_solve_flag = true;
+        bm->UserFlags.propagate_equalities = true;
+        bm->UserFlags.enable_flatten = true;
+        bm->UserFlags.enable_split_extracts = true;
+        bm->UserFlags.enable_sharing_aware_rewriting = true;
+        bm->UserFlags.enable_merge_same = true;
+        bm->UserFlags.enable_ite_context = true;
+        bm->UserFlags.bitblast_simplification = -1;
+      }
+      else
+      {
+        cerr << "Unknown --enable-simp name: '" << n << "'" << endl;
+        std::exit(-1);
+      }
+    }
   }
 
   const char* backend_name = nullptr;

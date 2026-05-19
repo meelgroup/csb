@@ -470,6 +470,11 @@ endif()
 # -----------------------------------------------------------------------------
 option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
 
+# cryptominisat5's exported targets may reference Threads::Threads, so make
+# sure the standard Threads imported target is defined before find_package.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 if (NOT NOCRYPTOMINISAT)
   set(cryptominisat5_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
   find_package(cryptominisat5 CONFIG)
