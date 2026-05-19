@@ -538,7 +538,8 @@ unsigned int STPMgr::NodeSize(const ASTNode& a)
   return result;
 }
 
-uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(const ASTNode& input) const
+uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(
+    const ASTNode& input, const ASTNodeMap* substitutionMap) const
 {
   ASTNodeSet seen_symbols;
   NodeIterator ni(input, ASTUndefined, *const_cast<STPMgr*>(this));
@@ -548,6 +549,12 @@ uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(const ASTNode& input) cons
     if (current.GetKind() == SYMBOL)
       seen_symbols.insert(current);
   }
+
+  // If the user supplied an explicit projection set, only projection
+  // variables contribute to the model count, so only their disappearance
+  // adds to the multiplier. With no projection set every declared variable
+  // is implicitly a projection variable.
+  const bool has_explicit_proj = !_proj_symbol_list.empty();
 
   uint64_t total = 0;
   for (auto it = _symbol_unique_table.begin(), itend = _symbol_unique_table.end();
@@ -564,7 +571,68 @@ uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(const ASTNode& input) cons
     if (seen_symbols.find(symbol) != seen_symbols.end())
       continue;
 
+    // If the simplifier substituted this declared symbol with an expression
+    // over other (typically fresh) variables that DO appear in the formula,
+    // its degrees of freedom are already tracked through the substitute --
+    // don't add them to the multiplier or we double-count.
+    if (substitutionMap != nullptr &&
+        substitutionMap->find(symbol) != substitutionMap->end())
+      continue;
+
+    if (has_explicit_proj &&
+        _proj_symbol_list.find(symbol) == _proj_symbol_list.end())
+      continue;
+
     total += (symbol.GetValueWidth() == 0) ? 1 : symbol.GetValueWidth();
+  }
+
+  // Account for declared->introduced bijective substitutions whose fresh
+  // RHS variable doesn't end up in the formula (typically because further
+  // simplifications eliminated it). The declared LHS was excluded above as
+  // "tracked through the substitute", but the substitute itself is now also
+  // free, so add its bits here. We dedupe by fresh-symbol identity so a
+  // shared fresh variable across multiple substitutions counts once.
+  // Skip when an explicit projection set is in effect: introduced symbols
+  // are never in that set, and substitutions on projection symbols are
+  // already blocked by RemoveUnconstrained in counting/sampling mode.
+  if (substitutionMap != nullptr && !has_explicit_proj)
+  {
+    ASTNodeSet introduced_in_subst_rhs;
+    for (auto it = substitutionMap->begin(), itend = substitutionMap->end();
+         it != itend; ++it)
+    {
+      // We only want substitutions LHS = declared (non-introduced) symbol.
+      // Symbol-to-anything substitutions for fresh LHS don't add freedom.
+      if (it->first.GetKind() != SYMBOL)
+        continue;
+      if (Introduced_SymbolsSet.find(it->first) !=
+          Introduced_SymbolsSet.end())
+        continue;
+
+      NodeIterator rhs_iter(it->second, ASTUndefined,
+                            *const_cast<STPMgr*>(this));
+      ASTNode rhs_cur;
+      while ((rhs_cur = rhs_iter.next()) != rhs_iter.end())
+      {
+        if (rhs_cur.GetKind() != SYMBOL)
+          continue;
+        if (Introduced_SymbolsSet.find(rhs_cur) ==
+            Introduced_SymbolsSet.end())
+          continue; // only count introduced (fresh) symbols
+        if (rhs_cur.GetIndexWidth() != 0)
+          continue;
+        if (seen_symbols.find(rhs_cur) != seen_symbols.end())
+          continue; // already in the formula -- captured by CNF projection
+        introduced_in_subst_rhs.insert(rhs_cur);
+      }
+    }
+    for (auto it = introduced_in_subst_rhs.begin(),
+              itend = introduced_in_subst_rhs.end();
+         it != itend; ++it)
+    {
+      const ASTNode& sym = *it;
+      total += (sym.GetValueWidth() == 0) ? 1 : sym.GetValueWidth();
+    }
   }
 
   return total;

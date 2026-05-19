@@ -236,7 +236,9 @@ public:
 
   unsigned int NodeSize(const ASTNode& a);
 
-  uint64_t countUnconstrainedDeclaredScalarBits(const ASTNode& input) const;
+  uint64_t countUnconstrainedDeclaredScalarBits(
+      const ASTNode& input,
+      const ASTNodeMap* substitutionMap = nullptr) const;
   /****************************************************************
    * Create Symbol and BVConst functions                          *
    ****************************************************************/

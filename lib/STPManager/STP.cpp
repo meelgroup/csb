@@ -26,6 +26,8 @@ THE SOFTWARE.
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 #include "stp/Simplifier/constantBitP/NodeToFixedBitsMap.h"
 #include "stp/ToSat/ToSATAIG.h"
+#include <cstdlib>
+#include <gmp.h>
 
 #include "stp/Simplifier/NodeDomainAnalysis.h"
 
@@ -716,7 +718,48 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
     return SOLVER_TIMEOUT;
 
   NewSolver.enableRefinement(maybeRefinement);
+
+  // Recompute unconstrained declared bits AFTER all simplifications. Some
+  // simplifications (e.g. AlwaysTrue elimination, full-bit cbitp, BVSolve)
+  // may eliminate declared variables from the formula without leaving a
+  // fresh substitute behind. Each lost bit contributes a 2x multiplier to
+  // the model count. We exclude vars that the simplifier substituted with
+  // an expression -- those are still "tracked" via the substitution's RHS,
+  // which appears in the formula and gets a CNF projection variable.
+  bm->unconstrained_variable_bits = bm->countUnconstrainedDeclaredScalarBits(
+      inputToSat, simp->Return_SolverMap());
+  if (bm->unconstrained_variable_bits > 0)
+  {
+    std::cout << "c Unconstrained bits (post-simp): "
+              << bm->unconstrained_variable_bits << std::endl;
+  }
   NewSolver.setUnconstrainedBits(bm->unconstrained_variable_bits);
+
+  // In counting/sampling mode, if simplification reduced the formula to a
+  // constant the SAT pipeline short-circuits and never invokes the model
+  // counter, so no "s mc N" line gets emitted. Print it here from the
+  // unconstrained-bit multiplier directly. The recompute above already
+  // accounts for fresh substitution-RHS variables that don't survive into
+  // the formula, so the multiplier is the full free-bit count.
+  if ((bm->UserFlags.counting_mode || bm->UserFlags.sampling_mode) &&
+      (inputToSat == bm->ASTTrue || inputToSat == bm->ASTFalse))
+  {
+    mpz_t count;
+    mpz_init(count);
+    if (inputToSat == bm->ASTTrue)
+      mpz_ui_pow_ui(count, 2, bm->unconstrained_variable_bits);
+    else
+      mpz_set_ui(count, 0);
+
+    char* count_str = mpz_get_str(nullptr, 10, count);
+    std::cout << "c [stp] formula reduced to "
+              << (inputToSat == bm->ASTTrue ? "true" : "false")
+              << " before bit-blasting; count = " << count_str << std::endl;
+    std::cout << "s mc " << count_str << std::endl;
+    free(count_str);
+    mpz_clear(count);
+    return (inputToSat == bm->ASTTrue) ? SOLVER_INVALID : SOLVER_VALID;
+  }
 
   if (bm->UserFlags.stats_flag)
     bm->print_stats();

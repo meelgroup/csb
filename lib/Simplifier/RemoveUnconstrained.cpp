@@ -215,6 +215,17 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
   // We don't want to check some expensive nodes over and over again.
   ASTNodeSet noCheck;
 
+  // In counting/sampling mode, many of the unconstrained substitutions below
+  // preserve SAT/UNSAT but not the model count: they map a variable's 2^w
+  // values to a smaller set (e.g. EQ rewrites to ITE with 2 outcomes). Skip
+  // them so model counting stays exact. Bijective rewrites (BVUMINUS, BVNOT,
+  // BVCONCAT, NOT, XOR/BVXOR, IFF, BVSUB, BVPLUS, BVMULT-odd-const,
+  // BVEXTRACT) stay enabled -- the substitution's RHS is a fresh variable
+  // that appears in the formula and gets a CNF projection variable, so the
+  // count is preserved.
+  const bool count_preserving_only =
+      bm.UserFlags.counting_mode || bm.UserFlags.sampling_mode;
+
   for (size_t i = 0; i < variable_array.size(); i++)
   {
     // Don't make this is a reference. If the vector gets resized, it will point
@@ -226,6 +237,20 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
 
     if (!muteNode.isUnconstrained())
       continue;
+
+    // In counting/sampling mode, don't substitute away a variable that the
+    // user explicitly declared as a projection variable. The substitution's
+    // RHS is a fresh non-projection variable, so the CNF would end up with
+    // no projection variables and the count would be wrong (or rejected).
+    // When the projection list is empty, every symbol is implicitly a
+    // projection variable, but introduced fresh variables are too -- so the
+    // count is still preserved by the fresh substitute.
+    if (count_preserving_only && bm.isAnyProjSymbolDeclared())
+    {
+      ASTNode mutable_var = var;
+      if (bm.isProjSymbol(mutable_var))
+        continue;
+    }
 
     MutableASTNode& muteParent = muteNode.getParent();
 
@@ -343,6 +368,11 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
       case BVGT:
       case BVGE:
       {
+        // Maps `var`'s 2^w values to just {biggestNumber, smallestNumber};
+        // not count-preserving when w > 1.
+        if (count_preserving_only)
+          continue;
+
         width = var.GetValueWidth();
         if (width == 1)
           continue; // Hard to get right, not used often.
@@ -484,6 +514,16 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
       {
         if (allChildrenAreUnconstrained(mutable_children))
         {
+          // OR(a,b,c)=true originally has 2^n - 1 models but collapses to a
+          // single fresh v=true here, losing models. Skip in counting mode.
+          if (count_preserving_only)
+          {
+            // fall through to the noCheck logic below so we don't keep
+            // rechecking gigantic conjunctions.
+            if (mutable_children.size() > 200)
+              noCheck.insert(muteParent.n);
+            break;
+          }
           ASTNodeSet already;
           ASTNode v = replaceParentWithFresh(muteParent, variable_array);
           for (size_t i = 0; i < numberOfChildren; i++)
@@ -552,6 +592,13 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
         if (indexWidth > 0)
           continue; // don't do arrays.
 
+        // The first two branches force `c` to a constant; the third folds two
+        // unconstrained branches into the same fresh variable. Both are
+        // not count-preserving (degrees of freedom in c, or in differing
+        // values of branch1 vs branch2 vanish).
+        if (count_preserving_only)
+          continue;
+
         if (mutable_children[0]->isUnconstrained() &&
             mutable_children[1]->isUnconstrained() &&
             children[0] != children[1])
@@ -586,6 +633,9 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
         if (mutable_children[0]->isUnconstrained() &&
             mutable_children[1]->isUnconstrained())
         {
+          // children[1] := 0 collapses the shift-amount's 2^w freedom away.
+          if (count_preserving_only)
+            continue;
           assert(children[0] != children[1]);
           ASTNode v = replaceParentWithFresh(muteParent, variable_array);
           replace(children[1], bm.CreateZeroConst(width));
@@ -615,6 +665,8 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
         if (mutable_children[0]->isUnconstrained() &&
             mutable_children[1]->isUnconstrained())
         {
+          if (count_preserving_only)
+            continue; // children[1] := 1 collapses divisor freedom.
           assert(children[0] != children[1]);
           ASTNode v = replaceParentWithFresh(muteParent, variable_array);
           replace(children[1], bm.CreateOneConst(width));
@@ -629,6 +681,13 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
         if (mutable_children[1]->isUnconstrained() &&
             mutable_children[0]->isUnconstrained()) // both are unconstrained
         {
+          if (count_preserving_only)
+          {
+            // children[0] := 1 collapses the freedom in that factor.
+            // Fall through so the odd-constant branch below isn't tried
+            // (the `other` here is unconstrained, not a constant).
+            break;
+          }
           ASTNode v = replaceParentWithFresh(muteParent, variable_array);
           replace(children[0], bm.CreateOneConst(width));
           replace(children[1], v);
@@ -655,9 +714,15 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
         break;
         case EQ:
         {
+          width = var.GetValueWidth();
+          // var := ITE(v, other, other+1) maps `var`'s 2^w values to just
+          // {other, other+1}. For w > 1 this is not count-preserving; for
+          // w == 1 the two values cover all of `var`'s possible values.
+          if (count_preserving_only && width > 1)
+            continue;
+
           ASTNode v = replaceParentWithFresh(muteParent, variable_array);
 
-          width = var.GetValueWidth();
           ASTNode rhs = nf->CreateTerm(
               ITE, width, v, muteOther->toASTNode(&bm),
               nf->CreateTerm(BVPLUS, width, muteOther->toASTNode(&bm),

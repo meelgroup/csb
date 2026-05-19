@@ -608,11 +608,22 @@ int ExtraMain::parse_options(int argc, char** argv)
 
   if (bm->UserFlags.sampling_mode || bm->UserFlags.counting_mode)
   {
-    // disable all simplifications while counting or sampling
-    bm->UserFlags.bitConstantProp_flag = false;
-    bm->UserFlags.optimize_flag = false;
-    bm->UserFlags.disableSimplifications();
-    bm->UserFlags.propagate_equalities = false;
+    // Disable only the simplifications that are NOT count-preserving.
+    // The rest are safe: bijective rewrites (or the substitution map +
+    // post-simp recount of unconstrained_variable_bits compensates for
+    // declared variables that were eliminated). RemoveUnconstrained
+    // additionally guards its own non-bijective sub-cases against
+    // counting/sampling mode.
+    bm->UserFlags.enable_pure_literals = false;
+
+    // Switch on the size-reducing helpers that ship off by default but are
+    // safe for model counting and useful for reducing the formula before
+    // bit-blasting.
+    bm->UserFlags.enable_flatten = true;
+    bm->UserFlags.enable_ite_context = true;
+    bm->UserFlags.enable_always_true = true;
+    bm->UserFlags.enable_merge_same = true;
+    bm->UserFlags.bitblast_simplification = -1; // -1 means always run
   }
 #endif
 
