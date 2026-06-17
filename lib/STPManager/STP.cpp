@@ -26,7 +26,9 @@ THE SOFTWARE.
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 #include "stp/Simplifier/constantBitP/NodeToFixedBitsMap.h"
 #include "stp/ToSat/ToSATAIG.h"
+#include "stp/Util/NodeIterator.h"
 #include <cstdlib>
+#include <functional>
 #include <gmp.h>
 
 #include "stp/Simplifier/NodeDomainAnalysis.h"
@@ -265,7 +267,7 @@ ASTNode STP::sizeReducing(ASTNode inputToSat,
 
   if (bm->UserFlags.enable_split_extracts)
   {
-    SplitExtracts se(*bm);
+    SplitExtracts se(*bm, simp);
     inputToSat = se.topLevel(inputToSat);
     bm->ASTNodeStats(se_message.c_str(), inputToSat);
   }
@@ -718,6 +720,87 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
     return SOLVER_TIMEOUT;
 
   NewSolver.enableRefinement(maybeRefinement);
+
+  // If the user declared an explicit projection set AND simplifications
+  // substituted some of those projection symbols away (RemoveUnconstrained
+  // and friends now do that aggressively), the fresh symbols on the
+  // substitution RHS are what survive into the bit-blasted formula. To
+  // keep ganak's projection set correct we walk the substitution map and
+  // mark every in-formula leaf reachable from a projection LHS as a
+  // projection symbol too. Leaves that are NOT in the formula are
+  // unconstrained-bit material and get handled by the recompute below.
+  if (bm->isAnyProjSymbolDeclared() &&
+      (bm->UserFlags.counting_mode || bm->UserFlags.sampling_mode))
+  {
+    ASTNodeSet in_formula;
+    {
+      NodeIterator ni(inputToSat, bm->ASTUndefined, *bm);
+      ASTNode cur;
+      while ((cur = ni.next()) != ni.end())
+        if (cur.GetKind() == SYMBOL)
+          in_formula.insert(cur);
+    }
+
+    ASTNodeMap* solverMap = simp->Return_SolverMap();
+    ASTNodeSet expansion_visited;
+    ASTNodeSet to_add_to_proj;
+
+    std::function<void(const ASTNode&)> collect_leaves =
+        [&](const ASTNode& expr)
+    {
+      if (expr.GetKind() == SYMBOL)
+      {
+        auto it = solverMap->find(expr);
+        if (it != solverMap->end())
+        {
+          if (!expansion_visited.insert(expr).second)
+            return;
+          collect_leaves(it->second);
+          return;
+        }
+        // Leaf symbol -- if it's in the bit-blasted formula and isn't
+        // already a projection symbol, it needs to become one so the
+        // CNF projection covers the freedom that the projection LHS used
+        // to contribute.
+        if (in_formula.find(expr) == in_formula.end())
+          return;
+        ASTNode m = expr;
+        if (!bm->isProjSymbol(m))
+          to_add_to_proj.insert(expr);
+        return;
+      }
+      for (size_t i = 0; i < expr.Degree(); i++)
+        collect_leaves(expr[i]);
+    };
+
+    for (auto it = solverMap->begin(), itend = solverMap->end();
+         it != itend; ++it)
+    {
+      const ASTNode& lhs = it->first;
+      if (lhs.GetKind() != SYMBOL)
+        continue;
+      if (bm->FoundIntroducedSymbolSet(lhs))
+        continue; // only follow chains from declared projection symbols
+      ASTNode mutable_lhs = lhs;
+      if (!bm->isProjSymbol(mutable_lhs))
+        continue;
+      expansion_visited.clear();
+      collect_leaves(it->second);
+    }
+
+    for (auto it = to_add_to_proj.begin(), itend = to_add_to_proj.end();
+         it != itend; ++it)
+    {
+      ASTNode m = *it;
+      bm->addProjSymbol(m);
+    }
+    if (!to_add_to_proj.empty())
+    {
+      std::cout << "c [stp] projection set extended by "
+                << to_add_to_proj.size()
+                << " fresh substitute symbol(s)" << std::endl;
+    }
+  }
 
   // Recompute unconstrained declared bits AFTER all simplifications. Some
   // simplifications (e.g. AlwaysTrue elimination, full-bit cbitp, BVSolve)

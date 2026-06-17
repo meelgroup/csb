@@ -106,6 +106,64 @@ def run_csb(csb: str, smt2: Path, enable: Optional[str], timeout_s: int,
     return CsbResult(status="no-output", stderr_tail=err)
 
 
+def run_cvc5(cvc5: str, smt2: Path, timeout_s: int) -> CsbResult:
+    cmd = [cvc5, "-e", str(smt2)]
+    try:
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout_s,
+            text=True,
+        )
+    except subprocess.TimeoutExpired:
+        return CsbResult(status="timeout")
+    out = p.stdout
+    err = (p.stderr or "")[-400:]
+    for line in out.splitlines():
+        m = re.match(r"^s\s+mc\s+(\S+)\s*$", line)
+        if m:
+            return CsbResult(status="mc", count=m.group(1), stderr_tail=err)
+    for line in out.splitlines():
+        s = line.strip()
+        if s == "unsat":
+            return CsbResult(status="unsat", stderr_tail=err)
+        if s == "sat":
+            return CsbResult(status="sat", stderr_tail=err)
+    return CsbResult(status="no-output", stderr_tail=err)
+
+
+def stage_pact(csb: str, cvc5: str, formulas: list[Path],
+               threshold: int, timeout_s: int) -> list[dict]:
+    """For each formula, run default csb. If its count exceeds `threshold`,
+    record PASS without further work; otherwise also run cvc5 -e and report
+    both counts side by side."""
+    results: list[dict] = []
+    for idx, formula in enumerate(formulas, start=1):
+        r = run_csb(csb, formula, enable=None, timeout_s=timeout_s)
+        rec: dict = {"path": str(formula), "csb": list(r.key())}
+        cnt: Optional[int] = None
+        if r.status == "mc" and r.count is not None:
+            try:
+                cnt = int(r.count)
+            except ValueError:
+                cnt = None
+        if cnt is not None and cnt > threshold:
+            rec["verdict"] = "pass"
+            print(f"[{idx}/{len(formulas)}] {formula.name}: csb mc {cnt} > {threshold} -> PASS",
+                  flush=True)
+        else:
+            rc = run_cvc5(cvc5, formula, timeout_s)
+            rec["cvc5"] = list(rc.key())
+            rec["verdict"] = "compared"
+            csb_desc = f"{r.status}" + (f" {r.count}" if r.count else "")
+            cvc5_desc = f"{rc.status}" + (f" {rc.count}" if rc.count else "")
+            print(f"[{idx}/{len(formulas)}] {formula.name}: csb={csb_desc} cvc5={cvc5_desc}",
+                  flush=True)
+        results.append(rec)
+    return results
+
+
 def gen_smtfuzz(python: str, out_dir: Path, n: int, seed_start: int,
                 logic: str = "QF_BV") -> list[Path]:
     """Generate `n` fuzz inputs using smtfuzz. Returns the list of file paths."""
@@ -390,6 +448,17 @@ def main(argv: Optional[list[str]] = None) -> int:
                     help="Skip the in-tree tests/examples regression set")
     ap.add_argument("--skip-fuzz", action="store_true",
                     help="Skip smtfuzz generation; only use --examples")
+    ap.add_argument("--pact", action="store_true",
+                    help="Run default csb on each formula; if count > --pact-threshold, "
+                         "report PASS, otherwise also run cvc5 -e and report both counts. "
+                         "Skips stages A/B and simplification toggling entirely.")
+    ap.add_argument("--cvc5", default=str(Path.home() / "solvers" / "cvc5"
+                                          / "build" / "bin" / "cvc5"),
+                    help="Path to cvc5 binary used by --pact "
+                         "(default: ~/solvers/cvc5/build/bin/cvc5)")
+    ap.add_argument("--pact-threshold", type=int, default=1000,
+                    help="In --pact mode, skip cvc5 when csb count exceeds this "
+                         "(default: 1000)")
     args = ap.parse_args(argv)
 
     csb = args.csb
@@ -417,13 +486,40 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"Generated {len(gen)} fuzz formulas", flush=True)
         formulas.extend(gen)
 
+    if args.pact:
+        if not Path(args.cvc5).exists():
+            print(f"ERROR: cvc5 binary not found at {args.cvc5}", file=sys.stderr)
+            return 2
+        print(f"Pact mode: {len(formulas)} formulas, threshold={args.pact_threshold}",
+              flush=True)
+        t0 = time.time()
+        pact_results = stage_pact(csb, args.cvc5, formulas, args.pact_threshold,
+                                  args.timeout)
+        elapsed = time.time() - t0
+        (out / "pact.json").write_text(
+            json.dumps({"csb": csb, "cvc5": args.cvc5,
+                        "threshold": args.pact_threshold,
+                        "timeout_s": args.timeout,
+                        "elapsed_s": elapsed,
+                        "results": pact_results}, indent=2, default=str))
+        passed = sum(1 for r in pact_results if r.get("verdict") == "pass")
+        compared = sum(1 for r in pact_results if r.get("verdict") == "compared")
+        print(f"Pact done in {elapsed:.1f}s. pass={passed} compared={compared}",
+              flush=True)
+        print(f"Report written to {out / 'pact.json'}", flush=True)
+        return 0
+
     print(f"Stage A: solo, {len(formulas)} formulas x {len(FLAGS)} flags "
           f"= {len(formulas) * len(FLAGS)} CSB runs (+ baselines)", flush=True)
     t0 = time.time()
     stats, outcomes = stage_solo(csb, formulas, args.timeout, report_dir)
     t_solo = time.time() - t0
 
-    safe = [f for f, s in stats.items() if s.disagree == 0 and s.agree > 0]
+    # __default__ is a synthetic stats key that tracks the "all safe simps
+    # on, no extra flags" mode; it isn't a real --enable-simp flag and must
+    # not be passed to CSB in the combine step.
+    safe = [f for f, s in stats.items()
+            if f != "__default__" and s.disagree == 0 and s.agree > 0]
     print(f"Stage A done in {t_solo:.1f}s. Solo-safe flags: {safe}", flush=True)
 
     print("Per-flag solo summary:", flush=True)

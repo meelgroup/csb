@@ -25,15 +25,17 @@ THE SOFTWARE.
 
 #include "stp/AST/AST.h"
 #include "stp/STPManager/STPManager.h"
+#include "stp/Simplifier/Simplifier.h"
 #include <map>
 
 namespace stp
 {
 
 
-class SplitExtracts 
+class SplitExtracts
 {
   STPMgr& bm;
+  Simplifier* simp;
   ASTNode ASTUndefined;
 
   unsigned extractsFound =0;
@@ -42,7 +44,7 @@ class SplitExtracts
   using Ranges = std::vector < std::tuple<ASTNode, uint64_t, uint64_t> >;
   // Node is the extract, then high of the extract, then low of the extract.
   using NodeToExtractsMap = std::unordered_map<ASTNode, Ranges, ASTNode::ASTNodeHasher, ASTNode::ASTNodeEqual>;
-  
+
   void buildMap(const ASTNode & n, std::unordered_set<uint64_t> &visited, NodeToExtractsMap& nodeToExtracts);
 
 public:
@@ -50,7 +52,7 @@ public:
   virtual ~SplitExtracts()
   {}
 
-	SplitExtracts(STPMgr& _bm ) : bm(_bm)
+	SplitExtracts(STPMgr& _bm, Simplifier* _simp = nullptr) : bm(_bm), simp(_simp)
 	{
 	  ASTUndefined = bm.CreateNode(stp::UNDEFINED);
 	}

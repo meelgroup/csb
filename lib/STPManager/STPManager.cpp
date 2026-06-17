@@ -28,6 +28,7 @@ THE SOFTWARE.
 #include "stp/Util/NodeIterator.h"
 #include <cmath>
 #include <cstdint>
+#include <functional>
 
 namespace stp
 {
@@ -590,44 +591,79 @@ uint64_t STPMgr::countUnconstrainedDeclaredScalarBits(
   // RHS variable doesn't end up in the formula (typically because further
   // simplifications eliminated it). The declared LHS was excluded above as
   // "tracked through the substitute", but the substitute itself is now also
-  // free, so add its bits here. We dedupe by fresh-symbol identity so a
-  // shared fresh variable across multiple substitutions counts once.
+  // free, so add its bits here. We follow chains: X -> f(V1), V1 -> g(V2),
+  // ... until we reach a fresh symbol that is itself unsubstituted, and add
+  // its bits if it's also not in the formula. We dedupe so shared fresh
+  // variables count once.
+  //
   // Skip when an explicit projection set is in effect: introduced symbols
   // are never in that set, and substitutions on projection symbols are
   // already blocked by RemoveUnconstrained in counting/sampling mode.
   if (substitutionMap != nullptr && !has_explicit_proj)
   {
-    ASTNodeSet introduced_in_subst_rhs;
+    ASTNodeSet free_leaf_introduced;
+    ASTNodeSet expansion_visited; // for chain expansion (cycle guard)
+
+    // Recursive lambda to walk an expression's symbol leaves, expanding
+    // substituted variables through the chain.
+    std::function<void(const ASTNode&)> collect_leaves =
+        [&](const ASTNode& expr)
+    {
+      if (expr.GetKind() == SYMBOL)
+      {
+        if (expr.GetIndexWidth() != 0)
+          return;
+        // If this symbol is substituted, recurse into its RHS.
+        auto sit = substitutionMap->find(expr);
+        if (sit != substitutionMap->end())
+        {
+          // Guard against cycles in pathological maps.
+          if (!expansion_visited.insert(expr).second)
+            return;
+          collect_leaves(sit->second);
+          return;
+        }
+        // Symbol is not in subst map. It's a "leaf" of the chain.
+        // Only count it if it's introduced (a fresh substitute) and
+        // also doesn't appear in the formula -- if it appears in the
+        // formula its bits get a CNF projection variable and are
+        // counted there.
+        if (Introduced_SymbolsSet.find(expr) ==
+            Introduced_SymbolsSet.end())
+          return;
+        if (seen_symbols.find(expr) != seen_symbols.end())
+          return;
+        free_leaf_introduced.insert(expr);
+        return;
+      }
+
+      // Constants (BVCONST etc.) contribute no degrees of freedom.
+      // For composite nodes, recurse into children.
+      for (size_t i = 0; i < expr.Degree(); i++)
+        collect_leaves(expr[i]);
+    };
+
     for (auto it = substitutionMap->begin(), itend = substitutionMap->end();
          it != itend; ++it)
     {
       // We only want substitutions LHS = declared (non-introduced) symbol.
-      // Symbol-to-anything substitutions for fresh LHS don't add freedom.
+      // Symbol-to-anything substitutions for fresh LHS don't add freedom;
+      // their freedom (if any) is reached via some declared chain that
+      // points to them, and we follow that chain at its declared root.
       if (it->first.GetKind() != SYMBOL)
         continue;
       if (Introduced_SymbolsSet.find(it->first) !=
           Introduced_SymbolsSet.end())
         continue;
-
-      NodeIterator rhs_iter(it->second, ASTUndefined,
-                            *const_cast<STPMgr*>(this));
-      ASTNode rhs_cur;
-      while ((rhs_cur = rhs_iter.next()) != rhs_iter.end())
-      {
-        if (rhs_cur.GetKind() != SYMBOL)
-          continue;
-        if (Introduced_SymbolsSet.find(rhs_cur) ==
-            Introduced_SymbolsSet.end())
-          continue; // only count introduced (fresh) symbols
-        if (rhs_cur.GetIndexWidth() != 0)
-          continue;
-        if (seen_symbols.find(rhs_cur) != seen_symbols.end())
-          continue; // already in the formula -- captured by CNF projection
-        introduced_in_subst_rhs.insert(rhs_cur);
-      }
+      if (it->first.GetIndexWidth() != 0)
+        continue;
+      // If the declared LHS is itself a projection-set member that's
+      // somehow still in the formula, the standard rule above already
+      // handled it; otherwise walk through its RHS.
+      collect_leaves(it->second);
     }
-    for (auto it = introduced_in_subst_rhs.begin(),
-              itend = introduced_in_subst_rhs.end();
+    for (auto it = free_leaf_introduced.begin(),
+              itend = free_leaf_introduced.end();
          it != itend; ++it)
     {
       const ASTNode& sym = *it;

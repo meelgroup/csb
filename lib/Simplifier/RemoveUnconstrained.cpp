@@ -238,19 +238,13 @@ ASTNode RemoveUnconstrained::topLevel_other(const ASTNode& n,
     if (!muteNode.isUnconstrained())
       continue;
 
-    // In counting/sampling mode, don't substitute away a variable that the
-    // user explicitly declared as a projection variable. The substitution's
-    // RHS is a fresh non-projection variable, so the CNF would end up with
-    // no projection variables and the count would be wrong (or rejected).
-    // When the projection list is empty, every symbol is implicitly a
-    // projection variable, but introduced fresh variables are too -- so the
-    // count is still preserved by the fresh substitute.
-    if (count_preserving_only && bm.isAnyProjSymbolDeclared())
-    {
-      ASTNode mutable_var = var;
-      if (bm.isProjSymbol(mutable_var))
-        continue;
-    }
+    // In counting/sampling mode with an explicit projection set, a
+    // bijective substitution of a projection variable is fine *if* the
+    // fresh substitutes are also added to the projection set. We don't do
+    // it inline here (substitutions can be chains across simplifier
+    // passes), but instead carry the missing membership over by patching
+    // the projection list after all simplifications complete -- see
+    // STP::TopLevelSTPAux. So we no longer skip projection symbols here.
 
     MutableASTNode& muteParent = muteNode.getParent();
 
