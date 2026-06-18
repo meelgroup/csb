@@ -157,7 +157,12 @@ void ExtraMain::create_options()
       "disable-opt-inc", "disable rewriting simplifier")(
       "disable-cbitp", "disable constant bit propagation")(
       "disable-equality", "disable equality propagation")(
-      "size-reducing-only", "size reducing simplifications only")
+      "size-reducing-only", "size reducing simplifications only")(
+      "nosimp",
+      "disable ALL simplifications, including the count-preserving ones kept "
+      "on in counting/sampling mode. Reverts to the pre-simplification "
+      "behaviour (commit 641e37ee): equivalent to disableSimplifications() and "
+      "overrides --enable-simp.")
 
       ("unconstrained-variable-elimination",
        BOOL_ARG(bm->UserFlags.enable_unconstrained),
@@ -702,6 +707,18 @@ int ExtraMain::parse_options(int argc, char** argv)
         std::exit(-1);
       }
     }
+  }
+
+  if (vm.count("nosimp"))
+  {
+    // Disable ALL simplifications, reverting to the pre-simplification
+    // behaviour (commit 641e37ee). Runs last so it overrides the
+    // count-preserving simplifications kept on in counting/sampling mode
+    // as well as any --enable-simp selection.
+    bm->UserFlags.bitConstantProp_flag = false;
+    bm->UserFlags.optimize_flag = false;
+    bm->UserFlags.disableSimplifications();
+    bm->UserFlags.propagate_equalities = false;
   }
 
   const char* backend_name = nullptr;
