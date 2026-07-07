@@ -9,9 +9,9 @@
 
 CSB (Count and Sample on Bitvectors) is an exact / approximate model counting and almost-uniform sampling tool aimed at solving constraints of bitvectors. CSB supports *projection* and *weighted model counting*.
 
-To learn more about CSB, please have a look at our [SMT Workshop '24 paper](https://ceur-ws.org/Vol-3725/short2.pdf).
+To learn more about CSB, please have a look at our [Acta Informatica paper](https://arxiv.org/abs/2607.04142).
 
-CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top of that. For counting it uses [ApproxMC](https://github.com/meelgroup/approxmc) (with [Arjun](https://github.com/meelgroup/arjun)). For sampling, it uses [UniGen](https://github.com/meelgroup/unigen/).
+CSB uses [STP](https://github.com/stp/stp) as its frontend and is built on top of that. For counting it uses [ApproxMC](https://github.com/meelgroup/approxmc) or [Ganak](https://github.com/meelgroup/ganak) (with [Arjun](https://github.com/meelgroup/arjun)). For sampling, it uses [UniGen](https://github.com/meelgroup/unigen/) or [CMSGen](https://github.com/meelgroup/cmsgen).
 
 
 ## Building
