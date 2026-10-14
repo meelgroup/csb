@@ -209,7 +209,12 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   Ganak counter(conf, fg);
   counter.new_vars(cnf.nVars());
 
-  auto unconstrained_multiplier = std::pow(2, getUnconstrainedBits());
+  // The unconstrained-bit multiplier is 2**(eliminated bits). This must be an
+  // exact bignum: these counts routinely exceed 2**1024, where a double would
+  // overflow to +inf and then crash when multiplied into a GMP value.
+  mpz_class unconstrained_multiplier;
+  mpz_ui_pow_ui(unconstrained_multiplier.get_mpz_t(), 2,
+                static_cast<unsigned long>(getUnconstrainedBits()));
 
   std::cout << "c [stp->gnk] unconstrained bits multiplier 2**" << getUnconstrainedBits() << "\n";
 
@@ -255,35 +260,25 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   std::string result_value;
   if (const auto* as_mpz = dynamic_cast<const ArjunNS::FMpz*>(ptr))
   {
-    if (unconstrained_multiplier == 1)
-    {
-      print_log(as_mpz->val * unconstrained_multiplier);
-    }
-    result_value = as_mpz->val.get_str();
-    if (unconstrained_multiplier == 1)
-    {
-      std::cout << "c s exact arb int " << *cnt << std::endl;
-    }
+    const mpz_class final_count = as_mpz->val * unconstrained_multiplier;
+    print_log(final_count);
+    result_value = final_count.get_str();
+    std::cout << "c s exact arb int " << final_count << std::endl;
   }
   else if (const auto* as_mpq = dynamic_cast<const ArjunNS::FMpq*>(ptr))
   {
+    const mpq_class value = as_mpq->val * mpq_class(unconstrained_multiplier);
+
     mpfr_t r;
     mpfr_init2(r, 256);
-    mpfr_set_q(r, as_mpq->val.get_mpq_t(), MPFR_RNDN);
-    if (unconstrained_multiplier == 1)
-    {
-      print_log(r);
-      std::cout << "c o exact quadruple float "
-              << print_mpq_as_scientific(as_mpq->val) << std::endl;
-    std::cout << "c s exact arb frac " << *cnt << std::endl;
-    }
+    mpfr_set_q(r, value.get_mpq_t(), MPFR_RNDN);
+    print_log(r);
+    std::cout << "c o exact quadruple float "
+              << print_mpq_as_scientific(value) << std::endl;
+    std::cout << "c s exact arb frac " << value << std::endl;
     mpfr_clear(r);
 
-
-
-    mpq_class value = as_mpq->val;
-    mpz_class num = value.get_num();
-    num *= unconstrained_multiplier;
+    const mpz_class num = value.get_num();
     const mpz_class den = value.get_den();
     if (!cnf.weighted && den == 1)
       result_value = num.get_str();

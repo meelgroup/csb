@@ -25,6 +25,8 @@ THE SOFTWARE.
 #include "main_common.h"
 
 #include <boost/program_options.hpp>
+#include <fstream>
+#include <iterator>
 #include <new>
 namespace po = boost::program_options;
 
@@ -719,6 +721,27 @@ int ExtraMain::parse_options(int argc, char** argv)
     bm->UserFlags.optimize_flag = false;
     bm->UserFlags.disableSimplifications();
     bm->UserFlags.propagate_equalities = false;
+  }
+
+  // Weighted counting: the simplifications substitute variables away (e.g. one
+  // side of an exactly-one pair becomes the negation of the other), and the
+  // weight declared for a substituted variable is then never attached to a CNF
+  // variable, so the count silently loses it. Until weights are carried through
+  // substitutions, an input that declares weights runs as with --nosimp.
+  if (!vm.count("nosimp") && !infile.empty())
+  {
+    std::ifstream in(infile);
+    const std::string text((std::istreambuf_iterator<char>(in)),
+                           std::istreambuf_iterator<char>());
+    if (text.find("declare-weight") != std::string::npos)
+    {
+      bm->UserFlags.bitConstantProp_flag = false;
+      bm->UserFlags.optimize_flag = false;
+      bm->UserFlags.disableSimplifications();
+      bm->UserFlags.propagate_equalities = false;
+      cout << "c [stp] input declares weights: simplifications disabled "
+              "(as with --nosimp)" << endl;
+    }
   }
 
   const char* backend_name = nullptr;

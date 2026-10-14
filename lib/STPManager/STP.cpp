@@ -827,6 +827,15 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
   if ((bm->UserFlags.counting_mode || bm->UserFlags.sampling_mode) &&
       (inputToSat == bm->ASTTrue || inputToSat == bm->ASTFalse))
   {
+    // 2^bits ignores the weights of the variables the simplifier eliminated, so
+    // a weighted formula reduced to true has no correct count to print here.
+    if (inputToSat == bm->ASTTrue &&
+        (!bm->getWeightSymbols().empty() || !bm->getNegWeightSymbols().empty()))
+    {
+      std::cout << "c [stp] weighted formula reduced to true before "
+                   "bit-blasting; weighted count not computed" << std::endl;
+      return SOLVER_INVALID;
+    }
     mpz_t count;
     mpz_init(count);
     if (inputToSat == bm->ASTTrue)
