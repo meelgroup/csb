@@ -33,6 +33,8 @@ THE SOFTWARE.
 #include <unordered_set>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
+#include "stp/Util/GanakOutput.h"
 
 using std::vector;
 
@@ -60,11 +62,11 @@ void GnK::enableRefinement(const bool enable)
   //   }
 }
 
-GnK::GnK(uint64_t unisamp_seed)
-    : seed(unisamp_seed), cnf(fg), max_confl(0), max_time(0)
+GnK::GnK(uint64_t unisamp_seed, bool no_arjun, bool fraction)
+    : seed(unisamp_seed), disable_arjun(no_arjun), print_fraction(fraction), cnf(fg), max_confl(0), max_time(0)
 {
-  arjun = std::make_unique<ArjunNS::Arjun>();
-  std::cout << "c [stp->gnk] GnK initialized" << std::endl;
+  if (!disable_arjun)
+    arjun = std::make_unique<ArjunNS::Arjun>();
 }
 
 GnK::~GnK() = default;
@@ -100,62 +102,11 @@ bool GnK::okay() const // FALSE means solver is in a conflicting state
   return true; //TODO AS: implement well
 }
 
-void print_log(const mpfr_t& cnt, std::string extra = "") {
-    mpfr_t log10_val;
-    mpfr_init2(log10_val, 256);
-    mpfr_set(log10_val, cnt, MPFR_RNDN);
-    if (mpfr_sgn(log10_val) < 0) {
-      std::cout << "c s neglog10-estimate" << extra << " ";
-      mpfr_neg(log10_val, log10_val, MPFR_RNDN);
-    } else {
-      std::cout << "c s log10-estimate" << extra << " ";
-    }
-    mpfr_log10(log10_val, log10_val, MPFR_RNDN);
-
-    char* tmp = nullptr;
-    mpfr_asprintf(&tmp, "%.8Re", log10_val);
-    std::cout << tmp << std::endl;
-    mpfr_free_str(tmp);
-    mpfr_clear(log10_val);
-}
-
-
-void print_log(const mpz_class& cnt, std::string extra = "") {
-    mpz_class abs_cnt = cnt;
-    if (abs_cnt < 0) {
-      std::cout << "c s neglog10-estimate" << extra << " ";
-      abs_cnt *= -1;
-    } else {
-      std::cout << "c s log10-estimate" << extra << " ";
-    }
-    mpfr_t log10_val;
-    mpfr_init2(log10_val, 256);
-    mpfr_set_z(log10_val, abs_cnt.get_mpz_t(), MPFR_RNDN);
-    mpfr_log10(log10_val, log10_val, MPFR_RNDN);
-
-    char* tmp = nullptr;
-    mpfr_asprintf(&tmp, "%.8Re", log10_val);
-    std::cout << tmp << std::endl;
-    mpfr_free_str(tmp);
-    mpfr_clear(log10_val);
-}
-
-std::string print_mpq_as_scientific(const mpq_class& number) {
-    mpf_class mpf_value(number);
-    std::ostringstream oss;
-    oss << std::scientific << std::setprecision(8) << mpf_value;
-    return oss.str();
-}
-
 bool GnK::solve(bool& timeout_expired) // Search without assumptions.
 {
   timeout_expired = false;
     std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
     const CMSat::Field* ptr = cnt.get();
-    const ArjunNS::FMpq* mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
-    std::cout << "c [stp->apxmc] sampling vars [arjun] "
-              << cnf.get_sampl_vars().size() << ", multipler weight " << mult->val
-              <<  std::endl;
 
   cnf.set_sampl_vars(sampling_vars_orig);
   if (cnf.get_sampl_vars().empty())
@@ -174,33 +125,43 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
       cnf.set_opt_sampl_vars(cnf.get_sampl_vars());
   }
 
+  GanakOutput::section("preprocessing");
   if (arjun)
     arjun->set_verb(0);
+  std::cout << "c Arjun preprocessing: " << (disable_arjun ? "disabled" : "enabled") << '\n';
   std::cout << "c [stp->arjun] Instance has " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
             << sampling_vars_orig.size() << " projvars" << std::endl;
 
-  arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
-  if (cnf.get_sampl_vars().size() >= 10)
-    arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
-  else
+  using Clock = std::chrono::steady_clock;
+  const auto preprocessing_started = Clock::now();
+  if (arjun) {
+    arjun->standalone_minimize_indep(cnf, etof_conf.all_indep);
+    if (cnf.get_sampl_vars().size() >= 10)
+      arjun->standalone_elim_to_file(cnf, etof_conf, simp_conf);
+    else
+      cnf.renumber_sampling_vars_for_ganak();
+  } else {
+    // Numbering only: preserve all clauses, variables, weights and support.
     cnf.renumber_sampling_vars_for_ganak();
+  }
+  const double preprocessing_seconds =
+      std::chrono::duration<double>(Clock::now()-preprocessing_started).count();
+  std::cout << "c preprocessing time: " << GanakOutput::decimal(preprocessing_seconds)
+            << " seconds" << std::endl;
+  GanakOutput::section("counting");
 
   std::cout << "c [stp->gnk] GnK solving instance with " << cnf.nVars()
             << " variables, " << cnf.clauses.size() << " clauses "
             << std::endl;
 
-  std::cout << "c [stp->gnk] sampling var size [from arjun] "
+  std::cout << "c [stp->gnk] sampling var size "
             << cnf.get_sampl_vars().size() << ", opt proj var size "
             << cnf.opt_sampl_vars.size() << std::endl;
 
 
     cnt = cnf.multiplier_weight->dup();
     ptr = cnt.get();
-    mult = dynamic_cast<const ArjunNS::FMpq*>(ptr);
-    std::cout << "c [stp->apxmc] sampling vars [arjun] "
-              << cnf.get_sampl_vars().size() << ", multipler weight " << mult->val
-              <<  std::endl;
 
   conf.verb = 0;
   if (seed == 0)
@@ -246,7 +207,18 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   for (const auto& cl : cnf.red_clauses)
     counter.add_red_cl(cms_to_ganak_cl(cl));
 
+  const auto counting_started = Clock::now();
   auto counter_result = counter.count();
+  const double counting_seconds =
+      std::chrono::duration<double>(Clock::now()-counting_started).count();
+  if (!counter_result)
+    throw std::runtime_error("Ganak did not return a count");
+  GanakOutput::section("run-time profiling");
+  std::cout << "c Ganak counting time: " << GanakOutput::decimal(counting_seconds) << " seconds\n";
+  GanakOutput::section("statistics");
+  std::cout << "c maximum component cache lookups: " << counter.get_num_cache_lookups() << '\n'
+            << "c maximum component cache entries: " << counter.get_max_cache_elems() << '\n';
+  GanakOutput::section("result");
   // std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
   if (!cnf.multiplier_weight->is_zero())
     *cnt *= *counter_result;
@@ -257,44 +229,18 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   if (ptr == nullptr)
     throw std::runtime_error("[stp->gnk] Null count returned by Ganak");
 
-  std::string result_value;
+  mpq_class final_count;
   if (const auto* as_mpz = dynamic_cast<const ArjunNS::FMpz*>(ptr))
-  {
-    const mpz_class final_count = as_mpz->val * unconstrained_multiplier;
-    print_log(final_count);
-    result_value = final_count.get_str();
-    std::cout << "c s exact arb int " << final_count << std::endl;
-  }
+    final_count = mpq_class(as_mpz->val * unconstrained_multiplier);
   else if (const auto* as_mpq = dynamic_cast<const ArjunNS::FMpq*>(ptr))
-  {
-    const mpq_class value = as_mpq->val * mpq_class(unconstrained_multiplier);
-
-    mpfr_t r;
-    mpfr_init2(r, 256);
-    mpfr_set_q(r, value.get_mpq_t(), MPFR_RNDN);
-    print_log(r);
-    std::cout << "c o exact quadruple float "
-              << print_mpq_as_scientific(value) << std::endl;
-    std::cout << "c s exact arb frac " << value << std::endl;
-    mpfr_clear(r);
-
-    const mpz_class num = value.get_num();
-    const mpz_class den = value.get_den();
-    if (!cnf.weighted && den == 1)
-      result_value = num.get_str();
-    else
-      result_value = num.get_str() + "/" + den.get_str();
-  }
+    final_count = as_mpq->val * mpq_class(unconstrained_multiplier);
   else
-  {
     throw std::runtime_error("[stp->gnk] Unsupported field type returned by Ganak");
-  }
 
   if (counter.get_is_approximate())
-    std::cout << "c count its approximate" << std::endl;
+    std::cout << "c count is approximate" << std::endl;
 
-  std::cout << "s " << (cnf.weighted ? "wmc " : "mc ") << result_value
-            << std::endl;
+  GanakOutput::result(final_count, print_fraction);
 
   return true;
 }

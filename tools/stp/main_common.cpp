@@ -23,6 +23,7 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "main_common.h"
+#include "stp/Util/GanakOutput.h"
 #include "extlib-abc/cnf_short.h"
 #include "stp/Parser/parser.h"
 #include "stp/cpp_interface.h"
@@ -295,6 +296,11 @@ int Main::main(int argc, char** argv)
   // ensure that all output is (at most) line buffered
   setvbuf(stdout, NULL, _IOLBF, 0);
 
+  if (bm->UserFlags.solver_to_use == UserDefinedFlags::GANAK_SOLVER &&
+      bm->UserFlags.counting_mode && !onePrintBack && !bm->UserFlags.exit_after_CNF)
+    GanakOutput::begin(infile, bm->UserFlags.ganak_disable_arjun,
+                       bm->UserFlags.unisamp_seed);
+
   STP* stp = new STP(bm);
 
   GlobalSTP = stp;
@@ -346,6 +352,8 @@ int Main::main(int argc, char** argv)
     asserts = ASTNode();
     query = ASTNode();
   }
+
+  GanakOutput::finish();
 
   // Save time by not calling the destructors.
   #ifdef NDEBUG

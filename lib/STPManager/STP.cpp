@@ -23,6 +23,7 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/STPManager/STP.h"
+#include "stp/Util/GanakOutput.h"
 #include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 #include "stp/Simplifier/constantBitP/NodeToFixedBitsMap.h"
 #include "stp/ToSat/ToSATAIG.h"
@@ -133,7 +134,7 @@ SATSolver* STP::get_new_sat_solver()
       break;
     case UserDefinedFlags::GANAK_SOLVER:
 #ifdef USE_GANAK
-      newS = new GnK(bm->UserFlags.unisamp_seed);
+      newS = new GnK(bm->UserFlags.unisamp_seed, bm->UserFlags.ganak_disable_arjun, bm->UserFlags.print_fraction);
 #else
       std::cerr << "Ganak support was not enabled at configure time."
                 << std::endl;
@@ -847,7 +848,10 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
     std::cout << "c [stp] formula reduced to "
               << (inputToSat == bm->ASTTrue ? "true" : "false")
               << " before bit-blasting; count = " << count_str << std::endl;
-    std::cout << "s mc " << count_str << std::endl;
+    if (bm->UserFlags.solver_to_use == UserDefinedFlags::GANAK_SOLVER)
+      GanakOutput::result(mpq_class(mpz_class(count)), bm->UserFlags.print_fraction);
+    else
+      std::cout << "s mc " << count_str << std::endl;
     free(count_str);
     mpz_clear(count);
     return (inputToSat == bm->ASTTrue) ? SOLVER_INVALID : SOLVER_VALID;

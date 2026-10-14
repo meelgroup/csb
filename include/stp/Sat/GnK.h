@@ -68,13 +68,15 @@ class GnK : public SATSolver
   ArjunNS::Arjun::ElimToFileConf etof_conf;
   std::unique_ptr<ArjunNS::Arjun> arjun;
   uint64_t seed;
+  bool disable_arjun;
+  bool print_fraction;
   vector<uint32_t> sampling_vars_orig;
   std::unique_ptr<CMSat::FieldGen> fg = std::make_unique<ArjunNS::FGenMpq>();
 
   ArjunNS::SimplifiedCNF cnf;
 
 public:
-  GnK(uint64_t unisamp_seed);
+  GnK(uint64_t unisamp_seed, bool disable_arjun = false, bool print_fraction = false);
 
   ~GnK();
 

@@ -23,6 +23,7 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/cpp_interface.h"
+#include "stp/Util/GanakOutput.h"
 #include "stp/Parser/LetMgr.h"
 #include "stp/STPManager/STP.h"
 #include "stp/STPManager/STPManager.h"
@@ -504,6 +505,8 @@ void Cpp_interface::printStatus()
 // Does some simple caching of prior results.
 void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 {
+  if (bm.UserFlags.solver_to_use == stp::UserDefinedFlags::GANAK_SOLVER)
+    GanakOutput::beginResult();
   static uint64_t samples_generated = 0;
   if (ignoreCheckSatRequest)
     return;
@@ -573,14 +576,19 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
   (GlobalSTP->tosat)->PrintOutput(last_run.result);
 
   if (last_run.result == SOLVER_SATISFIABLE &&
-    !hasConstrainedVariable(assertionsSMT2))
+      !hasConstrainedVariable(assertionsSMT2) &&
+      (bm.UserFlags.solver_to_use != stp::UserDefinedFlags::GANAK_SOLVER ||
+       !GanakOutput::hasResult()))
   {
     const uint64_t declared_bits = getDeclaredSymbolBits(getCurrentSymbols());
     cout << "c no constrained variables, model count 2^" << declared_bits << endl;
     mpz_t model_count;
     mpz_init(model_count);
     mpz_ui_pow_ui(model_count, 2, declared_bits);
-    cout << "s mc " << mpz_get_str(nullptr, 10, model_count) << "\n";
+    if (bm.UserFlags.solver_to_use == stp::UserDefinedFlags::GANAK_SOLVER)
+      GanakOutput::result(mpq_class(mpz_class(model_count)), bm.UserFlags.print_fraction);
+    else
+      cout << "s mc " << mpz_class(model_count) << "\n";
     mpz_clear(model_count);
   }
 

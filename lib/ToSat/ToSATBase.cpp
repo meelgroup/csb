@@ -35,7 +35,7 @@ void ToSATBase::PrintOutput(SOLVER_RETURN_TYPE ret)
 {
   if (ret == SOLVER_TIMEOUT || ret == SOLVER_UNDECIDED)
   {
-    cout << "Timed Out." << endl;
+    cout << (bm->UserFlags.counting_mode ? "c Timed Out." : "Timed Out.") << endl;
     return;
   }
 
@@ -67,9 +67,9 @@ void ToSATBase::PrintOutput(SOLVER_RETURN_TYPE ret)
     {
       if (bm->UserFlags.smtlib1_parser_flag ||
           bm->UserFlags.smtlib2_parser_flag)
-        cout << "unsat\n";
+        cout << (bm->UserFlags.counting_mode ? "c unsat\n" : "unsat\n");
       else
-        cout << "Valid.\n";
+        cout << (bm->UserFlags.counting_mode ? "c Valid.\n" : "Valid.\n");
     }
   }
   else
@@ -84,7 +84,7 @@ void ToSATBase::PrintOutput(SOLVER_RETURN_TYPE ret)
           cout << "sat\n";
       }
       else
-        cout << "Invalid.\n";
+        cout << (bm->UserFlags.counting_mode ? "c Invalid.\n" : "Invalid.\n");
     }
   }
 

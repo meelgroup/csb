@@ -152,6 +152,8 @@ public:
   /* Counting and Sampling mode options */
   bool sampling_mode = false;
   bool counting_mode = false;
+  bool ganak_disable_arjun = false;
+  bool print_fraction = false;
   bool almost_uniform_sampling = false;
   bool uniform_like_sampling = false;
 

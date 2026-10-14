@@ -310,6 +310,11 @@ void ExtraMain::create_options()
                                "use ganak as solver -- behave as a exact counter");
 #endif
   solver_options.add_options()
+      ("frac,f", po::bool_switch(&bm->UserFlags.print_fraction),
+       "Print the exact Ganak count as a fraction instead of scientific notation")
+      ("no-arjun", po::bool_switch(&bm->UserFlags.ganak_disable_arjun),
+       "Disable Arjun support minimization and CNF preprocessing in Ganak mode")
+      ("full-arjun", "Enable Arjun preprocessing (default; conflicts with --no-arjun)")
       ("seed",
        po::value<uint64_t>(&bm->UserFlags.unisamp_seed)
            ->default_value(bm->UserFlags.unisamp_seed),
@@ -472,6 +477,9 @@ void ExtraMain::create_options()
 #ifdef USE_GANAK
       ("ganak,e", "exact counting mode (ganak backend) [default]")
 #endif
+      ("frac,f", "Print the exact Ganak count as a fraction")
+      ("no-arjun", "Disable Arjun preprocessing in Ganak mode")
+      ("full-arjun", "Enable Arjun preprocessing (default)")
       ("seed", po::value<uint64_t>()->default_value(bm->UserFlags.unisamp_seed),
       "Seed for counting and sampling")(
       "num-samples,n",
@@ -739,17 +747,12 @@ int ExtraMain::parse_options(int argc, char** argv)
       bm->UserFlags.optimize_flag = false;
       bm->UserFlags.disableSimplifications();
       bm->UserFlags.propagate_equalities = false;
-      cout << "c [stp] input declares weights: simplifications disabled "
-              "(as with --nosimp)" << endl;
     }
   }
 
   const char* backend_name = nullptr;
   switch (bm->UserFlags.solver_to_use)
   {
-    case UserDefinedFlags::GANAK_SOLVER:
-      backend_name = "ganak";
-      break;
     case UserDefinedFlags::APPROXMC_SOLVER:
       backend_name = "approxmc";
       break;
@@ -774,6 +777,18 @@ int ExtraMain::parse_options(int argc, char** argv)
     check_infile_type();
   }
 
+  if (bm->UserFlags.ganak_disable_arjun && vm.count("full-arjun"))
+  {
+    cerr << "c error: --no-arjun and --full-arjun are mutually exclusive" << endl;
+    return 1;
+  }
+  if (bm->UserFlags.ganak_disable_arjun &&
+      bm->UserFlags.solver_to_use != UserDefinedFlags::GANAK_SOLVER)
+  {
+    cerr << "c error: --no-arjun requires the Ganak backend in this build" << endl;
+    return 1;
+  }
+
   if (vm.count("version"))
   {
     printVersionInfo();
@@ -785,6 +800,14 @@ int ExtraMain::parse_options(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-  ExtraMain main;
-  return main.main(argc, argv);
+  try
+  {
+    ExtraMain main;
+    return main.main(argc, argv);
+  }
+  catch (const std::exception& error)
+  {
+    std::cerr << "c error: " << error.what() << std::endl;
+    return 1;
+  }
 }
