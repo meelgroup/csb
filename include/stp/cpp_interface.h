@@ -81,6 +81,14 @@ class Cpp_interface
   };
   std::unordered_map<std::string, Function> functions;
 
+  // An assertion made in some frame. 'name' is non-empty if the assertion
+  // was a top-level (! <formula> :named <name>); used for unsat cores.
+  struct AssertRec
+  {
+    ASTNode node;
+    std::string name;
+  };
+
   // Nested helper class to encapsulate a frame (i.e., between push a pop)
   class SolverFrame
   {
@@ -98,10 +106,14 @@ class Cpp_interface
     ASTVec& getSymbols();
     ASTVec& getProjSymbols();
 
+    // Obtain the assertions made in the current frame
+    vector<AssertRec>& getAsserts();
+
   private:
     vector<std::string> _scoped_functions;
     ASTVec _scoped_symbols;
     ASTVec _scoped_proj_symbols;
+    vector<AssertRec> _scoped_asserts;
     std::unordered_map<std::string, Function>* _global_function_context;
   };
 
@@ -120,6 +132,17 @@ class Cpp_interface
 
   bool produce_models;
   bool changed_model_status;
+
+  // Unsat core support. A (! f :named n) records (n, f) as pending; the next
+  // AddAssert of exactly f then names that assertion.
+  bool produce_unsat_cores;
+  bool have_pending_name;
+  std::string pending_name;
+  ASTNode pending_node;
+
+  // True if the conjunction of the given assertions is unsatisfiable. Uses a
+  // complete SAT solver, regardless of the sampling mode.
+  bool isUnsatisfiable(const ASTVec& assertions);
 
 public:
   std::unique_ptr<LetMgr> letMgr;
@@ -142,6 +165,9 @@ public:
   DLL_PUBLIC UserDefinedFlags& getUserFlags();
 
   DLL_PUBLIC void AddAssert(const ASTNode& assert);
+
+  // Called by the parser for (! <formula> :named <name>).
+  DLL_PUBLIC void setPendingName(const std::string& name, const ASTNode& node);
   DLL_PUBLIC void SetQuery(const ASTNode& q);
 
   // NODES//
@@ -229,6 +255,7 @@ public:
   DLL_PUBLIC void getOption(std::string);
 
   DLL_PUBLIC void getModel();
+  DLL_PUBLIC void getUnsatCore();
   DLL_PUBLIC void getValue(const ASTVec& v);
 };
 

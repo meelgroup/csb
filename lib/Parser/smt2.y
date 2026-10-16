@@ -475,6 +475,11 @@ cmdi:
        stp::GlobalParserInterface->getModel();
     }
 |
+     GET_UNSAT_CORE_TOK
+    {
+       stp::GlobalParserInterface->getUnsatCore();
+    }
+|
      GET_VALUE_TOK LPAREN_TOK an_mixed RPAREN_TOK
     {
       stp::GlobalParserInterface->getValue(*$3);
@@ -1115,6 +1120,7 @@ TRUE_TOK
   ASTNode n = stp::GlobalParserInterface->CreateNode(IFF,s, *$3);
 
   stp::GlobalParserInterface->AddAssert(n);
+  stp::GlobalParserInterface->setPendingName(*$5, *$3);
 
   delete $5;
 
