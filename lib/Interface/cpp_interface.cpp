@@ -28,7 +28,9 @@ THE SOFTWARE.
 #include "stp/STPManager/STPManager.h"
 #include "stp/ToSat/ToSATAIG.h"
 #include <cassert>
+#include <cctype>
 #include <cstdint>
+#include <cstring>
 #include <gmp.h>
 #include <gmpxx.h>
 
@@ -744,6 +746,17 @@ bool Cpp_interface::isUnsatisfiable(const ASTVec& assertions)
   return result == SOLVER_UNSATISFIABLE;
 }
 
+// The parser strips the bars from a quoted symbol such as |x = 1|; put them
+// back when the name is not a simple symbol, so that it reads back as one.
+static std::string smt2Symbol(const std::string& name)
+{
+  bool simple = !name.empty() && !isdigit((unsigned char)name[0]);
+  for (char c : name)
+    simple = simple && (isalnum((unsigned char)c) ||
+                        strchr("~!@$%^&*_-+=<>.?/", c) != NULL);
+  return simple ? name : "|" + name + "|";
+}
+
 // Deletion-based unsat core over the named assertions. Unnamed assertions are
 // always kept.
 void Cpp_interface::getUnsatCore()
@@ -789,7 +802,7 @@ void Cpp_interface::getUnsatCore()
 
   cout << "(";
   for (size_t i = 0; i < core.size(); i++)
-    cout << (i ? " " : "") << core[i]->name;
+    cout << (i ? " " : "") << smt2Symbol(core[i]->name);
   cout << ")" << endl;
   flush(cout);
 }
