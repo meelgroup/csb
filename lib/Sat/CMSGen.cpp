@@ -116,7 +116,14 @@ bool CMSGenC::solve(bool& timeout_expired) // Search without assumptions.
 
 uint8_t CMSGenC::modelValue(uint32_t x) const
 {
-  return (s->get_model().at(x) == CMSGen::l_True);
+  // Must match true_literal()/false_literal()/undef_literal(). Returning 0 for
+  // a false variable makes the caller treat it as undefined.
+  const CMSGen::lbool v = s->get_model().at(x);
+  if (v == CMSGen::l_True)
+    return (uint8_t)1;
+  if (v == CMSGen::l_False)
+    return (uint8_t)-1;
+  return (uint8_t)0;
 }
 
 uint32_t CMSGenC::newProjVar(uint32_t x)
