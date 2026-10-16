@@ -115,7 +115,14 @@ bool CryptoMiniSat5::solve(bool& timeout_expired) // Search without assumptions.
 
 uint8_t CryptoMiniSat5::modelValue(uint32_t x) const
 {
-  return (s->get_model().at(x) == CMSat::l_True);
+  // Must match true_literal()/false_literal()/undef_literal(). Returning 0 for
+  // a false variable makes the caller treat it as undefined.
+  const CMSat::lbool v = s->get_model().at(x);
+  if (v == CMSat::l_True)
+    return (uint8_t)1;
+  if (v == CMSat::l_False)
+    return (uint8_t)-1;
+  return (uint8_t)0;
 }
 
 uint32_t CryptoMiniSat5::newProjVar(uint32_t x)
