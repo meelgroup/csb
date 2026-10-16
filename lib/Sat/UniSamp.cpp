@@ -152,7 +152,12 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
 
   timeout_expired = false;
 
-  if (!unisamp_ran || next_model_index >= unigen_models.size())
+  // appmc already holds the CNF, so UniGen runs once per object. Asking for
+  // more samples than UniGen produced is a failure.
+  if (unisamp_ran && next_model_index >= unigen_models.size())
+    return false;
+
+  if (!unisamp_ran)
   {
     unigen_models.clear();
       std::unique_ptr<CMSat::Field> cnt = cnf.multiplier_weight->dup();
