@@ -504,7 +504,6 @@ void Cpp_interface::printStatus()
 // Does some simple caching of prior results.
 void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 {
-  static uint64_t samples_generated = 0;
   if (ignoreCheckSatRequest)
     return;
 
@@ -548,7 +547,12 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
     else
       query = bm.ASTTrue;
 
+    // In sampling mode TopLevelSTP prints every sample as it finds it.
+    if (bm.UserFlags.sampling_mode)
+      GlobalSTP->sample_callback = [this]() { printModel(); };
+
     SOLVER_RETURN_TYPE last_result = GlobalSTP->TopLevelSTP(query, bm.ASTFalse);
+    GlobalSTP->sample_callback = nullptr;
 
     // Store away the answer. Might be timeout, or error though..
     last_run = Entry(last_result);
@@ -585,21 +589,10 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
   }
 
   // User has specified -p option to print model.
-   if (bm.UserFlags.print_counterexample_flag)
-   {
-      getModel();
-   }
-   if(bm.UserFlags.sampling_mode)
-   {
-      getModel();
-      samples_generated++;
-      if(samples_generated < bm.UserFlags.num_samples)
-      {
-        bm.UserFlags.unisamp_seed++;
-        bm.UserFlags.samples_generated++;
-        checkSat(assertionsSMT2);
-      }
-   }
+  if (bm.UserFlags.print_counterexample_flag)
+  {
+    getModel();
+  }
 
 
   bm.GetRunTimes()->start(RunTimes::Parsing);
@@ -722,6 +715,11 @@ void Cpp_interface::getModel()
     return;
   }
 
+  printModel();
+}
+
+void Cpp_interface::printModel()
+{
   cout << "(model" << std::endl;
 
   std::ostringstream os;

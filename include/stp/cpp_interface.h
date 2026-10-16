@@ -115,6 +115,7 @@ class Cpp_interface
 
   void checkInvariant();
   void init();
+  void printModel();
   void addFrame();
   void removeFrame();
 
