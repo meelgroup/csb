@@ -301,7 +301,10 @@ bool GnK::solve(bool& timeout_expired) // Search without assumptions.
   std::cout << "s " << (cnf.weighted ? "wmc " : "mc ") << result_value
             << std::endl;
 
-  return true;
+  // A zero (unweighted) count means the formula is unsatisfiable. Return
+  // false so that STP records an UNSAT result. With weights a zero result
+  // does not imply unsatisfiability.
+  return cnf.weighted || !cnt->is_zero();
 }
 
 uint8_t GnK::modelValue(uint32_t x) const
