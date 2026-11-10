@@ -1,0 +1,6 @@
+(set-logic QF_BV)
+(declare-const p Bool)
+(declare-const x (_ BitVec 3))
+(assert (ite p (= x #b001) (= x #b010)))
+(assert (not (or (= x #b001) (= x #b010))))
+(check-sat)

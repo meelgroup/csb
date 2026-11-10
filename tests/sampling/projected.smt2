@@ -1,0 +1,8 @@
+(set-logic QF_BV)
+(declare-const flag Bool)
+(declare-const witness (_ BitVec 3))
+(declare-const odd Bool)
+(declare-projvar flag)
+(assert (= flag (bvult witness #b100)))
+(assert (= odd (= ((_ extract 0 0) witness) #b1)))
+(check-sat)

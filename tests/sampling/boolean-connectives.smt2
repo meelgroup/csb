@@ -1,0 +1,7 @@
+(set-logic QF_BV)
+(declare-const a Bool)
+(declare-const b Bool)
+(declare-const c Bool)
+(declare-const d Bool)
+(assert (and (= a (not b)) (= c (xor a d)) (=> d c) (or b c)))
+(check-sat)
