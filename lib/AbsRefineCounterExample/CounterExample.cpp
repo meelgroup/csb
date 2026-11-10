@@ -32,10 +32,18 @@ const bool debug_counterexample = false;
 
 namespace
 {
-THREAD_LOCAL std::mt19937_64 unconstrained_rng(std::random_device{}());
-
 stp::ASTNode randomUnconstrainedValue(stp::STPMgr* bm, const stp::ASTNode& symbol)
 {
+  // Derive a stream for each symbol from the sampling seed. Symbol names keep
+  // completion independent of the iteration order of the model's hash tables.
+  const uint64_t sampling_seed = bm->UserFlags.unisamp_seed;
+  std::vector<uint32_t> seed_data = {static_cast<uint32_t>(sampling_seed),
+                                    static_cast<uint32_t>(sampling_seed >> 32)};
+  for (unsigned char c : std::string(symbol.GetName()))
+    seed_data.push_back(c);
+  std::seed_seq seed(seed_data.begin(), seed_data.end());
+  std::mt19937_64 unconstrained_rng(seed);
+
   if (symbol.GetType() == stp::BOOLEAN_TYPE)
   {
     std::uniform_int_distribution<int> bit(0, 1);

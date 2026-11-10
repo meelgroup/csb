@@ -859,6 +859,17 @@ if(ENABLE_TESTING)
 endif()
 add_feature_info(Tests ENABLE_TESTING "Enables tests")
 
+# Sampling regressions also support static builds and need neither lit nor GTest.
+option(ENABLE_SAMPLING_TESTS "Enable sampling model regression tests" OFF)
+if(ENABLE_SAMPLING_TESTS)
+    if(NOT BUILD_EXECUTABLES OR NOT USE_UNIGEN)
+        message(FATAL_ERROR "Sampling tests require executables and UniGen/CMSGen support")
+    endif()
+    find_package(PythonInterp 3.7 REQUIRED)
+    enable_testing()
+    add_subdirectory(tests/sampling)
+endif()
+
 # -----------------------------------------------------------------------------
 # Print information about used features
 # -----------------------------------------------------------------------------
