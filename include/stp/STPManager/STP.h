@@ -37,6 +37,8 @@ THE SOFTWARE.
 #include "stp/ToSat/ToSATAIG.h"
 #include "stp/Simplifier/NodeDomainAnalysis.h"
 
+#include <functional>
+
 namespace stp
 {
 // FIXME: This needs a better name
@@ -68,8 +70,18 @@ class STP
 
   SATSolver* get_new_sat_solver();
 
+  // Sampling mode: report the sample found so far, then solve the CNF that is
+  // already in the solver again for every further sample.
+  void drawSamples(SATSolver& NewSolver, const ASTNode& original_input,
+                   ToSATBase* satBase, bool refinement);
+
 public:
   STPMgr* bm;
+
+  // Sampling mode: called after each sample, while it is the current model.
+  // TopLevelSTP bit-blasts once and solves again for every further sample.
+  std::function<void()> sample_callback;
+
   Simplifier* simp;
   ToSATBase* tosat;
   AbsRefine_CounterExample* Ctr_Example;

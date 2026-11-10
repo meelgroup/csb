@@ -205,6 +205,24 @@ SOLVER_RETURN_TYPE STP::TopLevelSTP(const ASTNode& inputasserts,
   return result;
 }
 
+void STP::drawSamples(SATSolver& NewSolver, const ASTNode& original_input,
+                      ToSATBase* satBase, bool refinement)
+{
+  sample_callback();
+  for (uint64_t i = 1; i < bm->UserFlags.num_samples; i++)
+  {
+    if (Ctr_Example->CallSAT_ResultCheck(NewSolver, bm->ASTTrue, original_input,
+                                         satBase,
+                                         refinement) != SOLVER_SATISFIABLE)
+    {
+      std::cout << "c only " << i << " of " << bm->UserFlags.num_samples
+                << " samples found" << std::endl;
+      return;
+    }
+    sample_callback();
+  }
+}
+
 ASTNode STP::callSizeReducing(ASTNode inputToSat,
                               BVSolver* bvSolver,
                               PropagateEqualities* pe,
@@ -735,6 +753,9 @@ STP::TopLevelSTPAux(SATSolver& NewSolver, const ASTNode& original_input)
 
   if (SOLVER_UNDECIDED != res)
   {
+    if (sample_callback && SOLVER_SATISFIABLE == res)
+      drawSamples(NewSolver, original_input, satBase, maybeRefinement);
+
     // If the aig converter knows that it is never going to be called again,
     // it deletes the constant bit stuff before calling the SAT solver.
     if (toSATAIG.cbIsDestructed())

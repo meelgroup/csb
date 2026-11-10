@@ -91,8 +91,10 @@ bool CMSGenC::okay()
 
 bool CMSGenC::solve(bool& timeout_expired) // Search without assumptions.
 {
+  // CMSGen counts the limit from the current conflict total, so each solve()
+  // gets the full budget. Sampling calls solve() once per sample.
   if (max_confl > 0) {
-     s->set_max_confl(std::max(max_confl - s->get_sum_conflicts(), (uint64_t)1));
+     s->set_max_confl(max_confl);
   }
 
   /*
