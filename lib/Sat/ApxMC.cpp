@@ -187,7 +187,10 @@ bool ApxMC::solve(bool& timeout_expired) // Search without assumptions.
 
     print_num_solutions(sol_count.cellSolCount, sol_count.hashCount + getUnconstrainedBits(), appmc.get_multiplier_weight());
 
-  return true;
+  // A zero count means the formula is unsatisfiable (ApproxMC reports 0 only
+  // when it is exact). Return false so that STP records an UNSAT result.
+  return !(sol_count.cellSolCount == 0 ||
+           appmc.get_multiplier_weight()->is_zero());
 }
 
 uint8_t ApxMC::modelValue(uint32_t x) const

@@ -28,7 +28,9 @@ THE SOFTWARE.
 #include "stp/STPManager/STPManager.h"
 #include "stp/ToSat/ToSATAIG.h"
 #include <cassert>
+#include <cctype>
 #include <cstdint>
+#include <cstring>
 #include <gmp.h>
 #include <gmpxx.h>
 
@@ -97,6 +99,8 @@ void Cpp_interface::init()
   ignoreCheckSatRequest = false;
   produce_models = false;
   changed_model_status = false;
+  produce_unsat_cores = false;
+  have_pending_name = false;
 }
 
 void Cpp_interface::addFrame()
@@ -169,6 +173,22 @@ UserDefinedFlags& Cpp_interface::getUserFlags()
 void Cpp_interface::AddAssert(const ASTNode& assert)
 {
   bm.AddAssert(assert);
+
+  AssertRec rec;
+  rec.node = assert;
+  if (have_pending_name && pending_node == assert)
+    rec.name = pending_name;
+  have_pending_name = false;
+
+  frames.back()->getAsserts().push_back(rec);
+}
+
+void Cpp_interface::setPendingName(const std::string& name,
+                                   const ASTNode& node)
+{
+  have_pending_name = true;
+  pending_name = name;
+  pending_node = node;
 }
 
 void Cpp_interface::SetQuery(const ASTNode& q)
@@ -677,8 +697,114 @@ void Cpp_interface::setOption(std::string option, std::string value)
     else
       unsupported();
   }
+  else if (option == "produce-unsat-cores")
+  {
+    if (value == "true")
+    {
+      produce_unsat_cores = true;
+      success();
+    }
+    else if (value == "false")
+    {
+      produce_unsat_cores = false;
+      success();
+    }
+    else
+      unsupported();
+  }
   else
     unsupported();
+}
+
+bool Cpp_interface::isUnsatisfiable(const ASTVec& assertions)
+{
+  ASTNode query;
+  if (assertions.size() > 1)
+    query = nf->CreateNode(AND, assertions);
+  else if (assertions.size() == 1)
+    query = assertions[0];
+  else
+    return false;
+
+  // The core is computed with a complete solver, not the sampler / counter.
+  const auto saved_solver = bm.UserFlags.solver_to_use;
+  const bool saved_sampling = bm.UserFlags.sampling_mode;
+  const bool saved_construct = bm.UserFlags.construct_counterexample_flag;
+  bm.UserFlags.solver_to_use = UserDefinedFlags::MINISAT_SOLVER;
+  bm.UserFlags.sampling_mode = false;
+
+  resetSolver();
+  const SOLVER_RETURN_TYPE result = GlobalSTP->TopLevelSTP(query, bm.ASTFalse);
+  resetSolver();
+
+  bm.UserFlags.solver_to_use = saved_solver;
+  bm.UserFlags.sampling_mode = saved_sampling;
+  bm.UserFlags.construct_counterexample_flag = saved_construct;
+
+  // A timeout or error is treated as "not unsat", which keeps the assertion
+  // in the core: the result stays valid, just less minimal.
+  return result == SOLVER_UNSATISFIABLE;
+}
+
+// The parser strips the bars from a quoted symbol such as |x = 1|; put them
+// back when the name is not a simple symbol, so that it reads back as one.
+static std::string smt2Symbol(const std::string& name)
+{
+  bool simple = !name.empty() && !isdigit((unsigned char)name[0]);
+  for (char c : name)
+    simple = simple && (isalnum((unsigned char)c) ||
+                        strchr("~!@$%^&*_-+=<>.?/", c) != NULL);
+  return simple ? name : "|" + name + "|";
+}
+
+// Deletion-based unsat core over the named assertions. Unnamed assertions are
+// always kept.
+void Cpp_interface::getUnsatCore()
+{
+  if (!produce_unsat_cores)
+  {
+    error("unsat core generation is not enabled, use (set-option "
+          ":produce-unsat-cores true)");
+    return;
+  }
+
+  if (cache.back().result != SOLVER_UNSATISFIABLE)
+  {
+    error("the last check-sat result was not unsat");
+    return;
+  }
+
+  ASTVec background;
+  std::vector<const AssertRec*> core;
+  for (SolverFrame* frame : frames)
+  {
+    for (const AssertRec& rec : frame->getAsserts())
+    {
+      if (rec.name.empty())
+        background.push_back(rec.node);
+      else
+        core.push_back(&rec);
+    }
+  }
+
+  for (size_t i = 0; i < core.size();)
+  {
+    ASTVec candidate = background;
+    for (size_t j = 0; j < core.size(); j++)
+      if (j != i)
+        candidate.push_back(core[j]->node);
+
+    if (isUnsatisfiable(candidate))
+      core.erase(core.begin() + i);
+    else
+      i++;
+  }
+
+  cout << "(";
+  for (size_t i = 0; i < core.size(); i++)
+    cout << (i ? " " : "") << smt2Symbol(core[i]->name);
+  cout << ")" << endl;
+  flush(cout);
 }
 
 void Cpp_interface::getOption(std::string)
@@ -733,6 +859,11 @@ void Cpp_interface::getModel()
 void CNFClearMemory()
 {
   Cnf_ClearMemory();
+}
+
+vector<Cpp_interface::AssertRec>& Cpp_interface::SolverFrame::getAsserts()
+{
+  return _scoped_asserts;
 }
 
 Cpp_interface::SolverFrame::SolverFrame(

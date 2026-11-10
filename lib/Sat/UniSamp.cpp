@@ -232,7 +232,15 @@ bool UniSamp::solve(bool& timeout_expired) // Search without assumptions.
               << "*2**" << sol_count.hashCount
               << " * " <<  mult_val << std::endl;
 
-
+    // A zero count means the formula is unsatisfiable (ApproxMC reports 0 only
+    // when it is exact). UniGen calls exit() on such a count, so return false
+    // before sampling so that STP records an UNSAT result.
+    if (sol_count.cellSolCount == 0 ||
+        appmc.get_multiplier_weight()->is_zero())
+    {
+      unisamp_ran = true;
+      return false;
+    }
 
     unigen->set_verbosity(0);
     unigen->set_verb_sampler_cls(0);
